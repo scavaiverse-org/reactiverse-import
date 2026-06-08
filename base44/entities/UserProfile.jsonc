@@ -1,0 +1,47 @@
+{
+  "name": "UserProfile",
+  "type": "object",
+  "properties": {
+    "seed_key": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "full_name": {
+      "type": "string"
+    },
+    "display_name": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "access_scope": {
+      "type": "string"
+    },
+    "tenant_id": {
+      "type": "string"
+    },
+    "avatar_url": {
+      "type": "string"
+    },
+    "job_title": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "last_login_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "seed_key",
+    "email",
+    "role"
+  ]
+}

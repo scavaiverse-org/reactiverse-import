@@ -1,0 +1,96 @@
+{
+  "name": "Exhibit",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "tenant_name": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string",
+      "description": "Exhibit title"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "long_description": {
+      "type": "string"
+    },
+    "historical_significance": {
+      "type": "string"
+    },
+    "related_exhibits": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "media_references": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "ai_guide_context": {
+      "type": "string"
+    },
+    "station_number": {
+      "type": "number"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "opera_tradition",
+        "costume_art",
+        "music_instruments",
+        "stage_design",
+        "cultural_heritage",
+        "interactive",
+        "commerce"
+      ],
+      "description": "Exhibit category"
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "audio_url": {
+      "type": "string"
+    },
+    "narrative_text": {
+      "type": "string"
+    },
+    "is_featured": {
+      "type": "boolean",
+      "default": false
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "published",
+        "archived"
+      ],
+      "default": "draft"
+    },
+    "engagement_count": {
+      "type": "number",
+      "default": 0
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "title",
+    "station_number",
+    "category"
+  ]
+}

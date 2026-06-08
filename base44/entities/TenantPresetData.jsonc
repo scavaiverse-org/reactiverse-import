@@ -1,0 +1,57 @@
+{
+  "name": "TenantPresetData",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "museum_id": {
+      "type": "string"
+    },
+    "tenant_name": {
+      "type": "string"
+    },
+    "preset_key": {
+      "type": "string"
+    },
+    "preset_name": {
+      "type": "string"
+    },
+    "walkthrough_key": {
+      "type": "string"
+    },
+    "source_preset_id": {
+      "type": "string"
+    },
+    "preset_data": {
+      "type": "object"
+    },
+    "rooms": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "saved",
+        "archived"
+      ],
+      "default": "saved"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "updated_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "preset_key",
+    "preset_name",
+    "walkthrough_key",
+    "preset_data"
+  ]
+}

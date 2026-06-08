@@ -1,0 +1,71 @@
+{
+  "name": "QASentinelExport",
+  "type": "object",
+  "properties": {
+    "export_id": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "created_by": {
+      "type": "string"
+    },
+    "export_type": {
+      "type": "string",
+      "enum": [
+        "json",
+        "markdown",
+        "txt"
+      ]
+    },
+    "issue_count": {
+      "type": "number",
+      "default": 0
+    },
+    "critical_count": {
+      "type": "number",
+      "default": 0
+    },
+    "major_count": {
+      "type": "number",
+      "default": 0
+    },
+    "minor_count": {
+      "type": "number",
+      "default": 0
+    },
+    "warning_count": {
+      "type": "number",
+      "default": 0
+    },
+    "regression_count": {
+      "type": "number",
+      "default": 0
+    },
+    "included_tabs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "filters": {
+      "type": "object"
+    },
+    "export_blob": {
+      "type": "string"
+    },
+    "checksum": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "export_id",
+    "created_at",
+    "export_type",
+    "export_blob"
+  ]
+}

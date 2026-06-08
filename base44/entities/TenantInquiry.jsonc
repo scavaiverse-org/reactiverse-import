@@ -1,0 +1,40 @@
+{
+  "name": "TenantInquiry",
+  "type": "object",
+  "properties": {
+    "organization": {
+      "type": "string"
+    },
+    "contact_name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "museum_type": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "new",
+        "contacted",
+        "qualified",
+        "closed"
+      ],
+      "default": "new"
+    },
+    "submitted_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "organization",
+    "contact_name",
+    "email",
+    "status"
+  ]
+}

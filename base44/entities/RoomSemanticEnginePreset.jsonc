@@ -1,0 +1,53 @@
+{
+  "name": "RoomSemanticEnginePreset",
+  "type": "object",
+  "properties": {
+    "slug": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "method": {
+      "type": "string"
+    },
+    "default_enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "mode_availability": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "type": "string"
+    },
+    "created_by_system": {
+      "type": "boolean",
+      "default": true
+    },
+    "version": {
+      "type": "string"
+    },
+    "sort_order": {
+      "type": "number"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "updated_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "slug",
+    "title",
+    "method",
+    "status"
+  ]
+}

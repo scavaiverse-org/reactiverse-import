@@ -1,0 +1,33 @@
+{
+  "name": "MasterMuseumCategory",
+  "type": "object",
+  "properties": {
+    "categoryCode": {
+      "type": "string"
+    },
+    "categoryName": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "isDefault": {
+      "type": "boolean",
+      "default": false
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "categoryCode",
+    "categoryName"
+  ]
+}

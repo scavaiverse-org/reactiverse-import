@@ -1,0 +1,25 @@
+{
+  "name": "RolePermission",
+  "type": "object",
+  "properties": {
+    "seed_key": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string"
+    },
+    "permissions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "description": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "seed_key",
+    "role"
+  ]
+}

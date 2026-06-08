@@ -1,0 +1,91 @@
+{
+  "name": "QASentinelRun",
+  "type": "object",
+  "properties": {
+    "run_id": {
+      "type": "string"
+    },
+    "run_type": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "scheduled",
+        "live_user",
+        "smoke",
+        "full",
+        "regression"
+      ],
+      "default": "manual"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "running",
+        "passed",
+        "failed",
+        "partial",
+        "cancelled"
+      ],
+      "default": "running"
+    },
+    "started_at": {
+      "type": "string"
+    },
+    "finished_at": {
+      "type": "string"
+    },
+    "duration_ms": {
+      "type": "number"
+    },
+    "routes_tested": {
+      "type": "number",
+      "default": 0
+    },
+    "ctas_tested": {
+      "type": "number",
+      "default": 0
+    },
+    "forms_tested": {
+      "type": "number",
+      "default": 0
+    },
+    "functions_tested": {
+      "type": "number",
+      "default": 0
+    },
+    "issues_found": {
+      "type": "number",
+      "default": 0
+    },
+    "critical_count": {
+      "type": "number",
+      "default": 0
+    },
+    "major_count": {
+      "type": "number",
+      "default": 0
+    },
+    "minor_count": {
+      "type": "number",
+      "default": 0
+    },
+    "tenant_id": {
+      "type": "string"
+    },
+    "tenant_slug": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "coverage_map": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "run_id",
+    "run_type",
+    "status",
+    "started_at"
+  ]
+}

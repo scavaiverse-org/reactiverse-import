@@ -1,0 +1,43 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "MASTER_ADMIN",
+        "PLATFORM_ADMIN",
+        "FRANCHISE_OWNER",
+        "FRANCHISE_MANAGER",
+        "FRANCHISE_STAFF",
+        "CONTENT_EDITOR",
+        "MEDIA_MANAGER",
+        "APPROVAL_REVIEWER",
+        "ANALYTICS_VIEWER",
+        "PUBLIC_USER",
+        "admin",
+        "user"
+      ],
+      "default": "PUBLIC_USER"
+    },
+    "tenantIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "assignedTenantIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "permissions": {
+      "type": "object"
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true
+    }
+  }
+}

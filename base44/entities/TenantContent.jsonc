@@ -1,0 +1,132 @@
+{
+  "name": "TenantContent",
+  "type": "object",
+  "properties": {
+    "tenantId": {
+      "type": "string"
+    },
+    "ownerId": {
+      "type": "string"
+    },
+    "pageKey": {
+      "type": "string"
+    },
+    "sectionKey": {
+      "type": "string"
+    },
+    "contentType": {
+      "type": "string",
+      "enum": [
+        "page",
+        "section",
+        "card",
+        "cta",
+        "story",
+        "event",
+        "testimonial",
+        "program",
+        "gallery_item",
+        "custom"
+      ],
+      "default": "section"
+    },
+    "title": {
+      "type": "string"
+    },
+    "subtitle": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "structuredData": {
+      "type": "object"
+    },
+    "layoutConfig": {
+      "type": "object"
+    },
+    "mediaIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "visibilityScope": {
+      "type": "string",
+      "enum": [
+        "public",
+        "tenant",
+        "platform",
+        "private"
+      ],
+      "default": "tenant"
+    },
+    "rolePermissions": {
+      "type": "object"
+    },
+    "publishState": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "pending_review",
+        "approved",
+        "scheduled",
+        "published",
+        "hidden",
+        "archived",
+        "rejected"
+      ],
+      "default": "draft"
+    },
+    "scheduledAt": {
+      "type": "string"
+    },
+    "publishedAt": {
+      "type": "string"
+    },
+    "approvedBy": {
+      "type": "string"
+    },
+    "createdBy": {
+      "type": "string"
+    },
+    "updatedBy": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string"
+    },
+    "deletedAt": {
+      "type": "string"
+    },
+    "archivedAt": {
+      "type": "string"
+    },
+    "version": {
+      "type": "number",
+      "default": 1
+    },
+    "previousVersionId": {
+      "type": "string"
+    },
+    "aiSummary": {
+      "type": "string"
+    },
+    "aiTags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "tenantId",
+    "pageKey",
+    "contentType",
+    "title",
+    "publishState"
+  ]
+}

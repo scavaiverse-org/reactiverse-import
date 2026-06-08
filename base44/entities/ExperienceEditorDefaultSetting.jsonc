@@ -1,0 +1,99 @@
+{
+  "name": "ExperienceEditorDefaultSetting",
+  "type": "object",
+  "properties": {
+    "slug": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "default_floor_detection_method": {
+      "type": "string"
+    },
+    "fallback_floor_detection_method": {
+      "type": "string"
+    },
+    "manual_floor_method": {
+      "type": "string"
+    },
+    "default_sprite_anchor": {
+      "type": "string"
+    },
+    "default_sprite_floor_locked": {
+      "type": "boolean"
+    },
+    "default_sprite_shadow_enabled": {
+      "type": "boolean"
+    },
+    "default_sprite_shadow_strength": {
+      "type": "number"
+    },
+    "default_sprite_opacity": {
+      "type": "number"
+    },
+    "default_sprite_rotation": {
+      "type": "number"
+    },
+    "default_sprite_scale": {
+      "type": "number"
+    },
+    "default_safe_zone_margin_percent": {
+      "type": "number"
+    },
+    "default_mobile_safe_zone_margin_percent": {
+      "type": "number"
+    },
+    "default_text_readability_mode": {
+      "type": "string"
+    },
+    "default_preview_required_before_publish": {
+      "type": "boolean"
+    },
+    "default_qa_required_before_publish": {
+      "type": "boolean"
+    },
+    "default_reduced_motion_available": {
+      "type": "boolean"
+    },
+    "easy_mode_enabled": {
+      "type": "boolean"
+    },
+    "expert_mode_enabled": {
+      "type": "boolean"
+    },
+    "museum_co_curator_enabled": {
+      "type": "boolean"
+    },
+    "analytics_memory_enabled": {
+      "type": "boolean"
+    },
+    "scrollable_coordinate_lock_enabled": {
+      "type": "boolean"
+    },
+    "status": {
+      "type": "string"
+    },
+    "created_by_system": {
+      "type": "boolean",
+      "default": true
+    },
+    "version": {
+      "type": "string"
+    },
+    "sort_order": {
+      "type": "number"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "updated_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "slug",
+    "title",
+    "status"
+  ]
+}

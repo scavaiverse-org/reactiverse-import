@@ -1,0 +1,62 @@
+{
+  "name": "PlatformArchitecturePreset",
+  "type": "object",
+  "properties": {
+    "presetKey": {
+      "type": "string"
+    },
+    "presetName": {
+      "type": "string"
+    },
+    "ownershipScope": {
+      "type": "string",
+      "enum": [
+        "platform"
+      ],
+      "default": "platform"
+    },
+    "presetType": {
+      "type": "string",
+      "enum": [
+        "overlay",
+        "typography",
+        "animation",
+        "cta_engine",
+        "fallback",
+        "theme",
+        "validator"
+      ]
+    },
+    "config": {
+      "type": "object"
+    },
+    "publishState": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "published",
+        "archived"
+      ],
+      "default": "draft"
+    },
+    "createdBy": {
+      "type": "string"
+    },
+    "updatedBy": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "presetKey",
+    "presetName",
+    "ownershipScope",
+    "presetType",
+    "publishState"
+  ]
+}

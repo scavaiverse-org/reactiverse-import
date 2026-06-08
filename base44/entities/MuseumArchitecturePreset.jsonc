@@ -1,0 +1,75 @@
+{
+  "name": "MuseumArchitecturePreset",
+  "type": "object",
+  "properties": {
+    "tenantId": {
+      "type": "string"
+    },
+    "museumId": {
+      "type": "string"
+    },
+    "tenantSlug": {
+      "type": "string"
+    },
+    "presetKey": {
+      "type": "string"
+    },
+    "presetName": {
+      "type": "string"
+    },
+    "ownershipScope": {
+      "type": "string",
+      "enum": [
+        "museum"
+      ],
+      "default": "museum"
+    },
+    "presetType": {
+      "type": "string",
+      "enum": [
+        "hero_media",
+        "onboarding_visual",
+        "walkthrough_media",
+        "guide_avatar",
+        "exhibit_visual",
+        "overlay",
+        "cta_visual",
+        "theme"
+      ]
+    },
+    "config": {
+      "type": "object"
+    },
+    "publishState": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "published",
+        "archived"
+      ],
+      "default": "draft"
+    },
+    "createdBy": {
+      "type": "string"
+    },
+    "updatedBy": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenantId",
+    "museumId",
+    "tenantSlug",
+    "presetKey",
+    "presetName",
+    "ownershipScope",
+    "presetType",
+    "publishState"
+  ]
+}

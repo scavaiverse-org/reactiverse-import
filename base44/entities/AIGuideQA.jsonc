@@ -1,0 +1,33 @@
+{
+  "name": "AIGuideQA",
+  "type": "object",
+  "properties": {
+    "seed_key": {
+      "type": "string"
+    },
+    "tenant_id": {
+      "type": "string"
+    },
+    "guide_id": {
+      "type": "string"
+    },
+    "question": {
+      "type": "string"
+    },
+    "answer": {
+      "type": "string"
+    },
+    "topic": {
+      "type": "string"
+    },
+    "enabled": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "seed_key",
+    "tenant_id",
+    "question",
+    "answer"
+  ]
+}

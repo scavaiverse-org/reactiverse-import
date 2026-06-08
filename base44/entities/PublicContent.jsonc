@@ -1,0 +1,76 @@
+{
+  "name": "PublicContent",
+  "type": "object",
+  "properties": {
+    "page_key": {
+      "type": "string",
+      "enum": [
+        "home",
+        "walkthrough",
+        "guide",
+        "tickets",
+        "vendors",
+        "commerce",
+        "platform",
+        "white_label",
+        "analytics",
+        "documentation_notes"
+      ]
+    },
+    "title": {
+      "type": "string"
+    },
+    "subtitle": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "cta_label": {
+      "type": "string"
+    },
+    "cta_path": {
+      "type": "string"
+    },
+    "secondary_cta_label": {
+      "type": "string"
+    },
+    "secondary_cta_path": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "review",
+        "published",
+        "archived"
+      ],
+      "default": "published"
+    },
+    "last_updated": {
+      "type": "string"
+    },
+    "owner": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    },
+    "public_visibility": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "page_key",
+    "title",
+    "subtitle",
+    "body",
+    "cta_label",
+    "cta_path",
+    "status",
+    "owner",
+    "source"
+  ]
+}

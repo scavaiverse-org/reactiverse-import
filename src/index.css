@@ -1,0 +1,305 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-heading: 'Playfair Display', Georgia, serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+    --font-display: 'Space Grotesk', system-ui, sans-serif;
+    --font-ui: 'Space Grotesk', system-ui, sans-serif;
+    --font-accent: 'Space Grotesk', system-ui, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+    --cinematic-ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --cinematic-duration: 900ms;
+    --immersive-radius: 2rem;
+    --immersive-blur: 24px;
+    --immersive-glow: 0 24px 90px hsl(210 18% 82% / 0.16);
+    --immersive-purple-glow: 0 24px 90px hsl(220 12% 72% / 0.12);
+
+    --background: 240 10% 3.9%;
+    --foreground: 220 20% 98%;
+    --card: 240 8% 6%;
+    --card-foreground: 220 20% 98%;
+    --popover: 240 8% 6%;
+    --popover-foreground: 220 20% 98%;
+    --primary: 210 20% 94%;
+    --primary-foreground: 240 12% 2%;
+    --secondary: 240 6% 12%;
+    --secondary-foreground: 220 14% 94%;
+    --muted: 240 6% 12%;
+    --muted-foreground: 240 8% 63%;
+    --accent: 215 16% 71%;
+    --accent-foreground: 220 20% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 6% 15%;
+    --input: 240 6% 15%;
+    --ring: 210 18% 82%;
+    --chart-1: 210 20% 94%;
+    --chart-2: 220 14% 83%;
+    --chart-3: 220 20% 98%;
+    --chart-4: 240 8% 63%;
+    --chart-5: 215 16% 71%;
+    --radius: 0.75rem;
+
+    --sidebar-background: 240 8% 6%;
+    --sidebar-foreground: 220 20% 98%;
+    --sidebar-primary: 210 20% 94%;
+    --sidebar-primary-foreground: 240 12% 2%;
+    --sidebar-accent: 240 6% 12%;
+    --sidebar-accent-foreground: 220 14% 94%;
+    --sidebar-border: 240 6% 15%;
+    --sidebar-ring: 210 18% 82%;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 220 20% 98%;
+    --card: 240 8% 6%;
+    --card-foreground: 220 20% 98%;
+    --popover: 240 8% 6%;
+    --popover-foreground: 220 20% 98%;
+    --primary: 210 20% 94%;
+    --primary-foreground: 240 12% 2%;
+    --secondary: 240 6% 12%;
+    --secondary-foreground: 220 14% 94%;
+    --muted: 240 6% 12%;
+    --muted-foreground: 240 8% 63%;
+    --accent: 215 16% 71%;
+    --accent-foreground: 220 20% 98%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 6% 15%;
+    --input: 240 6% 15%;
+    --ring: 210 18% 82%;
+    --chart-1: 210 20% 94%;
+    --chart-2: 220 14% 83%;
+    --chart-3: 220 20% 98%;
+    --chart-4: 240 8% 63%;
+    --chart-5: 215 16% 71%;
+    --sidebar-background: 240 8% 6%;
+    --sidebar-foreground: 220 20% 98%;
+    --sidebar-primary: 210 20% 94%;
+    --sidebar-primary-foreground: 240 12% 2%;
+    --sidebar-accent: 240 6% 12%;
+    --sidebar-accent-foreground: 220 14% 94%;
+    --sidebar-border: 240 6% 15%;
+    --sidebar-ring: 210 18% 82%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-body;
+    font-feature-settings: "ss01" 1, "cv01" 1;
+    text-rendering: geometricPrecision;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(240 10% 3.9%);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(210 18% 82% / 0.3);
+    border-radius: 999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(210 18% 82% / 0.5);
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(210 18% 82% / 0.3) hsl(240 10% 3.9%);
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-heading;
+    letter-spacing: -0.045em;
+  }
+
+  .scavai-reduced-motion *,
+  .scavai-reduced-motion *::before,
+  .scavai-reduced-motion *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .scavai-calm-mode body {
+    filter: saturate(0.85) contrast(1.1);
+  }
+
+  .scavai-large-text {
+    font-size: 112.5%;
+  }
+
+  .scavai-large-text body {
+    font-size: 1rem;
+  }
+
+  [data-text-reveal="ready"],
+  [data-text-reveal="visible"] {
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-text-reveal="ready"],
+    [data-text-reveal="visible"] {
+      opacity: 1 !important;
+      transition: none !important;
+    }
+  }
+}
+
+@layer components {
+  .public-immersive-root {
+    position: relative;
+    isolation: isolate;
+    background:
+      radial-gradient(ellipse at center, hsl(210 18% 82% / 0.03) 0%, transparent 70%),
+      radial-gradient(circle at 20% 18%, hsl(210 18% 82% / 0.06), transparent 28rem),
+      radial-gradient(circle at 80% 42%, hsl(220 18% 94% / 0.035), transparent 30rem),
+      linear-gradient(180deg, hsl(240 10% 3.9%), hsl(240 8% 6%) 42%, hsl(240 10% 3.9%));
+  }
+
+  .public-immersive-root::before {
+    content: "";
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    opacity: 0.34;
+    background:
+      linear-gradient(115deg, transparent 0%, hsl(210 18% 82% / 0.045) 38%, transparent 58%),
+      radial-gradient(circle at 50% 0%, hsl(220 18% 94% / 0.06), transparent 32rem);
+    mix-blend-mode: screen;
+  }
+
+  .public-immersive-card {
+    position: relative;
+    overflow: hidden;
+    transform: translate3d(0, 10px, 0) scale(0.992);
+    transition: transform var(--cinematic-duration) var(--cinematic-ease), box-shadow var(--cinematic-duration) var(--cinematic-ease), border-color var(--cinematic-duration) var(--cinematic-ease), background-color var(--cinematic-duration) var(--cinematic-ease);
+    will-change: transform, opacity;
+  }
+
+  .public-immersive-card::before,
+  .public-immersive-card::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 1200ms var(--cinematic-ease), transform 1200ms var(--cinematic-ease);
+  }
+
+  .public-immersive-card::before {
+    z-index: 0;
+    background:
+      radial-gradient(circle at 18% 12%, hsl(210 18% 82% / 0.14), transparent 18rem),
+      radial-gradient(circle at 88% 15%, hsl(220 18% 94% / 0.08), transparent 18rem),
+      linear-gradient(135deg, hsl(220 18% 94% / 0.045), transparent 45%);
+    transform: translate3d(0, 14px, 0);
+  }
+
+  .public-immersive-card::after {
+    z-index: 1;
+    background: transparent;
+    transform: none;
+    mix-blend-mode: normal;
+  }
+
+  .public-immersive-card > * {
+    position: relative;
+    z-index: 2;
+  }
+
+  .public-immersive-card[data-immersive-phase="quiet"] {
+    transform: none;
+  }
+
+  .public-immersive-card[data-immersive-phase="active"] {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .public-immersive-card[data-immersive-phase="active"]::before {
+    opacity: 0;
+    transform: none;
+  }
+
+  .public-immersive-card[data-immersive-phase="full"] {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .public-immersive-card[data-immersive-phase="full"]::before {
+    opacity: 0;
+    transform: none;
+  }
+
+  .public-immersive-card[data-immersive-phase="full"]::after {
+    opacity: 0;
+    transform: none;
+  }
+
+  .public-cinematic-text {
+    opacity: 1;
+  }
+
+  .public-immersive-root h1,
+  .public-immersive-root h2 {
+    color: hsl(var(--foreground));
+    text-shadow: 0 0 24px hsl(210 22% 90% / 0.08);
+  }
+
+  .public-immersive-root a,
+  .public-immersive-root button {
+    transition: border-color 300ms, background-color 300ms;
+  }
+
+  .public-immersive-root a:hover,
+  .public-immersive-root button:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .public-cinematic-text,
+  .public-immersive-root h1,
+  .public-immersive-root h2 {
+    opacity: 1 !important;
+  }
+}
+
+/* Cinematic onboarding texture layers */
+.texture-rice-paper {
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.22) 0 1px, transparent 1px),
+    radial-gradient(circle at 80% 70%, rgba(214, 168, 90, 0.18) 0 1px, transparent 1px);
+  background-size: 42px 42px, 57px 57px;
+}
+
+.texture-fabric-weave {
+  background-image:
+    linear-gradient(45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(214, 168, 90, 0.06) 25%, transparent 25%);
+  background-size: 18px 18px;
+}

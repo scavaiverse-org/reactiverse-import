@@ -1,0 +1,222 @@
+{
+  "name": "QASentinelIssue",
+  "type": "object",
+  "properties": {
+    "issue_key": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "critical",
+        "major",
+        "minor",
+        "warning",
+        "info"
+      ],
+      "default": "warning"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "investigating",
+        "fixed",
+        "ignored",
+        "regressed"
+      ],
+      "default": "open"
+    },
+    "domain": {
+      "type": "string",
+      "enum": [
+        "platform",
+        "master_admin",
+        "tenant_admin",
+        "public_museum",
+        "system"
+      ],
+      "default": "system"
+    },
+    "area": {
+      "type": "string"
+    },
+    "route": {
+      "type": "string"
+    },
+    "component_name": {
+      "type": "string"
+    },
+    "cta_label": {
+      "type": "string"
+    },
+    "function_name": {
+      "type": "string"
+    },
+    "expected_result": {
+      "type": "string"
+    },
+    "actual_result": {
+      "type": "string"
+    },
+    "human_impact": {
+      "type": "string"
+    },
+    "likely_cause": {
+      "type": "string"
+    },
+    "root_cause_hypothesis": {
+      "type": "string"
+    },
+    "fix_summary": {
+      "type": "string"
+    },
+    "recommended_fix_steps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "likely_files_affected": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "likely_components_affected": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "default": "medium"
+    },
+    "fix_complexity": {
+      "type": "string",
+      "enum": [
+        "easy",
+        "moderate",
+        "hard"
+      ],
+      "default": "moderate"
+    },
+    "estimated_fix_area": {
+      "type": "string",
+      "enum": [
+        "frontend",
+        "backend",
+        "entity_schema",
+        "routing",
+        "permissions",
+        "media_binding",
+        "data_persistence",
+        "realtime",
+        "tenant_isolation",
+        "unknown"
+      ],
+      "default": "unknown"
+    },
+    "regression_test_steps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "verification_command": {
+      "type": "string"
+    },
+    "safe_to_autofix": {
+      "type": "boolean",
+      "default": false
+    },
+    "autofix_forbidden_reason": {
+      "type": "string"
+    },
+    "developer_notes": {
+      "type": "string"
+    },
+    "reproduction_steps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "evidence": {
+      "type": "object"
+    },
+    "console_errors": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "network_errors": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "screenshot_url": {
+      "type": "string"
+    },
+    "video_url": {
+      "type": "string"
+    },
+    "tenant_id": {
+      "type": "string"
+    },
+    "tenant_slug": {
+      "type": "string"
+    },
+    "first_seen_at": {
+      "type": "string"
+    },
+    "last_seen_at": {
+      "type": "string"
+    },
+    "last_verified_at": {
+      "type": "string"
+    },
+    "fixed_at": {
+      "type": "string"
+    },
+    "regression_count": {
+      "type": "number",
+      "default": 0
+    },
+    "occurrence_count": {
+      "type": "number",
+      "default": 1
+    },
+    "test_run_id": {
+      "type": "string"
+    },
+    "fingerprint": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "issue_key",
+    "title",
+    "severity",
+    "status",
+    "route",
+    "first_seen_at",
+    "last_seen_at",
+    "fingerprint"
+  ]
+}

@@ -1,0 +1,131 @@
+{
+  "name": "PermissionGrant",
+  "type": "object",
+  "properties": {
+    "tenantId": {
+      "type": "string"
+    },
+    "ownerId": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string"
+    },
+    "userId": {
+      "type": "string"
+    },
+    "entityName": {
+      "type": "string"
+    },
+    "scope": {
+      "type": "string",
+      "enum": [
+        "platform",
+        "tenant",
+        "own",
+        "public"
+      ],
+      "default": "tenant"
+    },
+    "canRead": {
+      "type": "boolean",
+      "default": false
+    },
+    "canWrite": {
+      "type": "boolean",
+      "default": false
+    },
+    "canPublish": {
+      "type": "boolean",
+      "default": false
+    },
+    "canApprove": {
+      "type": "boolean",
+      "default": false
+    },
+    "canDelete": {
+      "type": "boolean",
+      "default": false
+    },
+    "canArchive": {
+      "type": "boolean",
+      "default": false
+    },
+    "canUpload": {
+      "type": "boolean",
+      "default": false
+    },
+    "canManageUsers": {
+      "type": "boolean",
+      "default": false
+    },
+    "canManageBilling": {
+      "type": "boolean",
+      "default": false
+    },
+    "canManagePrompts": {
+      "type": "boolean",
+      "default": false
+    },
+    "canViewAnalytics": {
+      "type": "boolean",
+      "default": false
+    },
+    "canExportData": {
+      "type": "boolean",
+      "default": false
+    },
+    "visibilityScope": {
+      "type": "string",
+      "enum": [
+        "platform",
+        "tenant",
+        "private"
+      ],
+      "default": "tenant"
+    },
+    "rolePermissions": {
+      "type": "object"
+    },
+    "publishState": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "pending_review",
+        "approved",
+        "scheduled",
+        "published",
+        "hidden",
+        "archived",
+        "rejected"
+      ],
+      "default": "published"
+    },
+    "approvedBy": {
+      "type": "string"
+    },
+    "createdBy": {
+      "type": "string"
+    },
+    "updatedBy": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string"
+    },
+    "deletedAt": {
+      "type": "string"
+    },
+    "archivedAt": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "role",
+    "entityName",
+    "scope"
+  ]
+}

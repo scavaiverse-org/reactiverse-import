@@ -1,0 +1,53 @@
+{
+  "name": "TicketType",
+  "type": "object",
+  "properties": {
+    "seed_key": {
+      "type": "string"
+    },
+    "tenant_id": {
+      "type": "string"
+    },
+    "ticket_name": {
+      "type": "string"
+    },
+    "ticket_type": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "price": {
+      "type": "number"
+    },
+    "currency": {
+      "type": "string"
+    },
+    "available_quantity": {
+      "type": "number"
+    },
+    "max_per_order": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string"
+    },
+    "booking_required": {
+      "type": "boolean"
+    },
+    "includes_guided_tour": {
+      "type": "boolean"
+    },
+    "includes_virtual_access": {
+      "type": "boolean"
+    },
+    "terms": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "seed_key",
+    "tenant_id",
+    "ticket_name"
+  ]
+}

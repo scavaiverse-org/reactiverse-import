@@ -1,0 +1,68 @@
+{
+  "name": "ExperienceEditorTool",
+  "type": "object",
+  "properties": {
+    "slug": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "module_slug": {
+      "type": "string"
+    },
+    "tool_type": {
+      "type": "string"
+    },
+    "mode_availability": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "type": "string"
+    },
+    "sort_order": {
+      "type": "number"
+    },
+    "requires_media": {
+      "type": "boolean",
+      "default": false
+    },
+    "requires_room_image": {
+      "type": "boolean",
+      "default": false
+    },
+    "requires_selected_artifact": {
+      "type": "boolean",
+      "default": false
+    },
+    "qa_related": {
+      "type": "boolean",
+      "default": false
+    },
+    "created_by_system": {
+      "type": "boolean",
+      "default": true
+    },
+    "version": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "updated_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "slug",
+    "title",
+    "module_slug",
+    "status"
+  ]
+}

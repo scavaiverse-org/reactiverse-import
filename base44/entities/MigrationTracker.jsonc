@@ -1,0 +1,38 @@
+{
+  "name": "MigrationTracker",
+  "type": "object",
+  "properties": {
+    "seed_key": {
+      "type": "string"
+    },
+    "area": {
+      "type": "string"
+    },
+    "current_dependency": {
+      "type": "string"
+    },
+    "target_system": {
+      "type": "string"
+    },
+    "migration_status": {
+      "type": "string"
+    },
+    "affected_files_count": {
+      "type": "number"
+    },
+    "risk_level": {
+      "type": "string"
+    },
+    "next_action": {
+      "type": "string"
+    },
+    "owner": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "seed_key",
+    "area",
+    "migration_status"
+  ]
+}

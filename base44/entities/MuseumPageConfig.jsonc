@@ -1,0 +1,170 @@
+{
+  "name": "MuseumPageConfig",
+  "type": "object",
+  "properties": {
+    "tenantId": {
+      "type": "string"
+    },
+    "museumId": {
+      "type": "string"
+    },
+    "tenantSlug": {
+      "type": "string"
+    },
+    "pageKey": {
+      "type": "string",
+      "enum": [
+        "museum_home",
+        "museum",
+        "onboarding",
+        "walkthrough",
+        "room_preview",
+        "ai_guide",
+        "tickets",
+        "vendors",
+        "commerce",
+        "exhibits",
+        "stories",
+        "collections",
+        "museum_analytics",
+        "entrance",
+        "stages",
+        "experience",
+        "rooms",
+        "completion",
+        "museum_setup",
+        "gamification",
+        "vr",
+        "media",
+        "staff",
+        "settings"
+      ]
+    },
+    "pageName": {
+      "type": "string"
+    },
+    "pageTitle": {
+      "type": "string"
+    },
+    "pageContent": {
+      "type": "string"
+    },
+    "ownershipScope": {
+      "type": "string",
+      "enum": [
+        "museum"
+      ],
+      "default": "museum"
+    },
+    "createdBy": {
+      "type": "string"
+    },
+    "updatedBy": {
+      "type": "string"
+    },
+    "publishState": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "published",
+        "archived"
+      ],
+      "default": "draft"
+    },
+    "visibilityState": {
+      "type": "string",
+      "enum": [
+        "public",
+        "private",
+        "restricted"
+      ],
+      "default": "public"
+    },
+    "publishedVersion": {
+      "type": "number",
+      "default": 0
+    },
+    "draftVersion": {
+      "type": "number",
+      "default": 1
+    },
+    "heroMedia": {
+      "type": "object"
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "cards": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "mediaSlots": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "ctaSlots": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "architecturePresets": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "seo": {
+      "type": "object"
+    },
+    "accessibility": {
+      "type": "object"
+    },
+    "verificationReport": {
+      "type": "object"
+    },
+    "mirrorContract": {
+      "type": "object"
+    },
+    "architectureLayer": {
+      "type": "string"
+    },
+    "canonicalRoute": {
+      "type": "string"
+    },
+    "adminMirrorRoute": {
+      "type": "string"
+    },
+    "renderEngineDependency": {
+      "type": "string"
+    },
+    "lastPublishedAt": {
+      "type": "string"
+    },
+    "lastEditedAt": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string"
+    },
+    "updatedByUser": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenantId",
+    "museumId",
+    "tenantSlug",
+    "pageKey",
+    "pageName",
+    "ownershipScope",
+    "publishState"
+  ]
+}

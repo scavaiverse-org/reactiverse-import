@@ -1,0 +1,144 @@
+{
+  "name": "MuseumMediaRegistry",
+  "type": "object",
+  "properties": {
+    "tenantId": {
+      "type": "string"
+    },
+    "museumId": {
+      "type": "string"
+    },
+    "tenantSlug": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "presetName": {
+      "type": "string"
+    },
+    "presetSlug": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "ownershipScope": {
+      "type": "string",
+      "enum": [
+        "museum"
+      ],
+      "default": "museum"
+    },
+    "assignedPage": {
+      "type": "string"
+    },
+    "assignedComponent": {
+      "type": "string"
+    },
+    "renderType": {
+      "type": "string",
+      "enum": [
+        "background",
+        "foreground",
+        "overlay",
+        "avatar",
+        "poster",
+        "fallback",
+        "cta_visual"
+      ],
+      "default": "background"
+    },
+    "mediaType": {
+      "type": "string",
+      "enum": [
+        "image",
+        "video"
+      ],
+      "default": "image"
+    },
+    "sourceType": {
+      "type": "string",
+      "enum": [
+        "upload",
+        "url"
+      ],
+      "default": "url"
+    },
+    "fileUrl": {
+      "type": "string"
+    },
+    "thumbnailUrl": {
+      "type": "string"
+    },
+    "originalFileName": {
+      "type": "string"
+    },
+    "fileExtension": {
+      "type": "string"
+    },
+    "mimeType": {
+      "type": "string"
+    },
+    "fileSize": {
+      "type": "number"
+    },
+    "autoplay": {
+      "type": "boolean",
+      "default": true
+    },
+    "loop": {
+      "type": "boolean",
+      "default": true
+    },
+    "muted": {
+      "type": "boolean",
+      "default": true
+    },
+    "publishState": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "published",
+        "archived"
+      ],
+      "default": "published"
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "createdBy": {
+      "type": "string"
+    },
+    "updatedBy": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenantId",
+    "museumId",
+    "tenantSlug",
+    "name",
+    "ownershipScope",
+    "assignedPage",
+    "assignedComponent",
+    "renderType",
+    "mediaType",
+    "sourceType",
+    "fileUrl",
+    "publishState"
+  ]
+}

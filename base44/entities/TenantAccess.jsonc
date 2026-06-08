@@ -1,0 +1,27 @@
+{
+  "name": "TenantAccess",
+  "type": "object",
+  "properties": {
+    "seed_key": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "tenant_id": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string"
+    },
+    "scope_status": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "seed_key",
+    "user_id",
+    "tenant_id",
+    "role"
+  ]
+}

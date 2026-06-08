@@ -1,0 +1,87 @@
+{
+  "name": "TesterFeedback",
+  "type": "object",
+  "properties": {
+    "timestamp": {
+      "type": "string"
+    },
+    "agent_name": {
+      "type": "string",
+      "enum": [
+        "Operational Tester",
+        "Visitor Tester",
+        "Accessibility Tester",
+        "Tenant Isolation Tester"
+      ]
+    },
+    "test_category": {
+      "type": "string"
+    },
+    "page": {
+      "type": "string"
+    },
+    "pageKey": {
+      "type": "string"
+    },
+    "route": {
+      "type": "string"
+    },
+    "tenant_id": {
+      "type": "string"
+    },
+    "expected_result": {
+      "type": "string"
+    },
+    "actual_result": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "PASS",
+        "FAIL",
+        "WARNING",
+        "NOT_RUN",
+        "MANUAL_QA_REQUIRED"
+      ],
+      "default": "NOT_RUN"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "critical",
+        "high",
+        "medium",
+        "low",
+        "info"
+      ],
+      "default": "info"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "details": {
+      "type": "string"
+    },
+    "recommended_fix": {
+      "type": "string"
+    },
+    "screenshot_url": {
+      "type": "string"
+    },
+    "resolved": {
+      "type": "boolean",
+      "default": false
+    },
+    "resolved_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "timestamp",
+    "agent_name",
+    "test_category",
+    "status",
+    "summary"
+  ]
+}

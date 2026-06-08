@@ -1,0 +1,39 @@
+{
+  "name": "OnboardingStep",
+  "type": "object",
+  "properties": {
+    "seed_key": {
+      "type": "string"
+    },
+    "audience": {
+      "type": "string"
+    },
+    "step_order": {
+      "type": "number"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "route": {
+      "type": "string"
+    },
+    "action_label": {
+      "type": "string"
+    },
+    "completed_by_default": {
+      "type": "boolean"
+    },
+    "flow_key": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "seed_key",
+    "audience",
+    "step_order",
+    "title"
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "name": "CommerceProduct",
+  "type": "object",
+  "properties": {
+    "seed_key": {
+      "type": "string"
+    },
+    "tenant_id": {
+      "type": "string"
+    },
+    "vendor_id": {
+      "type": "string"
+    },
+    "product_name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "price": {
+      "type": "number"
+    },
+    "currency": {
+      "type": "string"
+    },
+    "stock_quantity": {
+      "type": "number"
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "featured": {
+      "type": "boolean"
+    },
+    "shipping_required": {
+      "type": "boolean"
+    },
+    "digital_delivery": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "seed_key",
+    "tenant_id",
+    "product_name"
+  ]
+}

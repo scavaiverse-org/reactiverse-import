@@ -1,0 +1,141 @@
+{
+  "name": "MusicAsset",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string",
+      "description": "Tenant/museum owner for tenant-scoped music assets"
+    },
+    "created_by": {
+      "type": "string"
+    },
+    "updated_by": {
+      "type": "string"
+    },
+    "visibility": {
+      "type": "string",
+      "enum": [
+        "public",
+        "private",
+        "restricted"
+      ],
+      "default": "private"
+    },
+    "ownership_scope": {
+      "type": "string",
+      "enum": [
+        "platform",
+        "tenant"
+      ],
+      "default": "tenant"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "fileUrl": {
+      "type": "string"
+    },
+    "fileType": {
+      "type": "string"
+    },
+    "fileName": {
+      "type": "string"
+    },
+    "fileSize": {
+      "type": "number"
+    },
+    "duration": {
+      "type": "number"
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "draft",
+        "disconnected",
+        "archived"
+      ],
+      "default": "active"
+    },
+    "targetType": {
+      "type": "string",
+      "enum": [
+        "Page",
+        "Pop-up Overlay",
+        "Onboarding Overlay",
+        "Card",
+        "Global"
+      ],
+      "default": "Onboarding Overlay"
+    },
+    "targetKey": {
+      "type": "string"
+    },
+    "targetLabel": {
+      "type": "string"
+    },
+    "placement": {
+      "type": "string",
+      "enum": [
+        "Background music",
+        "Intro music",
+        "Slide music",
+        "CTA music",
+        "Ambient loop"
+      ],
+      "default": "Background music"
+    },
+    "autoplay": {
+      "type": "boolean",
+      "default": true
+    },
+    "loop": {
+      "type": "boolean",
+      "default": true
+    },
+    "volume": {
+      "type": "number",
+      "default": 0.7
+    },
+    "fadeInMs": {
+      "type": "number",
+      "default": 1500
+    },
+    "fadeOutMs": {
+      "type": "number",
+      "default": 1000
+    },
+    "startAtSeconds": {
+      "type": "number",
+      "default": 0
+    },
+    "endAtSeconds": {
+      "type": "number"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string"
+    },
+    "createdBy": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "title",
+    "fileUrl",
+    "fileType",
+    "targetType",
+    "targetKey",
+    "targetLabel",
+    "status"
+  ]
+}

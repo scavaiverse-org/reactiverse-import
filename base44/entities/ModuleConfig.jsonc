@@ -1,0 +1,61 @@
+{
+  "name": "ModuleConfig",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "tenant_name": {
+      "type": "string"
+    },
+    "module_key": {
+      "type": "string",
+      "enum": [
+        "onboarding",
+        "ticketing",
+        "ai_guide",
+        "walkthrough",
+        "vendors",
+        "commerce",
+        "analytics",
+        "gamification"
+      ]
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "config_json": {
+      "type": "object"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "healthy",
+        "warning",
+        "error",
+        "unconfigured"
+      ],
+      "default": "unconfigured"
+    },
+    "content_readiness": {
+      "type": "number",
+      "default": 0
+    },
+    "config_completeness": {
+      "type": "number",
+      "default": 0
+    },
+    "record_count": {
+      "type": "number",
+      "default": 0
+    },
+    "last_updated": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id",
+    "module_key"
+  ]
+}

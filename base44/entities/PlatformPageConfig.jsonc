@@ -1,0 +1,120 @@
+{
+  "name": "PlatformPageConfig",
+  "type": "object",
+  "properties": {
+    "pageKey": {
+      "type": "string",
+      "enum": [
+        "platform_home",
+        "become_a_tenant",
+        "virtual_experience",
+        "platform_overview",
+        "platform_about",
+        "platform_pricing",
+        "platform_contact",
+        "platform_marketplace",
+        "platform_showcase",
+        "platform_analytics",
+        "platform_white_label",
+        "platform_infrastructure",
+        "platform_services",
+        "platform_launch",
+        "platform_docs",
+        "platform_system",
+        "platform_admin",
+        "tenant_registry",
+        "architecture_blueprint",
+        "platform_navigation",
+        "platform_templates",
+        "platform_seo",
+        "platform_landing_pages",
+        "platform_featured_museums",
+        "platform_settings"
+      ]
+    },
+    "pageName": {
+      "type": "string"
+    },
+    "ownershipScope": {
+      "type": "string",
+      "enum": [
+        "platform"
+      ],
+      "default": "platform"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "published",
+        "archived"
+      ],
+      "default": "draft"
+    },
+    "publishedVersion": {
+      "type": "number",
+      "default": 0
+    },
+    "draftVersion": {
+      "type": "number",
+      "default": 1
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "cards": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "mediaSlots": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "ctaSlots": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "seo": {
+      "type": "object"
+    },
+    "accessibility": {
+      "type": "object"
+    },
+    "verificationReport": {
+      "type": "object"
+    },
+    "mirrorContract": {
+      "type": "object"
+    },
+    "architectureLayer": {
+      "type": "string"
+    },
+    "canonicalRoute": {
+      "type": "string"
+    },
+    "adminMirrorRoute": {
+      "type": "string"
+    },
+    "lastPublishedAt": {
+      "type": "string"
+    },
+    "lastEditedAt": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "pageKey",
+    "pageName",
+    "ownershipScope",
+    "status"
+  ]
+}

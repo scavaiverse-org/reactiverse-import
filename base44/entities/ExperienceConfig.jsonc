@@ -1,0 +1,128 @@
+{
+  "name": "ExperienceConfig",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "museum_id": {
+      "type": "string"
+    },
+    "tenant_name": {
+      "type": "string"
+    },
+    "module_key": {
+      "type": "string"
+    },
+    "walkthrough_key": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "published",
+        "hidden",
+        "archived"
+      ],
+      "default": "draft"
+    },
+    "onboarding_config": {
+      "type": "object"
+    },
+    "ai_guide_config": {
+      "type": "object"
+    },
+    "walkthrough_config": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "number",
+          "default": 3
+        },
+        "editor_type": {
+          "type": "string",
+          "default": "aom_world_class_experience_builder"
+        },
+        "walkthrough_key": {
+          "type": "string"
+        },
+        "rooms": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "scenes": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "journey_map": {
+          "type": "object"
+        },
+        "timeline_metrics": {
+          "type": "object"
+        },
+        "quality_scores": {
+          "type": "object"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "draft_state": {
+          "type": "string"
+        },
+        "published_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        }
+      }
+    },
+    "rooms": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "legacy_backup_before_dynamic_walkthrough_migration": {
+      "type": "object"
+    },
+    "room_preview_config": {
+      "type": "object"
+    },
+    "gamification_config": {
+      "type": "object"
+    },
+    "experience_modes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "theme_config": {
+      "type": "object"
+    },
+    "updated_at": {
+      "type": "string"
+    },
+    "last_updated": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenant_id"
+  ]
+}

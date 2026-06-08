@@ -1,0 +1,51 @@
+{
+  "name": "TicketOrder",
+  "type": "object",
+  "properties": {
+    "seed_key": {
+      "type": "string"
+    },
+    "tenant_id": {
+      "type": "string"
+    },
+    "ticket_type_id": {
+      "type": "string"
+    },
+    "visitor_user_id": {
+      "type": "string"
+    },
+    "visitor_name": {
+      "type": "string"
+    },
+    "visitor_email": {
+      "type": "string"
+    },
+    "quantity": {
+      "type": "number"
+    },
+    "total_price": {
+      "type": "number"
+    },
+    "currency": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "visit_date": {
+      "type": "string"
+    },
+    "payment_status": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "seed_key",
+    "tenant_id",
+    "ticket_type_id",
+    "visitor_email"
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "name": "PlatformHealth",
+  "type": "object",
+  "properties": {
+    "service_key": {
+      "type": "string"
+    },
+    "service_name": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "operational",
+        "degraded",
+        "outage",
+        "maintenance"
+      ],
+      "default": "operational"
+    },
+    "message": {
+      "type": "string"
+    },
+    "last_checked": {
+      "type": "string"
+    },
+    "uptime_percent": {
+      "type": "number",
+      "default": 100
+    },
+    "response_time_ms": {
+      "type": "number"
+    },
+    "error_count": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "service_key",
+    "service_name"
+  ]
+}

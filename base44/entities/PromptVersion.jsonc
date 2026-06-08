@@ -1,0 +1,105 @@
+{
+  "name": "PromptVersion",
+  "type": "object",
+  "properties": {
+    "tenantId": {
+      "type": "string"
+    },
+    "ownerId": {
+      "type": "string"
+    },
+    "masterPromptId": {
+      "type": "string"
+    },
+    "versionNumber": {
+      "type": "number",
+      "default": 1
+    },
+    "promptText": {
+      "type": "string"
+    },
+    "systemInstructions": {
+      "type": "string"
+    },
+    "modelConfig": {
+      "type": "object"
+    },
+    "testInputs": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "testResults": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "rolloutStage": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "testing",
+        "staged",
+        "active",
+        "rolled_back",
+        "archived"
+      ],
+      "default": "draft"
+    },
+    "visibilityScope": {
+      "type": "string",
+      "enum": [
+        "platform",
+        "tenant",
+        "private"
+      ],
+      "default": "tenant"
+    },
+    "rolePermissions": {
+      "type": "object"
+    },
+    "publishState": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "pending_review",
+        "approved",
+        "scheduled",
+        "published",
+        "hidden",
+        "archived",
+        "rejected"
+      ],
+      "default": "draft"
+    },
+    "approvedBy": {
+      "type": "string"
+    },
+    "createdBy": {
+      "type": "string"
+    },
+    "updatedBy": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string"
+    },
+    "deletedAt": {
+      "type": "string"
+    },
+    "archivedAt": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "masterPromptId",
+    "versionNumber",
+    "promptText",
+    "publishState"
+  ]
+}

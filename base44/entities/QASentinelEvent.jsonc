@@ -1,0 +1,67 @@
+{
+  "name": "QASentinelEvent",
+  "type": "object",
+  "properties": {
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "click",
+        "route_visit",
+        "form_submit",
+        "save_attempt",
+        "api_error",
+        "console_error",
+        "upload_attempt",
+        "permission_check",
+        "render_error",
+        "issue_created",
+        "issue_updated",
+        "issue_fixed",
+        "regression_detected"
+      ]
+    },
+    "route": {
+      "type": "string"
+    },
+    "component_name": {
+      "type": "string"
+    },
+    "target_label": {
+      "type": "string"
+    },
+    "target_selector": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "metadata": {
+      "type": "object"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "info",
+        "warning",
+        "critical"
+      ],
+      "default": "info"
+    },
+    "timestamp": {
+      "type": "string"
+    },
+    "test_run_id": {
+      "type": "string"
+    },
+    "tenant_id": {
+      "type": "string"
+    },
+    "tenant_slug": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "event_type",
+    "timestamp"
+  ]
+}

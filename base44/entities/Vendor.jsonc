@@ -1,0 +1,80 @@
+{
+  "name": "Vendor",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "tenant_name": {
+      "type": "string"
+    },
+    "business_name": {
+      "type": "string"
+    },
+    "contact_name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "cultural_arts",
+        "food_beverage",
+        "merchandise",
+        "experiences",
+        "education",
+        "technology",
+        "corporate_sponsor"
+      ]
+    },
+    "description": {
+      "type": "string"
+    },
+    "logo_url": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "active",
+        "suspended",
+        "rejected"
+      ],
+      "default": "pending"
+    },
+    "slot_type": {
+      "type": "string",
+      "enum": [
+        "standard",
+        "premium",
+        "featured",
+        "anchor"
+      ],
+      "default": "standard"
+    },
+    "website_url": {
+      "type": "string"
+    },
+    "products_count": {
+      "type": "number",
+      "default": 0
+    },
+    "revenue_total": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "business_name",
+    "contact_name",
+    "email",
+    "category"
+  ]
+}

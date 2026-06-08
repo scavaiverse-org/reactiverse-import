@@ -1,0 +1,57 @@
+{
+  "name": "VisitPlan",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "tenant_name": {
+      "type": "string"
+    },
+    "stage": {
+      "type": "string",
+      "enum": [
+        "planning",
+        "addons"
+      ],
+      "default": "planning"
+    },
+    "visit_date": {
+      "type": "string"
+    },
+    "quantity": {
+      "type": "number",
+      "default": 1
+    },
+    "group_type": {
+      "type": "string",
+      "enum": [
+        "individual",
+        "family",
+        "school",
+        "corporate"
+      ],
+      "default": "individual"
+    },
+    "accessibility_needs": {
+      "type": "string"
+    },
+    "requirements": {
+      "type": "string"
+    },
+    "addons": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "commerce_interest": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "tenant_id",
+    "stage"
+  ]
+}

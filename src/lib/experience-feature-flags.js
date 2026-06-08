@@ -1,0 +1,13 @@
+export const EXPERIENCE_FEATURE_FLAGS = {
+  ENABLE_SUPER_EASY_MODE: true,
+  ENABLE_GLOBAL_AUTOFILL: true,
+  ENABLE_MEDIA_SEED_DATABASE: true,
+  ENABLE_IMMERSIVE_PUBLIC_UI: true,
+  ENABLE_CINEMATIC_TEXT: true,
+  ENABLE_VIEWPORT_OVERLAYS: true,
+  ENABLE_IMMERSIVE_SCROLL_SYSTEM: true,
+};
+
+export function isExperienceFeatureEnabled(flag) {
+  return EXPERIENCE_FEATURE_FLAGS[flag] === true;
+}

@@ -1,0 +1,101 @@
+{
+  "name": "ApprovalRequest",
+  "type": "object",
+  "properties": {
+    "tenantId": {
+      "type": "string"
+    },
+    "ownerId": {
+      "type": "string"
+    },
+    "targetEntity": {
+      "type": "string"
+    },
+    "targetId": {
+      "type": "string"
+    },
+    "requestedState": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected",
+        "revision_requested",
+        "escalated",
+        "cancelled"
+      ],
+      "default": "pending"
+    },
+    "reviewerId": {
+      "type": "string"
+    },
+    "reviewerComments": {
+      "type": "string"
+    },
+    "rejectionReason": {
+      "type": "string"
+    },
+    "requestedBy": {
+      "type": "string"
+    },
+    "reviewedAt": {
+      "type": "string"
+    },
+    "visibilityScope": {
+      "type": "string",
+      "enum": [
+        "platform",
+        "tenant",
+        "private"
+      ],
+      "default": "tenant"
+    },
+    "rolePermissions": {
+      "type": "object"
+    },
+    "publishState": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "pending_review",
+        "approved",
+        "scheduled",
+        "published",
+        "hidden",
+        "archived",
+        "rejected"
+      ],
+      "default": "pending_review"
+    },
+    "approvedBy": {
+      "type": "string"
+    },
+    "createdBy": {
+      "type": "string"
+    },
+    "updatedBy": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string"
+    },
+    "deletedAt": {
+      "type": "string"
+    },
+    "archivedAt": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tenantId",
+    "targetEntity",
+    "targetId",
+    "status"
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "name": "AnalyticsEvent",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "tenant_name": {
+      "type": "string"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "page_view",
+        "ticket_purchase",
+        "vendor_signup",
+        "onboarding_step",
+        "walkthrough_start",
+        "walkthrough_scene_view",
+        "walkthrough_hotspot_click",
+        "walkthrough_hotspot_action",
+        "walkthrough_ask_aria",
+        "walkthrough_open_ticket",
+        "walkthrough_open_vendor",
+        "walkthrough_open_commerce",
+        "walkthrough_complete",
+        "walkthrough_next_path_click",
+        "exhibit_view",
+        "ai_guide_interaction",
+        "commerce_view",
+        "commerce_purchase",
+        "onboarding_started",
+        "onboarding_completed",
+        "onboarding_abandoned",
+        "walkthrough_started",
+        "walkthrough_scene_viewed",
+        "hotspot_opened",
+        "hotspot_action_clicked",
+        "walkthrough_completed",
+        "ai_guide_opened",
+        "ai_guide_question_asked",
+        "ticket_viewed",
+        "ticket_selected",
+        "vendor_application_started",
+        "vendor_application_submitted",
+        "commerce_viewed",
+        "commerce_category_viewed",
+        "white_label_viewed",
+        "tester_agent_run",
+        "tester_feedback_created"
+      ]
+    },
+    "event_data": {
+      "type": "object"
+    },
+    "source_page": {
+      "type": "string"
+    },
+    "device_type": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "event_type"
+  ]
+}

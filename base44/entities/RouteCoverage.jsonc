@@ -1,0 +1,44 @@
+{
+  "name": "RouteCoverage",
+  "type": "object",
+  "properties": {
+    "seed_key": {
+      "type": "string"
+    },
+    "route": {
+      "type": "string"
+    },
+    "route_type": {
+      "type": "string"
+    },
+    "required_role": {
+      "type": "string"
+    },
+    "tenant_scoped": {
+      "type": "boolean"
+    },
+    "expected_status": {
+      "type": "string"
+    },
+    "test_status": {
+      "type": "string"
+    },
+    "blocked_access_test": {
+      "type": "boolean"
+    },
+    "actor_role": {
+      "type": "string"
+    },
+    "actor_user_id": {
+      "type": "string"
+    },
+    "expected_result": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "seed_key",
+    "route",
+    "test_status"
+  ]
+}

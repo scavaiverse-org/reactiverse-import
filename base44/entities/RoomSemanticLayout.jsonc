@@ -1,0 +1,169 @@
+{
+  "name": "RoomSemanticLayout",
+  "type": "object",
+  "properties": {
+    "seed_key": {
+      "type": "string"
+    },
+    "room_id": {
+      "type": "string"
+    },
+    "tenant_id": {
+      "type": "string"
+    },
+    "semantic_method": {
+      "type": "string"
+    },
+    "floor_detected": {
+      "type": "boolean",
+      "default": false
+    },
+    "floor_y_min": {
+      "type": "number"
+    },
+    "floor_y_max": {
+      "type": "number"
+    },
+    "floor_baseline_y": {
+      "type": "number"
+    },
+    "floor_confidence": {
+      "type": "number"
+    },
+    "floor_confidence_label": {
+      "type": "string"
+    },
+    "fallback_used": {
+      "type": "boolean",
+      "default": false
+    },
+    "detection_method": {
+      "type": "string"
+    },
+    "manual_floor_override": {
+      "type": "boolean",
+      "default": false
+    },
+    "manual_floor_baseline_y": {
+      "type": "number"
+    },
+    "human_verified": {
+      "type": "boolean",
+      "default": false
+    },
+    "safe_placement_zones": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "floor_zones": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "wall_zones": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "ceiling_zones": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "display_zones": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "restricted_zones": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "safe_text_zones": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "mobile_safe_zones": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "scan_metadata": {
+      "type": "object"
+    },
+    "scan_sample_rows": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "scan_best_transition": {
+      "type": "number"
+    },
+    "scan_brightness_delta": {
+      "type": "number"
+    },
+    "scan_saturation_delta": {
+      "type": "number"
+    },
+    "scan_edge_delta": {
+      "type": "number"
+    },
+    "image_width": {
+      "type": "number"
+    },
+    "image_height": {
+      "type": "number"
+    },
+    "aspect_ratio": {
+      "type": "number"
+    },
+    "last_scan_at": {
+      "type": "string"
+    },
+    "last_scan_source": {
+      "type": "string"
+    },
+    "wall_y_min": {
+      "type": "number"
+    },
+    "wall_y_max": {
+      "type": "number"
+    },
+    "suggested_anchor_points": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "perspective_hint": {
+      "type": "string"
+    },
+    "confidence": {
+      "type": "number"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "version": {
+      "type": "number",
+      "default": 2
+    }
+  },
+  "required": [
+    "seed_key",
+    "room_id",
+    "tenant_id"
+  ]
+}

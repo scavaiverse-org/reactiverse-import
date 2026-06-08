@@ -1,0 +1,286 @@
+{
+  "name": "MuseumModeArtifact",
+  "type": "object",
+  "properties": {
+    "seed_key": {
+      "type": "string"
+    },
+    "id": {
+      "type": "string"
+    },
+    "tenant_id": {
+      "type": "string"
+    },
+    "experience_id": {
+      "type": "string"
+    },
+    "room_id": {
+      "type": "string"
+    },
+    "artifact_id": {
+      "type": "string"
+    },
+    "exhibit_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "source_image_url": {
+      "type": "string"
+    },
+    "media_url": {
+      "type": "string"
+    },
+    "sprite_image_url": {
+      "type": "string"
+    },
+    "processed_sprite_url": {
+      "type": "string"
+    },
+    "active_museum_media_url": {
+      "type": "string"
+    },
+    "sprite_type": {
+      "type": "string"
+    },
+    "background_removed": {
+      "type": "boolean",
+      "default": false
+    },
+    "background_removal_method": {
+      "type": "string"
+    },
+    "background_removal_confidence": {
+      "type": "number"
+    },
+    "background_removal_status": {
+      "type": "string"
+    },
+    "edge_cleanup_status": {
+      "type": "string"
+    },
+    "x": {
+      "type": "number"
+    },
+    "y": {
+      "type": "number"
+    },
+    "x_percent": {
+      "type": "number"
+    },
+    "y_percent": {
+      "type": "number"
+    },
+    "width": {
+      "type": "number"
+    },
+    "height": {
+      "type": "number"
+    },
+    "width_percent": {
+      "type": "number"
+    },
+    "height_percent": {
+      "type": "number"
+    },
+    "rotation": {
+      "type": "number"
+    },
+    "scale": {
+      "type": "number",
+      "default": 1
+    },
+    "opacity": {
+      "type": "number",
+      "default": 1
+    },
+    "z_index": {
+      "type": "number"
+    },
+    "depth": {
+      "type": "number"
+    },
+    "layer_group": {
+      "type": "string"
+    },
+    "anchor_mode": {
+      "type": "string"
+    },
+    "foot_anchor": {
+      "type": "string"
+    },
+    "floor_locked": {
+      "type": "boolean",
+      "default": true
+    },
+    "floor_contact_y": {
+      "type": "number"
+    },
+    "floor_baseline_y_at_placement": {
+      "type": "number"
+    },
+    "semantic_zone_id": {
+      "type": "string"
+    },
+    "placement_confidence": {
+      "type": "number"
+    },
+    "placement_method": {
+      "type": "string"
+    },
+    "shadow_enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "shadow_strength": {
+      "type": "number"
+    },
+    "shadow_blur": {
+      "type": "number"
+    },
+    "shadow_offset_x": {
+      "type": "number"
+    },
+    "shadow_offset_y": {
+      "type": "number"
+    },
+    "reflection_enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "reflection_strength": {
+      "type": "number"
+    },
+    "locked": {
+      "type": "boolean",
+      "default": false
+    },
+    "visible": {
+      "type": "boolean",
+      "default": true
+    },
+    "editable": {
+      "type": "boolean",
+      "default": true
+    },
+    "interactive": {
+      "type": "boolean",
+      "default": true
+    },
+    "display_mode": {
+      "type": "string"
+    },
+    "action_type": {
+      "type": "string"
+    },
+    "action_target": {
+      "type": "string"
+    },
+    "header": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "caption": {
+      "type": "string"
+    },
+    "curator_note": {
+      "type": "string"
+    },
+    "accessibility_label": {
+      "type": "string"
+    },
+    "audio_description": {
+      "type": "string"
+    },
+    "video_url": {
+      "type": "string"
+    },
+    "audio_url": {
+      "type": "string"
+    },
+    "transcript": {
+      "type": "string"
+    },
+    "language": {
+      "type": "string"
+    },
+    "created_from_mode": {
+      "type": "string"
+    },
+    "last_edited_from_mode": {
+      "type": "string"
+    },
+    "qa_state": {
+      "type": "string"
+    },
+    "publish_state": {
+      "type": "string"
+    },
+    "artifact_title": {
+      "type": "string"
+    },
+    "artifact_header": {
+      "type": "string"
+    },
+    "artifact_description": {
+      "type": "string"
+    },
+    "artifact_body": {
+      "type": "string"
+    },
+    "x_position_percent": {
+      "type": "number"
+    },
+    "y_position_percent": {
+      "type": "number"
+    },
+    "rotation_degrees": {
+      "type": "number"
+    },
+    "interaction_mode": {
+      "type": "string"
+    },
+    "placement_type": {
+      "type": "string"
+    },
+    "semantic_confidence": {
+      "type": "number"
+    },
+    "fallback_used": {
+      "type": "boolean"
+    },
+    "floor_zone_id": {
+      "type": "string"
+    },
+    "mobile_position_override": {
+      "type": "object"
+    },
+    "created_by": {
+      "type": "string"
+    },
+    "updated_by": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "updated_at": {
+      "type": "string"
+    },
+    "version": {
+      "type": "number",
+      "default": 2
+    }
+  },
+  "required": [
+    "seed_key",
+    "tenant_id",
+    "room_id"
+  ]
+}

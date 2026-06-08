@@ -1,0 +1,144 @@
+{
+  "name": "ExperiencePreset",
+  "type": "object",
+  "properties": {
+    "tenant_id": {
+      "type": "string"
+    },
+    "owner_user_id": {
+      "type": "string"
+    },
+    "assigned_tenant_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "preset_name": {
+      "type": "string"
+    },
+    "preset_description": {
+      "type": "string"
+    },
+    "preset_category": {
+      "type": "string"
+    },
+    "preset_scope": {
+      "type": "string",
+      "enum": [
+        "system",
+        "tenant",
+        "assigned"
+      ],
+      "default": "tenant"
+    },
+    "source_mode": {
+      "type": "string",
+      "enum": [
+        "easy",
+        "expert",
+        "system"
+      ],
+      "default": "easy"
+    },
+    "created_from_experience_id": {
+      "type": "string"
+    },
+    "canonical_experience_config": {
+      "type": "object"
+    },
+    "easy_mode_snapshot": {
+      "type": "object"
+    },
+    "expert_mode_snapshot": {
+      "type": "object"
+    },
+    "room_count": {
+      "type": "number",
+      "default": 0
+    },
+    "room_types": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "media_manifest": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "audio_manifest": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "theme_manifest": {
+      "type": "object"
+    },
+    "interaction_manifest": {
+      "type": "object"
+    },
+    "hotspot_manifest": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "transition_manifest": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "ambience_manifest": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "schema_health": {
+      "type": "object"
+    },
+    "usage_count": {
+      "type": "number",
+      "default": 0
+    },
+    "version": {
+      "type": "number",
+      "default": 1
+    },
+    "is_system_preset": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_tenant_preset": {
+      "type": "boolean",
+      "default": true
+    },
+    "is_customized": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_archived": {
+      "type": "boolean",
+      "default": false
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "updated_at": {
+      "type": "string"
+    },
+    "last_applied_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "preset_name",
+    "preset_scope",
+    "canonical_experience_config"
+  ]
+}

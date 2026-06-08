@@ -1,0 +1,151 @@
+{
+  "name": "HomeConfig",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "published",
+        "archived"
+      ],
+      "default": "published"
+    },
+    "eyebrow": {
+      "type": "string"
+    },
+    "hero_title": {
+      "type": "string"
+    },
+    "hero_subtitle": {
+      "type": "string"
+    },
+    "hero_body": {
+      "type": "string"
+    },
+    "primary_cta_label": {
+      "type": "string"
+    },
+    "primary_cta_path": {
+      "type": "string"
+    },
+    "secondary_cta_label": {
+      "type": "string"
+    },
+    "secondary_cta_path": {
+      "type": "string"
+    },
+    "tertiary_cta_label": {
+      "type": "string"
+    },
+    "tertiary_cta_path": {
+      "type": "string"
+    },
+    "background_image_url": {
+      "type": "string"
+    },
+    "mobile_hero_image_url": {
+      "type": "string"
+    },
+    "heroDesktopMediaId": {
+      "type": "string"
+    },
+    "heroTabletMediaId": {
+      "type": "string"
+    },
+    "heroMobileMediaId": {
+      "type": "string"
+    },
+    "highlightMediaId": {
+      "type": "string"
+    },
+    "visitCardMediaId": {
+      "type": "string"
+    },
+    "ariaCardMediaId": {
+      "type": "string"
+    },
+    "storiesCardMediaId": {
+      "type": "string"
+    },
+    "futureCardMediaId": {
+      "type": "string"
+    },
+    "finalCtaMediaId": {
+      "type": "string"
+    },
+    "mediaOverlayConfig": {
+      "type": "object"
+    },
+    "heroSection": {
+      "type": "object"
+    },
+    "museumHighlightsSection": {
+      "type": "object"
+    },
+    "museumHighlightCards": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "whatYouCanDoSection": {
+      "type": "object"
+    },
+    "homeCards": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "schoolsPartnersSection": {
+      "type": "object"
+    },
+    "platformPreviewSection": {
+      "type": "object"
+    },
+    "finalCtaSection": {
+      "type": "object"
+    },
+    "metrics": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "pathways": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "deployment_sites": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "final_cta_title": {
+      "type": "string"
+    },
+    "final_cta_body": {
+      "type": "string"
+    },
+    "updated_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "title",
+    "hero_title"
+  ]
+}

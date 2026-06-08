@@ -1,0 +1,80 @@
+{
+  "name": "QASentinelCheck",
+  "type": "object",
+  "properties": {
+    "check_key": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "domain": {
+      "type": "string"
+    },
+    "route": {
+      "type": "string"
+    },
+    "check_type": {
+      "type": "string",
+      "enum": [
+        "route",
+        "cta",
+        "form",
+        "upload",
+        "permission",
+        "data_persistence",
+        "redirect",
+        "media_binding",
+        "admin_tab",
+        "frontend_backend_match",
+        "spatial_editor",
+        "publish_gate"
+      ]
+    },
+    "selector": {
+      "type": "string"
+    },
+    "expected_behavior": {
+      "type": "string"
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "critical": {
+      "type": "boolean",
+      "default": false
+    },
+    "tenant_scope": {
+      "type": "string",
+      "enum": [
+        "global",
+        "per_tenant"
+      ],
+      "default": "global"
+    },
+    "last_status": {
+      "type": "string",
+      "enum": [
+        "unknown",
+        "passing",
+        "failing",
+        "skipped"
+      ],
+      "default": "unknown"
+    },
+    "last_checked_at": {
+      "type": "string"
+    },
+    "last_issue_key": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "check_key",
+    "label",
+    "check_type",
+    "expected_behavior",
+    "enabled"
+  ]
+}

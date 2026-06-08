@@ -1,0 +1,56 @@
+{
+  "name": "AIGuideConfig",
+  "type": "object",
+  "properties": {
+    "seed_key": {
+      "type": "string"
+    },
+    "tenant_id": {
+      "type": "string"
+    },
+    "guide_name": {
+      "type": "string"
+    },
+    "guide_personality": {
+      "type": "string"
+    },
+    "welcome_message": {
+      "type": "string"
+    },
+    "fallback_message": {
+      "type": "string"
+    },
+    "allowed_topics": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "blocked_topics": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "source_policy": {
+      "type": "string"
+    },
+    "citation_policy": {
+      "type": "string"
+    },
+    "language_level": {
+      "type": "string"
+    },
+    "tone": {
+      "type": "string"
+    },
+    "enabled": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "seed_key",
+    "tenant_id",
+    "guide_name"
+  ]
+}
