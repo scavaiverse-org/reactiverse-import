@@ -1,0 +1,133 @@
+name: Lovable path guard
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  guard:
+    name: guard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Identify PR source
+        id: src
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+          AUTHOR_TYPE: ${{ github.event.pull_request.user.type }}
+        run: |
+          # Treat as a Lovable-style PR if any of these match:
+          #   * branch name starts with lovable/ or lovable-
+          #   * PR author type is Bot
+          #   * PR author login contains 'lovable'
+          IS_LOVABLE="false"
+          case "$HEAD_REF" in
+            lovable/*|lovable-*) IS_LOVABLE="true" ;;
+          esac
+          if [ "$AUTHOR_TYPE" = "Bot" ]; then IS_LOVABLE="true"; fi
+          case "$AUTHOR" in
+            *lovable*|*Lovable*) IS_LOVABLE="true" ;;
+          esac
+          echo "is_lovable=$IS_LOVABLE" >> "$GITHUB_OUTPUT"
+          echo "Detected: head_ref='$HEAD_REF' author='$AUTHOR' type='$AUTHOR_TYPE' is_lovable=$IS_LOVABLE"
+
+      - name: Skip guard for non-Lovable PRs
+        if: steps.src.outputs.is_lovable != 'true'
+        run: echo "Not a Lovable PR; skipping path guard."
+
+      - name: Fetch changed files
+        if: steps.src.outputs.is_lovable == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+        run: |
+          page=1
+          : > /tmp/changed.txt
+          while :; do
+            resp=$(curl -sS -H "Authorization: Bearer $GH_TOKEN" \
+              "https://api.github.com/repos/$REPO/pulls/$PR_NUM/files?per_page=100&page=$page")
+            n=$(echo "$resp" | python3 -c "import json,sys; print(len(json.load(sys.stdin)))")
+            echo "$resp" | python3 -c "import json,sys; [print(f['filename']) for f in json.load(sys.stdin)]" >> /tmp/changed.txt
+            [ "$n" -lt 100 ] && break
+            page=$((page+1))
+          done
+          echo "--- Changed files ---"
+          cat /tmp/changed.txt
+
+      - name: Block protected paths
+        if: steps.src.outputs.is_lovable == 'true'
+        run: |
+          python3 - <<'PY'
+          import fnmatch, os, sys
+
+          # Protected globs. Each pattern is matched against the changed
+          # filename using fnmatch (shell-style). Keep this list in lockstep
+          # with .github/CODEOWNERS.
+          PROTECTED = [
+              "src/api/**",
+              "src/lib/**",
+              "src/hooks/**",
+              "src/supabase/**",
+              "src/components/auth/**",
+              "src/components/admin/**",
+              "src/components/tenant-admin/**",
+              "src/components/routing/**",
+              "src/components/layout/**",
+              "src/components/internal/**",
+              "src/components/audio/**",
+              "src/components/ModuleGate.*",
+              "src/pages/admin/**",
+              "src/pages/tenant-admin/**",
+              ".github/**",
+              "base44/**",
+              "vite.config.js",
+              "postcss.config.js",
+              "tailwind.config.js",
+              "eslint.config.js",
+              "jsconfig.json",
+              "components.json",
+              "package.json",
+              "package-lock.json",
+              "index.html",
+          ]
+
+          def matches(path, pattern):
+              # ** -> *  expansion: fnmatch doesn't recurse, so split into a
+              # prefix match for the dir-with-** case.
+              if pattern.endswith("/**"):
+                  prefix = pattern[:-3]
+                  return path == prefix or path.startswith(prefix + "/")
+              return fnmatch.fnmatchcase(path, pattern)
+
+          with open("/tmp/changed.txt") as fh:
+              files = [ln.strip() for ln in fh if ln.strip()]
+
+          violations = []
+          for f in files:
+              for pat in PROTECTED:
+                  if matches(f, pat):
+                      violations.append((f, pat))
+                      break
+
+          if violations:
+              print("::error title=Lovable PR touched protected paths::"
+                    "Lovable is not allowed to modify these files. "
+                    "Refactor the change to UI-only folders, or have "
+                    "@scavaiverse make the change directly.")
+              print()
+              print("Protected files modified by this PR:")
+              for f, pat in violations:
+                  print(f"  {f}  (matched: {pat})")
+              print()
+              print("Full list of protected globs (see .github/CODEOWNERS):")
+              for p in PROTECTED:
+                  print(f"  {p}")
+              sys.exit(1)
+
+          print("OK: no protected paths touched.")
+          PY

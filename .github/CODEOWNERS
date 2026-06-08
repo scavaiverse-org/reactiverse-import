@@ -1,0 +1,43 @@
+# CODEOWNERS for scavaiverse/reactiverse-import
+#
+# Lines below declare paths whose changes require @scavaiverse approval before
+# merging. Anything NOT matched here can be merged without owner review.
+#
+# Strategy: Lovable is intended for UI / marketing / branding work. The
+# platform's data layer, auth, routing, admin, infrastructure and migrations
+# all require explicit owner approval so Lovable cannot silently change them.
+
+# --- Data layer & integrations ---
+/src/api/          @scavaiverse
+/src/lib/          @scavaiverse
+/src/hooks/        @scavaiverse
+/src/supabase/     @scavaiverse
+
+# --- Auth, RBAC, admin surfaces ---
+/src/components/auth/          @scavaiverse
+/src/components/admin/         @scavaiverse
+/src/components/tenant-admin/  @scavaiverse
+/src/components/routing/       @scavaiverse
+/src/components/layout/        @scavaiverse
+/src/components/internal/      @scavaiverse
+/src/components/ModuleGate.*   @scavaiverse
+/src/pages/admin/              @scavaiverse
+/src/pages/tenant-admin/       @scavaiverse
+
+# --- Anything that touches the base44 adapter at runtime ---
+/src/components/audio/         @scavaiverse
+
+# --- Build / tooling / CI ---
+/.github/                      @scavaiverse
+/vite.config.js                @scavaiverse
+/postcss.config.js             @scavaiverse
+/tailwind.config.js            @scavaiverse
+/eslint.config.js              @scavaiverse
+/jsconfig.json                 @scavaiverse
+/components.json               @scavaiverse
+/package.json                  @scavaiverse
+/package-lock.json             @scavaiverse
+/index.html                    @scavaiverse
+
+# --- Base44 source-of-truth metadata (read-only until Base44 is retired) ---
+/base44/                       @scavaiverse
