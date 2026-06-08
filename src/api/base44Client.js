@@ -72,5 +72,18 @@ export const base44 = {
     async logout() {
       await supabase.auth.signOut();
     },
+    async isAuthenticated() {
+      const { data: { session } } = await supabase.auth.getSession();
+      return !!session;
+    },
+    redirectToLogin(redirectUrl) {
+      window.location.href = '/login?redirect=' + encodeURIComponent(redirectUrl || '/');
+    },
+  },
+  functions: {
+    async invoke(name, payload) {
+      console.warn('Function invoke not yet migrated:', name, payload);
+      return null;
+    },
   },
 };
