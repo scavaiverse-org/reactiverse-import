@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { RotateCcw, Sparkles, Volume2, VolumeX } from "lucide-react";
+import { RotateCcw, Sparkles, Volume2, VolumeX, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import useOnboardingAudio from "@/components/audio/useOnboardingAudio";
 import OnboardingSlide from "./OnboardingSlide";
@@ -174,6 +174,14 @@ export default function HomepageOnboardingOverlay({ open, onClose, onMarkSeen })
                 <Button type="button" variant="ghost" size="sm" onClick={handleReplay} className="text-foreground/60 hover:bg-white/10 hover:text-foreground">
                   <RotateCcw className="h-3.5 w-3.5" /> Replay Animation
                 </Button>
+                <button
+                  type="button"
+                  onClick={handleSkip}
+                  aria-label="Close intro"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200/25 bg-slate-200/10 text-slate-100/70 hover:bg-slate-200/20 hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
             </div>
 

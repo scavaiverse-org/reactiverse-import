@@ -6,9 +6,9 @@ export default function OperaLightSweep({ reduceMotion = false }) {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
       <motion.div
-        className="absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-[rgba(241,213,154,0.16)] to-transparent blur-2xl"
-        animate={{ x: ["-120%", "120%"], opacity: [0, 0.24, 0] }}
-        transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-[rgba(241,213,154,0.10)] to-transparent blur-2xl"
+        animate={{ x: ["-120%", "120%"], opacity: [0, 0.14, 0] }}
+        transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
       />
     </div>
   );
