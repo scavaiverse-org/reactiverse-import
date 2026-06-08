@@ -3,6 +3,16 @@ import { supabase } from '@/lib/supabase';
 
 const AuthContext = createContext();
 
+async function buildUser(authUser) {
+  if (!authUser) return null;
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, full_name, tenant_ids, avatar_url')
+    .eq('id', authUser.id)
+    .single();
+  return { ...authUser, ...(profile ?? {}) };
+}
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -13,16 +23,18 @@ export const AuthProvider = ({ children }) => {
   const [appPublicSettings, setAppPublicSettings] = useState({});
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setIsAuthenticated(!!session?.user);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      const enriched = await buildUser(session?.user ?? null);
+      setUser(enriched);
+      setIsAuthenticated(!!enriched);
       setIsLoadingAuth(false);
       setAuthChecked(true);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      setIsAuthenticated(!!session?.user);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const enriched = await buildUser(session?.user ?? null);
+      setUser(enriched);
+      setIsAuthenticated(!!enriched);
       setIsLoadingAuth(false);
       setAuthChecked(true);
     });
