@@ -30,15 +30,20 @@ export const AuthProvider = ({ children }) => {
   const [appPublicSettings, setAppPublicSettings] = useState({});
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    let initialised = false;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       const enriched = await buildUser(session?.user ?? null);
       setUser(enriched);
       setIsAuthenticated(!!enriched);
       setIsLoadingAuth(false);
       setAuthChecked(true);
+      initialised = true;
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    // Fallback: if onAuthStateChange never fires (e.g. no session), resolve after getSession
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (initialised) return;
       const enriched = await buildUser(session?.user ?? null);
       setUser(enriched);
       setIsAuthenticated(!!enriched);

@@ -27,17 +27,18 @@ function getRoleState(user) {
 }
 
 export function usePlatformWorkspace() {
-  const { user, isAuthenticated, logout } = useAuth();
-  const { tenants = [] } = useActiveTenant();
+  const { user, isAuthenticated, isLoadingAuth, logout } = useAuth();
+  const { tenants = [], isLoading: isLoadingTenants } = useActiveTenant();
   const { isMaster, isTenant } = getRoleState(user);
   const assignedTenant = getAssignedTenant(user, tenants);
   const tenant = assignedTenant || null;
+  const isReady = !isLoadingAuth && !isLoadingTenants;
 
-  return { user, isAuthenticated, logout, tenants, tenant, isMaster, isTenant };
+  return { user, isAuthenticated, isLoadingAuth, isReady, logout, tenants, tenant, isMaster, isTenant };
 }
 
 export default function PlatformShell({ children, audience = "public" }) {
-  const { isAuthenticated, logout, tenant, isMaster, isTenant } = usePlatformWorkspace();
+  const { isAuthenticated, isReady, logout, tenant, isMaster, isTenant } = usePlatformWorkspace();
   const tenantSlug = tenant?.slug;
   // Consumer-facing pages (audience="public") must never render admin/tenant
   // management navigation, even for admins browsing the public site.
@@ -84,23 +85,33 @@ export default function PlatformShell({ children, audience = "public" }) {
           </Link>
 
           <nav className="flex flex-wrap items-center gap-2">
-            {activeLinks.map((link) => (
-              <Link key={link.path} to={link.path}>
-                <Button variant="ghost" size="sm" className="font-display text-xs uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground">
-                  {link.label}
-                </Button>
-              </Link>
-            ))}
-            {isAuthenticated ? (
-              <Button variant="outline" size="sm" onClick={() => logout(true)} className="border-border/60">
-                <LogOut className="h-4 w-4" /> Logout
-              </Button>
+            {!isReady ? (
+              <div className="flex items-center gap-2">
+                <div className="h-7 w-24 animate-pulse rounded-md bg-muted/50" />
+                <div className="h-7 w-20 animate-pulse rounded-md bg-muted/50" />
+                <div className="h-7 w-16 animate-pulse rounded-md bg-muted/50" />
+              </div>
             ) : (
-              <Link to="/login">
-                <Button size="sm" className="bg-primary text-primary-foreground">
-                  <Building2 className="h-4 w-4" /> Login
-                </Button>
-              </Link>
+              <>
+                {activeLinks.map((link) => (
+                  <Link key={link.path} to={link.path}>
+                    <Button variant="ghost" size="sm" className="font-display text-xs uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground">
+                      {link.label}
+                    </Button>
+                  </Link>
+                ))}
+                {isAuthenticated ? (
+                  <Button variant="outline" size="sm" onClick={() => logout(true)} className="border-border/60">
+                    <LogOut className="h-4 w-4" /> Logout
+                  </Button>
+                ) : (
+                  <Link to="/login">
+                    <Button size="sm" className="bg-primary text-primary-foreground">
+                      <Building2 className="h-4 w-4" /> Login
+                    </Button>
+                  </Link>
+                )}
+              </>
             )}
           </nav>
         </div>
