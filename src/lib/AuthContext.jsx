@@ -33,6 +33,7 @@ export const AuthProvider = ({ children }) => {
     let initialised = false;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setIsLoadingAuth(true);
       const enriched = await buildUser(session?.user ?? null);
       setUser(enriched);
       setIsAuthenticated(!!enriched);
