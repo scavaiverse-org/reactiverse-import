@@ -5,18 +5,20 @@ const AuthContext = createContext();
 
 async function buildUser(authUser) {
   if (!authUser) return null;
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('role, full_name, tenant_ids, avatar_url')
+    .select('role, full_name, tenant_ids')
     .eq('id', authUser.id)
     .single();
-  if (!profile) return authUser;
+  if (profileError || !profile) {
+    console.error('[buildUser] profile read failed:', profileError?.message ?? 'no row');
+    return authUser;
+  }
   return {
     ...authUser,
     role: profile.role,
     fullName: profile.full_name,
     tenantIds: profile.tenant_ids ?? [],
-    avatarUrl: profile.avatar_url,
   };
 }
 
