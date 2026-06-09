@@ -10,7 +10,14 @@ async function buildUser(authUser) {
     .select('role, full_name, tenant_ids, avatar_url')
     .eq('id', authUser.id)
     .single();
-  return { ...authUser, ...(profile ?? {}) };
+  if (!profile) return authUser;
+  return {
+    ...authUser,
+    role: profile.role,
+    fullName: profile.full_name,
+    tenantIds: profile.tenant_ids ?? [],
+    avatarUrl: profile.avatar_url,
+  };
 }
 
 export const AuthProvider = ({ children }) => {
