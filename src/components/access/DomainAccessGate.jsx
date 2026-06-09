@@ -1,5 +1,5 @@
 import { ShieldAlert } from "lucide-react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Link, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { canAccessMuseum, canAccessPlatform } from "@/lib/access-control";
@@ -9,15 +9,22 @@ export default function DomainAccessGate({ domain, children }) {
   const { tenant, isLoading } = useActiveTenant();
   const location = useLocation();
 
+  // While auth or tenant data is still resolving, render nothing — avoids the
+  // "Checking access…" flash and the subsequent re-render snap
   if (isLoadingAuth || isLoading) {
-    return <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">Checking access…</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+      </div>
+    );
+  }
+
+  // Not logged in → send to login, preserving the intended destination
+  if (!user) {
+    return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />;
   }
 
   const allowed = domain === "platform" ? canAccessPlatform(user) : canAccessMuseum(user, tenant?.id);
-
-  if (!user && domain === "museum") {
-    return <Navigate to="/tenant-login" state={{ from: location.pathname }} replace />;
-  }
 
   if (!allowed) {
     return (
@@ -25,7 +32,10 @@ export default function DomainAccessGate({ domain, children }) {
         <div className="max-w-md rounded-2xl border border-destructive/30 bg-card p-6">
           <ShieldAlert className="mx-auto mb-3 h-8 w-8 text-destructive" />
           <h1 className="font-display text-2xl font-bold text-foreground">Access restricted</h1>
-          <p className="mt-2 text-sm text-muted-foreground">This area belongs to the {domain} ownership domain and your role is not allowed to modify it.</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Your account does not have permission to access this area. Contact your platform administrator to have your role or museum assignment updated.
+          </p>
+          <Link to="/" className="mt-4 inline-block text-sm text-primary underline-offset-4 hover:underline">Return home</Link>
         </div>
       </main>
     );
