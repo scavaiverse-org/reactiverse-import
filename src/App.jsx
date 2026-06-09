@@ -147,7 +147,7 @@ const AuthenticatedApp = () => {
         <InternalRapidPortalGateway />
         <div className="min-h-screen pt-16 sm:pt-20">
       <Routes>
-      <Route path="/" element={<PlatformHome />} />
+      <Route path="/" element={<Navigate to={museumPath(DEFAULT_MUSEUM_SLUG, "home")} replace />} />
       <Route path="/become-a-tenant" element={<BecomeTenant />} />
       <Route path="/virtual-experience" element={<VirtualExperience />} />
       <Route path="/tenant-login" element={<TenantLogin />} />
