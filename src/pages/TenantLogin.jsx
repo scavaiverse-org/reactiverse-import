@@ -2,15 +2,10 @@ import { Link } from "react-router-dom";
 import { Building2, Home, LogIn } from "lucide-react";
 import PlatformShell, { usePlatformWorkspace } from "@/components/platform/PlatformShell";
 import { Button } from "@/components/ui/button";
-import { base44 } from "@/api/base44Client";
 
 export default function TenantLogin() {
   const { isAuthenticated, tenant, isMaster } = usePlatformWorkspace();
   const tenantAdminPath = tenant?.slug ? `/museum/${tenant.slug}/admin` : "/";
-
-  const login = () => {
-    base44.auth.redirectToLogin(`${window.location.origin}/`);
-  };
 
   return (
     <PlatformShell>
@@ -32,7 +27,7 @@ export default function TenantLogin() {
                 <Link to={isMaster ? "/platform/admin" : tenantAdminPath}><Button variant="outline" className="w-full">Open Dashboard</Button></Link>
               </>
             ) : (
-              <Button onClick={login} className="w-full bg-primary text-primary-foreground"><LogIn className="h-4 w-4" /> Tenant Login</Button>
+              <Link to="/login?redirect=/"><Button className="w-full bg-primary text-primary-foreground"><LogIn className="h-4 w-4" /> Tenant Login</Button></Link>
             )}
             <Link to="/become-a-tenant"><Button variant="ghost" className="w-full">Not a tenant yet?</Button></Link>
           </div>
