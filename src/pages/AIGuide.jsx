@@ -210,41 +210,26 @@ async function getAIResponse(message, guideConfig, tenant, conversationHistory =
     .slice(-10)
     .map((msg) => `${msg.role === "user" ? "Visitor" : guideName}: ${msg.content}`)
     .join("\n");
-  const res = await base44.integrations.Core.InvokeLLM({
-    prompt: `You are ${guideName}, the AI Cultural Guide for ${tenant?.name || "the museum"}, part of the SCAVAI cultural technology ecosystem.
-
-Your role: Help visitors understand cultural heritage, navigate the museum, guide ticket purchases, explain vendor opportunities, and answer cultural questions.
-
-Personality:
-${personality}
-
-Approved knowledge:
-- ${approvedKnowledge}
-
-Key facts:
-  - AOM is a virtual-first cultural museum in Singapore built on the SCAVerse
-  - Virtual tickets: SGD 18 (General), SGD 38 (Premium)
-  - Physical tickets: SGD 25 (General), SGD 68 (VIP)
-  - The virtual walkthrough has immersive guided stations
-  - Vendor slots available from SGD 500/month
-  - SCAVerse is deployable for regional cultural institutions
-
-Available ticket add-ons / upgrades:
-${addonKnowledge || "- Add-ons may be tenant-specific; guide visitors to the Add-ons page."}
-
-Rules:
-  - Use the recent conversation to understand follow-up replies like yes, no, continue, tell me more, or compare those.
-  - If you don't know something specific, say "${fallback}"
-  - Never fabricate specific facts, dates, or prices not mentioned above
-  - Be warm, culturally intelligent, concise (2-4 sentences max)
-  - Guide visitors toward exhibit exploration, ticket purchase, or vendor registration as appropriate
-
-Recent conversation:
-${recentConversation || "No previous conversation yet."}
-
-Visitor question: ${message}`,
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const res = await fetch(`${supabaseUrl}/functions/v1/cultural-guide`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      prompt: message,
+      guide_name: guideName,
+      personality,
+      fallback_answer: fallback,
+      approved_knowledge: approvedKnowledge,
+      addon_knowledge: addonKnowledge || "Add-ons may be tenant-specific; guide visitors to the Add-ons page.",
+      tenant_name: tenant?.name || "the museum",
+      conversation_history: conversationHistory.slice(-10).map((msg) => ({
+        role: msg.role === "user" ? "user" : "assistant",
+        content: msg.content,
+      })),
+    }),
   });
-  const content = typeof res === "string" ? res : (res?.text || "I'm having trouble connecting right now. Please try again or visit our Help section.");
+  const data = res.ok ? await res.json().catch(() => ({})) : {};
+  const content = data?.text || "I'm having trouble connecting right now. Please try again or visit our Help section.";
   return { content, ctas: [], topic: "general" };
 }
 

@@ -186,11 +186,15 @@ function createEntity(_entityName, table) {
       if (error) throw error;
       return true;
     },
-    // Base44 realtime subscriptions are not yet ported. Returns a no-op
-    // unsubscribe so existing call sites don't crash. To enable real-time:
-    // forward to supabase.channel(...).on('postgres_changes', ...).
-    subscribe(_callback) {
-      return () => {};
+    subscribe(callback) {
+      if (!hasSupabaseConfig || typeof callback !== 'function') return () => {};
+      const channel = supabase
+        .channel(`realtime:${table}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table }, (payload) => {
+          callback(keysToCamel(payload));
+        })
+        .subscribe();
+      return () => supabase.removeChannel(channel);
     },
   };
 }

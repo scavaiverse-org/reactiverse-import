@@ -23,9 +23,11 @@ Copy `.env.example` to `.env.local` for local development.
 
 | Variable | Required when | Scope | Notes |
 |---|---|---|---|
-| `SLACK_BOT_TOKEN` | Slack posting/webhooks | Server only | Existing Base44 Slack connector must be reimplemented with OAuth or bot token. |
+| `SLACK_BOT_TOKEN` | Slack posting/webhooks | Server only | Used by `postOperationalStatusUpdate` Edge Function. |
 | `SLACK_SIGNING_SECRET` | Slack webhooks | Server only | Validate Slack requests. |
-| `AI_PROVIDER_API_KEY` | AI generation | Server only | Used by Edge Function, not frontend. |
+| `ANTHROPIC_API_KEY` | AI guide + QA agents | Server only | Used by `cultural-guide` and `qa-agent` Edge Functions. Required for AI features. |
+| `FAL_KEY` | Image generation | Server only | Used by `generateScrollableImageExtension`. Set to a FAL.ai API key for scrollable room extension to work. |
+| `AI_GENERATION_API_KEY` | Image generation (alt) | Server only | Alternative to `FAL_KEY` — `generateScrollableImageExtension` checks this if `FAL_KEY` is absent. |
 | `EMAIL_PROVIDER_API_KEY` | Email sending | Server only | For transactional email. |
 | `PAYMENT_PROVIDER_SECRET_KEY` | Payments | Server only | Stripe or other provider secret key. |
 | `WEBHOOK_SECRET` | External webhooks | Server only | Shared secret for custom webhooks. |
