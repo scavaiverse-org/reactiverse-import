@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
-const SUPABASE_URL = 'https://golunqdunvmubuprufmp.supabase.co';
-const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvbHVucWR1bnZtdWJ1cHJ1Zm1wIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDc3NDcyNCwiZXhwIjoyMDk2MzUwNzI0fQ.nHcGgh-Fq2hLjpe2LyhfwBOt5NnRCHjil909DKgI2iY';
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
+const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const BATCH_SIZE = 50;
 
 // Base44 entity name -> Supabase table name
