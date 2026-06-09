@@ -101,7 +101,7 @@ import PublicImmersiveLayer from './components/public/PublicImmersiveLayer';
 import InternalRapidPortalGateway from './components/internal/InternalRapidPortalGateway';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { authError, navigateToLogin } = useAuth();
   const location = useLocation();
 
   useEffect(() => {
@@ -121,17 +121,6 @@ const AuthenticatedApp = () => {
     if (last && last !== current) window.sessionStorage.setItem('scaverse_previous_path', last);
     window.sessionStorage.setItem('scaverse_current_path', current);
   }, [location.pathname, location.search]);
-
-  if (isLoadingPublicSettings || isLoadingAuth) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
-          <p className="text-xs text-muted-foreground tracking-widest">LOADING ECOSYSTEM</p>
-        </div>
-      </div>
-    );
-  }
 
   if (authError) {
     if (authError.type === 'user_not_registered') {
