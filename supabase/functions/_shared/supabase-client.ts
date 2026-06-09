@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 export function getServiceRoleClient() {
   return createClient(
     Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    Deno.env.get('SUPABASE_SECRET_KEYS')!,
     { auth: { autoRefreshToken: false, persistSession: false } },
   );
 }
@@ -11,7 +11,7 @@ export function getServiceRoleClient() {
 export function getUserClient(authHeader: string) {
   return createClient(
     Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!,
+    Deno.env.get('SUPABASE_PUBLISHABLE_KEYS')!,
     { global: { headers: { Authorization: authHeader } } },
   );
 }
