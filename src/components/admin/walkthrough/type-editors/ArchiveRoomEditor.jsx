@@ -1,4 +1,5 @@
 import { base44 } from "@/api/base44Client";
+import { uploadFile } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +16,7 @@ export default function ArchiveRoomEditor({ room, onChange }) {
   const updateDocument = (index, patch) => setConfig({ documents: documents.map((item, i) => i === index ? { ...item, ...patch } : item) });
   const upload = async (index, file) => {
     if (!file) return;
-    const result = await base44.integrations.Core.UploadFile({ file });
+    const result = await uploadFile(file);
     updateDocument(index, { file_url: result.file_url, media_url: result.file_url, media_type: detectMediaTypeFromFile(file) });
   };
 

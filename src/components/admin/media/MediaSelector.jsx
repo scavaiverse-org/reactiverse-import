@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { uploadFile } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -69,7 +70,7 @@ export default function MediaSelector({ label, value, onChange, media = [], cate
     setError(validation || (duplicateName ? "A preset with this name already exists. You can still save if this is intentional." : ""));
     if (validation) return;
 
-    const uploaded = sourceType === "upload" ? await base44.integrations.Core.UploadFile({ file }) : null;
+    const uploaded = sourceType === "upload" ? await uploadFile(file) : null;
     const fileUrl = uploaded?.file_url || url.trim();
     const finalExtension = getExtension(file?.name || fileUrl);
     const finalMediaType = detectMediaType(finalExtension);

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { uploadFile } from "@/lib/upload";
 import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,7 +76,7 @@ export default function WalkthroughRoomEditor({ room, onChange }) {
     }, 450);
 
     try {
-      const result = await base44.integrations.Core.UploadFile({ file });
+      const result = await uploadFile(file);
       window.clearInterval(timer);
       const detectedType = detectMediaTypeFromFile(file);
       const typeField = field === "media_url" ? "media_type" : field.replace(/_url$/, "_type");

@@ -1,4 +1,5 @@
 import { base44 } from "@/api/base44Client";
+import { uploadFile } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +16,7 @@ export default function FinaleRoomEditor({ room, onChange }) {
   const setConfig = (patch) => onChange({ ...room, finale_config: { ...config, ...patch } });
   const upload = async (file) => {
     if (!file) return;
-    const result = await base44.integrations.Core.UploadFile({ file });
+    const result = await uploadFile(file);
     setConfig({ media_url: result.file_url, media_type: detectMediaTypeFromFile(file) });
   };
 

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, Save } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { uploadFile } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -163,7 +164,7 @@ export default function TenantHomeEditor() {
     }
     setFieldStatus(field, { state: "uploading", fileName: file.name, mediaType: file.type?.startsWith("video/") ? "video" : "image", error: null });
     try {
-      const result = await base44.integrations.Core.UploadFile({ file });
+      const result = await uploadFile(file);
       update(field, result.file_url);
       if (typeField) update(typeField, file.type?.startsWith("video/") ? "video" : "image");
       setFieldStatus(field, { state: "complete", fileName: file.name, mediaType: file.type?.startsWith("video/") ? "video" : "image", error: null });

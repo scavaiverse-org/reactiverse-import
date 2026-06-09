@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AlertTriangle, ArrowRight, CheckCircle2, ImagePlus, Loader2, Upload, Wand2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { uploadFile } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
 import { deterministicAnalyzeMedia, mediaAnalysisToCanonicalRoom } from "@/lib/experience-append-protection";
 import { evaluateExperienceReadiness, evaluateRoomReadiness } from "@/lib/walkthrough-readiness";
@@ -16,7 +17,7 @@ export default function SuperEasyExperienceEditor({ rooms = [], activeRoom = 0, 
     if (!file) return;
     setUploadingIndex(index);
     try {
-      const result = await base44.integrations.Core.UploadFile({ file });
+      const result = await uploadFile(file);
       const analysis = deterministicAnalyzeMedia({ fileName: file.name, fileUrl: result.file_url, index });
       const mediaValidation = analyzeRoomMedia({ fileName: file.name, fileUrl: result.file_url });
       const built = mediaAnalysisToCanonicalRoom({ analysis, fileUrl: result.file_url, index, walkthroughKey, existingRoom: rooms[index] });

@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Music as MusicIcon, Upload, Play, Pause, Trash2, Unplug, RefreshCw } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { uploadFile } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -94,7 +95,7 @@ export default function Music() {
       if (file) {
         const validation = validateMusicFile(file);
         if (validation) throw new Error(validation);
-        const upload = await base44.integrations.Core.UploadFile({ file });
+        const upload = await uploadFile(file);
         fileData = {
           fileUrl: upload.file_url,
           fileType: file.type,

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Upload, Wand2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { uploadFile } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import SpritePhotoshopPanel from "./SpritePhotoshopPanel";
@@ -26,7 +27,7 @@ export default function MuseumSpriteUploader({ label = "Upload artifact file", e
 
   const uploadOriginal = async () => {
     if (!file && (currentSprite?.original_media_url || currentSprite?.media_url)) return { file_url: currentSprite.original_media_url || currentSprite.media_url };
-    return base44.integrations.Core.UploadFile({ file });
+    return uploadFile(file);
   };
 
   const acceptProcessed = async ({ blob, metadata }) => {
@@ -64,7 +65,7 @@ export default function MuseumSpriteUploader({ label = "Upload artifact file", e
     setStatus("Adding sprite to museum…");
 
     try {
-      const processed = await base44.integrations.Core.UploadFile({ file: blobToFile(blob) });
+      const processed = await uploadFile(blobToFile(blob));
       let originalUrl = baseSprite.original_media_url || baseSprite.media_url || processed.file_url;
 
       if (file) {

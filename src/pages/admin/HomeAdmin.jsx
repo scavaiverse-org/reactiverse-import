@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, Save, Upload } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { uploadFile } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -126,7 +127,7 @@ export default function HomeAdmin() {
   const update = (field, value) => setDraft((prev) => ({ ...prev, [field]: value }));
   const uploadMedia = async (field, typeField, file) => {
     if (!file) return;
-    const result = await base44.integrations.Core.UploadFile({ file });
+    const result = await uploadFile(file);
     update(field, result.file_url);
     update(typeField, file.type?.startsWith("video/") ? "video" : "image");
   };

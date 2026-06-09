@@ -1,4 +1,5 @@
 import { base44 } from "@/api/base44Client";
+import { uploadFile } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +12,7 @@ export default function ExhibitionRoomEditor({ room, onChange }) {
   const setConfig = (patch) => onChange({ ...room, exhibition_config: { ...config, ...patch } });
   const upload = async (field, file) => {
     if (!file) return;
-    const result = await base44.integrations.Core.UploadFile({ file });
+    const result = await uploadFile(file);
     setConfig({ [field]: result.file_url });
   };
 

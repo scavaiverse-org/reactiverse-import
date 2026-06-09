@@ -1,4 +1,5 @@
 import { base44 } from "@/api/base44Client";
+import { uploadFile } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,7 +25,7 @@ export default function ArtifactRoomEditor({ room, onChange }) {
     setUploadingIndex(index);
     setUploadError("");
     try {
-      const result = await base44.integrations.Core.UploadFile({ file });
+      const result = await uploadFile(file);
       updateArtifact(index, { media_url: result.file_url, artifact_type: detectMediaTypeFromFile(file) });
     } catch {
       setUploadError("Upload failed. Try a smaller file or another format.");

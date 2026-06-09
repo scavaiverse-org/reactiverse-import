@@ -108,33 +108,20 @@ export default function RoomPreview() {
   }, [configs[0]?.id, configs[0]?.updated_date]);
 
   const spriteLayoutMutation = useMutation({
-    mutationFn: () => base44.integrations.Core.InvokeLLM({
-      prompt: `Suggest a cinematic 2.5D visual sprite layout for this Asian Operatic Museum room preview. Return only lightweight decorative sprites, not interactive hotspots. Keep the existing museum room image readable. Use simple sprite types only: glow, shimmer, warmth, shadow, ring. Return 5 to 8 sprites with percentage positions. Room title: ${roomConfig.title}. Hotspots: ${hotspots.map(h => `${h.label} at ${h.x},${h.y}`).join("; ")}.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          sprites: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                id: { type: "string" },
-                label: { type: "string" },
-                type: { type: "string", enum: ["glow", "shimmer", "warmth", "shadow", "ring"] },
-                x: { type: "number" },
-                y: { type: "number" },
-                width: { type: "number" },
-                height: { type: "number" },
-                depth: { type: "number" },
-                opacity: { type: "number" }
-              },
-              required: ["id", "label", "type", "x", "y"]
-            }
-          }
-        },
-        required: ["sprites"]
-      }
-    }),
+    mutationFn: async () => {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const prompt = `Suggest a cinematic 2.5D visual sprite layout for this Asian Operatic Museum room preview. Return ONLY a JSON object with a "sprites" array — no explanation, no markdown. Each sprite must have: id (string), label (string), type (one of: glow shimmer warmth shadow ring), x (number 0-100), y (number 0-100), width (number), height (number), opacity (number 0-1). Return 5 to 8 sprites. Room title: ${roomConfig.title}. Hotspots: ${hotspots.map(h => `${h.label} at ${h.x},${h.y}`).join("; ")}.`;
+      const res = await fetch(`${supabaseUrl}/functions/v1/cultural-guide`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, guide_name: "SpriteAI", personality: "precise, returns only valid JSON" }),
+      });
+      if (!res.ok) return null;
+      const data = await res.json().catch(() => null);
+      const text = data?.text || "";
+      const match = text.match(/\{[\s\S]*\}/);
+      return match ? JSON.parse(match[0]) : null;
+    },
     onSuccess: (result) => {
       const nextSprites = result?.sprites || result?.data?.sprites;
       if (Array.isArray(nextSprites) && nextSprites.length) setAiSprites(nextSprites);

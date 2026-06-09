@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Upload, Play, Pause, Trash2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { uploadFile } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,7 +44,7 @@ export default function TenantMusic() {
       let fileData = { fileUrl: form.fileUrl, fileType: form.fileUrl ? "audio/url" : "", fileName: form.fileUrl ? "External audio URL" : "", fileSize: 0 };
 
       if (file) {
-        const upload = await base44.integrations.Core.UploadFile({ file });
+        const upload = await uploadFile(file);
         fileData = { fileUrl: upload.file_url, fileType: file.type, fileName: file.name, fileSize: file.size };
       }
 
