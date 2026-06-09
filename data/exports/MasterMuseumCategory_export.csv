@@ -1,0 +1,2 @@
+createdAt,isDefault,description,categoryCode,isActive,categoryName,updatedAt,id,created_date,updated_date,created_by_id,created_by,is_sample
+"2026-05-31T09:06:01.181Z","true","Default master media category for the Asian Operatic Museum.","AOM","true","Asian Operatic Museum","2026-05-31T09:06:14.231Z","6a1bf9f9cb80a300904473d2","2026-05-31T09:06:01.395000","2026-05-31T09:06:14.603000","6a171d7f6abbd230a00539e3","aipavuron@gmail.com","false"
