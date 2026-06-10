@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Accessibility, ChevronLeft, ChevronRight, Info, Moon, Volume2, VolumeX, X } from "lucide-react";
 import { base44 } from "@/api/base44Client";
@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import ThreeBackground from "@/components/layout/ThreeBackground";
 import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { DEFAULT_MUSEUM_SLUG, museumPath } from "@/lib/domain-registry";
-import { extractRoomsFromConfig, normalizeRooms } from "@/lib/walkthrough-admin";
+import { WALKTHROUGHS, extractRoomsFromConfig, normalizeRooms } from "@/lib/walkthrough-admin";
 import { getPublicMediaSlots, ensureMediaTypes } from "@/lib/walkthrough-media-bindings";
 import { resolveNextRoomIndex } from "@/lib/walkthrough-routing";
 import { trackWalkthroughEvent } from "@/lib/walkthrough-analytics";
@@ -50,7 +50,7 @@ function resolvePageMediaUrl(pageConfig = null, mediaRecords = []) {
   return pageConfig?.heroMedia?.fileUrl || pageConfig?.heroMedia?.url || "";
 }
 
-function createFallbackRecord(pageConfig = null, pageMediaUrl = "") {
+function createFallbackRecord(pageConfig = null, pageMediaUrl = "", walkthroughKey = "walkthrough1") {
   const heroSection = resolvePageHeroSection(pageConfig);
   const pageCtas = resolvePageConfigCtas(pageConfig);
   const pageCards = Array.isArray(pageConfig?.cards) ? pageConfig.cards.filter((card) => card?.title || card?.body || card?.description) : [];
@@ -124,10 +124,10 @@ function createFallbackRecord(pageConfig = null, pageMediaUrl = "") {
       },
     ];
 
-    return { walkthrough_key: "walkthrough1", walkthrough_config: { version: 3, walkthrough_key: "walkthrough1", rooms: configuredRooms } };
+    return { walkthrough_key: walkthroughKey, walkthrough_config: { version: 3, walkthrough_key: walkthroughKey, rooms: configuredRooms } };
   }
 
-  return { walkthrough_key: "walkthrough1", walkthrough_config: { version: 3, walkthrough_key: "walkthrough1", rooms: fallbackScenes.map((scene, index) => ({ ...scene, id: `fallback_${index + 1}`, page_type: scene.page_type || "walkthrough_exhibition", order: index + 1, room_key: `Fallback${index + 1}`, title: scene.title, narration: scene.narrative, media_url: scene.image, background_media_url: scene.image, finale_config: { completion_message: scene.narrative, achievement_title: "Journey Complete" } })) } };
+  return { walkthrough_key: walkthroughKey, walkthrough_config: { version: 3, walkthrough_key: walkthroughKey, rooms: fallbackScenes.map((scene, index) => ({ ...scene, id: `fallback_${index + 1}`, page_type: scene.page_type || "walkthrough_exhibition", order: index + 1, room_key: `Fallback${index + 1}`, title: scene.title, narration: scene.narrative, media_url: scene.image, background_media_url: scene.image, finale_config: { completion_message: scene.narrative, achievement_title: "Journey Complete" } })) } };
 }
 
 function isAudioUrl(url = "") {
@@ -160,6 +160,8 @@ function getInteractionRoute(item = {}) {
 export default function Walkthrough() {
   const { tenant } = useActiveTenant();
   const navigate = useNavigate();
+  const { walkthroughKey: routeWalkthroughKey } = useParams();
+  const walkthroughKey = WALKTHROUGHS.includes(routeWalkthroughKey) ? routeWalkthroughKey : WALKTHROUGHS[0];
   const [currentRoomIndex, setCurrentRoomIndex] = useState(0);
   const [activeHotspot, setActiveHotspot] = useState(null);
   const [activeArtifact, setActiveArtifact] = useState(null);
@@ -169,8 +171,8 @@ export default function Walkthrough() {
   const [reducedMotion, setReducedMotion] = useState(false);
 
   const { data: experienceConfigs = [] } = useQuery({
-    queryKey: ["public-walkthrough-config", tenant?.id],
-    queryFn: () => tenant ? base44.entities.ExperienceConfig.filter({ tenant_id: tenant.id, module_key: "walkthrough", walkthrough_key: "walkthrough1", status: "published" }, "-updated_at", 10) : Promise.resolve([]),
+    queryKey: ["public-walkthrough-config", tenant?.id, walkthroughKey],
+    queryFn: () => tenant ? base44.entities.ExperienceConfig.filter({ tenant_id: tenant.id, module_key: "walkthrough", walkthrough_key: walkthroughKey, status: "published" }, "-updated_at", 10) : Promise.resolve([]),
     enabled: !!tenant?.id,
     initialData: [],
   });
@@ -189,17 +191,15 @@ export default function Walkthrough() {
     initialData: [],
   });
 
-  const publicWalkthroughKey = "walkthrough1";
   const tenantSafeConfigs = experienceConfigs.filter((config) => {
-    const configWalkthroughKey = config.walkthrough_key || config.walkthrough_config?.walkthrough_key || publicWalkthroughKey;
-    return (!config.museum_id || config.museum_id === tenant?.id) && configWalkthroughKey === publicWalkthroughKey;
+    const configWalkthroughKey = config.walkthrough_key || config.walkthrough_config?.walkthrough_key || walkthroughKey;
+    return (!config.museum_id || config.museum_id === tenant?.id) && configWalkthroughKey === walkthroughKey;
   });
   const pageConfig = pageConfigs[0] || null;
   const pageHeroSection = useMemo(() => resolvePageHeroSection(pageConfig), [pageConfig]);
   const pageCtas = useMemo(() => resolvePageConfigCtas(pageConfig), [pageConfig]);
   const pageMediaUrl = useMemo(() => resolvePageMediaUrl(pageConfig, tenantMedia), [pageConfig, tenantMedia]);
-  const record = tenantSafeConfigs.find((config) => config.status === "published") || createFallbackRecord(pageConfig, pageMediaUrl);
-  const walkthroughKey = publicWalkthroughKey;
+  const record = tenantSafeConfigs.find((config) => config.status === "published") || createFallbackRecord(pageConfig, pageMediaUrl, walkthroughKey);
   const rooms = useMemo(() => normalizeRooms(extractRoomsFromConfig(record, walkthroughKey), walkthroughKey).filter((room) => room.visibility !== "hidden"), [record?.id, record?.updated_at, record?.last_updated, record?.walkthrough_config?.updated_at, walkthroughKey]);
   const room = rooms[Math.min(currentRoomIndex, rooms.length - 1)] || rooms[0];
   const resolvedRoom = useMemo(() => {

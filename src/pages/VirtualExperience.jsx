@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Building2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
-import { museumPath } from "@/lib/domain-registry";
+import { museumWalkthroughPath } from "@/lib/domain-registry";
 import PlatformShell from "@/components/platform/PlatformShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -42,7 +42,7 @@ export default function VirtualExperience() {
                   <p className="mt-3 min-h-20 font-body text-sm font-light leading-6 text-muted-foreground">{tenant.description || "A public virtual museum experience inside this tenant platform."}</p>
                   <div className="mt-4 text-xs text-muted-foreground">{tenant.region}</div>
                   <Button asChild className="mt-6 w-full bg-primary text-primary-foreground">
-                    <Link to={museumPath(tenant.slug, "home")}>
+                    <Link to={museumWalkthroughPath(tenant.slug, "walkthrough1")}>
                       Enter Museum <ArrowRight className="h-4 w-4" />
                     </Link>
                   </Button>

@@ -45,7 +45,7 @@ const typeEditors = {
   finale_room: FinaleRoomEditor,
 };
 
-export default function WalkthroughRoomEditor({ room, onChange }) {
+export default function WalkthroughRoomEditor({ room, onChange, hasError = false }) {
   const [tab, setTab] = useState("basic");
   const [uploadStates, setUploadStates] = useState({});
   if (!room) return null;
@@ -92,7 +92,7 @@ export default function WalkthroughRoomEditor({ room, onChange }) {
   const TypeEditor = typeEditors[room.page_type || "walkthrough_exhibition"] || ExhibitionRoomEditor;
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.035] shadow-2xl shadow-black/10">
+    <div className={`overflow-hidden rounded-3xl border bg-white/[0.035] shadow-2xl shadow-black/10 ${hasError ? "animate-error-glow border-destructive" : "border-white/10"}`}>
       <div className="flex flex-col gap-4 border-b border-white/10 bg-gradient-to-r from-primary/10 to-transparent p-5 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">

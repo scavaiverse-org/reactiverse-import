@@ -18,8 +18,9 @@ import AdminPanelTabGuidesDownload from "@/components/admin/AdminPanelTabGuidesD
 import SuperEasyExperienceEditor from "@/components/admin/walkthrough/SuperEasyExperienceEditor";
 import GlobalExperienceAutofill from "@/components/admin/walkthrough/GlobalExperienceAutofill";
 import { WALKTHROUGH_EDITOR_TYPE, WALKTHROUGHS, createRoomByType, duplicateRoom, extractRoomsFromConfig, moveRoom, normalizeRooms, walkthroughLabel } from "@/lib/walkthrough-admin";
+import { museumWalkthroughPath } from "@/lib/domain-registry";
 import { deepClone } from "@/lib/walkthrough-media-bindings";
-import { getWalkthroughWarnings, validateWalkthroughRooms } from "@/lib/walkthrough-validation";
+import { getErrorRoomKeys, getWalkthroughWarnings, hasGlobalIssue, validateWalkthroughRooms } from "@/lib/walkthrough-validation";
 import { scoreWalkthroughQuality } from "@/lib/walkthrough-quality-scoring";
 import { createLegacyBackup } from "@/lib/walkthrough-migration";
 import { autofillEntireExperience, autofillMedia, autofillRoom, buildCanonicalExperienceConfig, generateCinematicLayout, generateMuseumNarrative, prepareVeryEasyPublishRooms, validateExperienceIntegrity } from "@/lib/experience-append-protection";
@@ -87,6 +88,7 @@ export default function TenantWalkthrough() {
   const saveMutation = useMutation({
     mutationFn: async (input = {}) => {
       const nextStatus = typeof input === "string" ? input : input.status || status;
+      if (nextStatus === "published" && !WALKTHROUGHS.includes(walkthroughKey)) throw new Error(`"${walkthroughKey}" is not a publishable walkthrough slot. Choose one of: ${WALKTHROUGHS.join(", ")}.`);
       const sourceRooms = typeof input === "object" && input.rooms ? input.rooms : rooms;
       const normalizedMode = editorMode === "super_easy" ? "very_easy" : editorMode;
       const isVeryEasy = normalizedMode === "very_easy";
@@ -150,6 +152,10 @@ export default function TenantWalkthrough() {
       queryClient.invalidateQueries({ queryKey: ["public-walkthrough-config"] });
     },
   });
+
+  const showPublishErrorGlow = saveMutation.isError && validationErrors.length > 0;
+  const errorRoomKeys = useMemo(() => showPublishErrorGlow ? getErrorRoomKeys(validationErrors, rooms) : new Set(), [showPublishErrorGlow, validationErrors, rooms]);
+  const hasUnresolvedGlobalIssue = showPublishErrorGlow && hasGlobalIssue(validationErrors, rooms);
 
   const handlePresetPopulate = (nextRooms, summary, saveAsDraft) => {
     setRooms(deepClone(nextRooms));
@@ -226,6 +232,11 @@ export default function TenantWalkthrough() {
 
       <WalkthroughFilters tenants={tenants} selectedTenantId={selectedTenant.id} onTenantChange={(id) => { if (!routeTenant?.id) { setSelectedTenantId(id); setMuseumFilter(id); } }} museumFilter={museumFilter} onMuseumFilterChange={(value) => { if (!routeTenant?.id) setMuseumFilter(value); }} walkthroughKey={walkthroughKey} onWalkthroughChange={setWalkthroughKey} hideTenantSelector={!!routeTenant?.id} />
 
+      <p className="text-xs text-muted-foreground">
+        Publishing {walkthroughLabel(walkthroughKey)} will appear at{" "}
+        <span className="font-mono text-foreground">{museumWalkthroughPath(selectedTenant.slug, walkthroughKey)}</span>
+      </p>
+
       <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-2">
         <div className="grid gap-2 md:grid-cols-3">
           {[
@@ -272,9 +283,9 @@ export default function TenantWalkthrough() {
       )}
 
       {editorMode === "expert" && <div className="grid gap-6 xl:grid-cols-[340px_1fr_320px]">
-        <JourneyMap rooms={rooms} activeIndex={activeRoom} onSelect={setActiveRoom} onAdd={() => { const next = normalizeRooms([...rooms, createRoomByType(rooms.length, walkthroughKey, "walkthrough_exhibition")], walkthroughKey); setRooms(next); setActiveRoom(next.length - 1); }} onDuplicate={(index) => { const next = duplicateRoom(rooms, index, walkthroughKey); setRooms(next); setActiveRoom(index + 1); }} onMove={(index, direction) => { setRooms(moveRoom(rooms, index, direction, walkthroughKey)); setActiveRoom(Math.max(0, Math.min(rooms.length - 1, index + direction))); }} onDelete={(index) => { const next = normalizeRooms(rooms.filter((_, i) => i !== index), walkthroughKey); setRooms(next); setActiveRoom(Math.max(0, index - 1)); }} />
+        <JourneyMap rooms={rooms} activeIndex={activeRoom} onSelect={setActiveRoom} onAdd={() => { const next = normalizeRooms([...rooms, createRoomByType(rooms.length, walkthroughKey, "walkthrough_exhibition")], walkthroughKey); setRooms(next); setActiveRoom(next.length - 1); }} onDuplicate={(index) => { const next = duplicateRoom(rooms, index, walkthroughKey); setRooms(next); setActiveRoom(index + 1); }} onMove={(index, direction) => { setRooms(moveRoom(rooms, index, direction, walkthroughKey)); setActiveRoom(Math.max(0, Math.min(rooms.length - 1, index + direction))); }} onDelete={(index) => { const next = normalizeRooms(rooms.filter((_, i) => i !== index), walkthroughKey); setRooms(next); setActiveRoom(Math.max(0, index - 1)); }} errorRoomKeys={errorRoomKeys} hasGlobalIssue={hasUnresolvedGlobalIssue} />
         <div className="space-y-6">
-          <WalkthroughRoomEditor room={currentRoom} onChange={(room) => updateRoom(activeRoom, room)} />
+          <WalkthroughRoomEditor room={currentRoom} onChange={(room) => updateRoom(activeRoom, room)} hasError={errorRoomKeys.has(currentRoom?.room_key)} />
           <WalkthroughPreview room={currentRoom} />
         </div>
         <div className="space-y-6">

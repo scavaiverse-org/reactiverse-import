@@ -78,11 +78,16 @@ module.exports = {
   			'accordion-up': {
   				from: { height: 'var(--radix-accordion-content-height)' },
   				to: { height: '0' }
+  			},
+  			'error-glow': {
+  				'0%, 100%': { boxShadow: '0 0 0 1px hsl(0 84% 60% / 0.6), 0 0 12px 2px hsl(0 84% 60% / 0.35)' },
+  				'50%': { boxShadow: '0 0 0 1px hsl(0 84% 60% / 0.9), 0 0 24px 6px hsl(0 84% 60% / 0.65)' }
   			}
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
-  			'accordion-up': 'accordion-up 0.2s ease-out'
+  			'accordion-up': 'accordion-up 0.2s ease-out',
+  			'error-glow': 'error-glow 1.6s ease-in-out infinite'
   		}
   	}
   },

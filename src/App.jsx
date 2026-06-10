@@ -232,10 +232,11 @@ const AuthenticatedApp = () => {
       <Route path="/museum/:tenantSlug/about-4" element={<About4 />} />
       <Route path="/museum/:tenantSlug/about-5" element={<About5 />} />
       <Route path="/museum/:tenantSlug/begin-tour" element={<Walkthrough />} />
-      <Route path="/museum/:tenantSlug/begin-tour-2" element={<TenantPublicRedirect page="begin-tour" />} />
-      <Route path="/museum/:tenantSlug/begin-tour-3" element={<TenantPublicRedirect page="begin-tour" />} />
-      <Route path="/museum/:tenantSlug/begin-tour-4" element={<TenantPublicRedirect page="begin-tour" />} />
-      <Route path="/museum/:tenantSlug/begin-tour-5" element={<TenantPublicRedirect page="begin-tour" />} />
+      <Route path="/museum/:tenantSlug/begin-tour/:walkthroughKey" element={<Walkthrough />} />
+      <Route path="/museum/:tenantSlug/begin-tour-2" element={<TenantPublicRedirect page="begin-tour/walkthrough2" />} />
+      <Route path="/museum/:tenantSlug/begin-tour-3" element={<TenantPublicRedirect page="begin-tour/walkthrough3" />} />
+      <Route path="/museum/:tenantSlug/begin-tour-4" element={<TenantPublicRedirect page="begin-tour/walkthrough4" />} />
+      <Route path="/museum/:tenantSlug/begin-tour-5" element={<TenantPublicRedirect page="begin-tour/walkthrough5" />} />
       <Route element={<AppLayout />}>
         <Route path="/museum/:tenantSlug/museum" element={<TenantPublicRedirect page="home" />} />
         <Route path="/museum/:tenantSlug/onboarding" element={<TenantPublicRedirect page="home" />} />
@@ -244,6 +245,7 @@ const AuthenticatedApp = () => {
         <Route path="/museum/:tenantSlug/commerce" element={<Commerce />} />
       </Route>
       <Route path="/museum/:tenantSlug/walkthrough" element={<Walkthrough />} />
+      <Route path="/museum/:tenantSlug/walkthrough/:walkthroughKey" element={<Walkthrough />} />
       <Route path="/museum/:tenantSlug/guide" element={<AIGuide />} />
       <Route path="/museum/:tenantSlug/room-preview" element={<TenantPublicRedirect page="begin-tour" />} />
 

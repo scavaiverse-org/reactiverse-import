@@ -135,6 +135,12 @@ export function museumPath(tenantSlug = DEFAULT_MUSEUM_SLUG, page = "home") {
   return `/museum/${tenantSlug || DEFAULT_MUSEUM_SLUG}/${page}`;
 }
 
+export function museumWalkthroughPath(tenantSlug = DEFAULT_MUSEUM_SLUG, walkthroughKey = "walkthrough1", page = "begin-tour") {
+  const slug = tenantSlug || DEFAULT_MUSEUM_SLUG;
+  if (!walkthroughKey || walkthroughKey === "walkthrough1") return `/museum/${slug}/${page}`;
+  return `/museum/${slug}/${page}/${walkthroughKey}`;
+}
+
 export function platformPath(page = "overview") {
   return page === "overview" ? "/platform/overview" : `/platform/${page}`;
 }

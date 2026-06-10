@@ -3,6 +3,23 @@ import { getMediaWarnings } from "@/lib/walkthrough-media-bindings";
 
 function hasText(value) { return typeof value === "string" && value.trim().length > 0; }
 function roomLabel(room, index) { return room?.room_key || `Room ${index + 1}`; }
+
+// Validation/warning messages are written as "<label>: <message>" where <label> is roomLabel(room, index).
+// This maps those messages back to the offending room(s) so the editor can highlight the source of the error.
+export function getErrorRoomKeys(messages = [], rooms = []) {
+  const labelToKey = new Map(rooms.map((room, index) => [roomLabel(room, index), room.room_key || `Room ${index + 1}`]));
+  const keys = new Set();
+  messages.forEach((message) => {
+    const label = String(message).split(":")[0].trim();
+    if (labelToKey.has(label)) keys.add(labelToKey.get(label));
+  });
+  return keys;
+}
+
+export function hasGlobalIssue(messages = [], rooms = []) {
+  const labels = new Set(rooms.map((room, index) => roomLabel(room, index)));
+  return messages.some((message) => !labels.has(String(message).split(":")[0].trim()));
+}
 function museumModeActive(room = {}) { return !!(room.museum_mode_enabled || room.artifact_placement_enabled); }
 function spriteBottom(sprite = {}) { return Number(sprite.y || 0) + Number(sprite.height || 0); }
 function spriteHasMedia(sprite = {}) { return hasText(sprite.media_url) || hasText(sprite.processed_sprite_url) || hasText(sprite.active_museum_media_url) || hasText(sprite.sprite_image_url); }

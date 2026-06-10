@@ -4,7 +4,7 @@ import { PAGE_TYPES } from "@/lib/walkthrough-room-types";
 import { findBrokenRoutes, getWalkthroughWarnings } from "@/lib/walkthrough-validation";
 import { getRoomConnections } from "@/lib/walkthrough-routing";
 
-export default function JourneyMap({ rooms, activeIndex, onSelect, onAdd, onDuplicate, onDelete, onMove }) {
+export default function JourneyMap({ rooms, activeIndex, onSelect, onAdd, onDuplicate, onDelete, onMove, errorRoomKeys, hasGlobalIssue }) {
   const connections = getRoomConnections(rooms);
   const brokenRoutes = findBrokenRoutes(rooms);
   const warnings = getWalkthroughWarnings(rooms);
@@ -24,7 +24,7 @@ export default function JourneyMap({ rooms, activeIndex, onSelect, onAdd, onDupl
           <h2 className="flex items-center gap-2 font-display text-xl font-bold"><GitBranch className="h-5 w-5 text-primary" /> Journey Map</h2>
           <p className="text-xs text-muted-foreground">Room states, branches, route health, and sequence.</p>
         </div>
-        <Button type="button" size="sm" onClick={guard(onAdd)}><Plus className="h-4 w-4" /> Add</Button>
+        <Button type="button" size="sm" onClick={guard(onAdd)} className={hasGlobalIssue ? "animate-error-glow ring-1 ring-destructive" : ""}><Plus className="h-4 w-4" /> Add</Button>
       </div>
 
       {(brokenRoutes.length > 0 || warnings.length > 0) && (
@@ -37,8 +37,9 @@ export default function JourneyMap({ rooms, activeIndex, onSelect, onAdd, onDupl
       <div className="space-y-3">
         {rooms.map((room, index) => {
           const active = index === activeIndex;
+          const hasError = errorRoomKeys?.has(room.room_key);
           return (
-            <div key={room.id || room.room_key} className={`rounded-2xl border p-3 transition ${active ? "border-primary bg-primary/10" : "border-white/10 bg-background/40"}`}>
+            <div key={room.id || room.room_key} className={`rounded-2xl border p-3 transition ${hasError ? "animate-error-glow border-destructive" : active ? "border-primary bg-primary/10" : "border-white/10 bg-background/40"}`}>
               <button type="button" onClick={() => onSelect(index)} className="w-full text-left focus:outline-none focus:ring-2 focus:ring-primary">
                 <div className="flex items-start justify-between gap-3">
                   <div>
