@@ -7,7 +7,7 @@ Status: Freeze-safe handover script
 Goal: show one clean visitor journey without improvising.
 
 1. Open platform landing page.
-2. Enter Asia Operatic Museum Singapore.
+2. Enter Asian Operatic Museum Singapore.
 3. Show homepage hero and museum purpose.
 4. Open tickets.
 5. Explain demo checkout status if payment is not connected.
