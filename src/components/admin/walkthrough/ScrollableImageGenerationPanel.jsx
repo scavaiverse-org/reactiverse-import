@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Loader2, Sparkles, Check, RotateCcw, Undo2, AlertTriangle, Lock, ImageOff, Power } from "lucide-react";
+import { toast } from "sonner";
 import { getPrimaryRoomImage, getPrimaryRoomImageType, makeResetGenerationPatch } from "@/lib/scrollable-image";
 
 const STRENGTHS = ["subtle", "medium", "wide", "immersive"];
@@ -51,19 +52,29 @@ export default function ScrollableImageGenerationPanel({ value = {}, onChange, o
   const generate = async (variation = false) => {
     if (!original) { update({ scrollable_image_generation_status: "failed", scrollable_image_generation_error: "Upload a room image first — there is nothing to extend." }); return; }
     if (!suitability.suitable) { update({ scrollable_image_generation_status: "failed", scrollable_image_generation_error: suitability.reason }); return; }
+
+    const randomness = value.scrollable_image_randomness ?? 0.12;
+    const extensionStrength = value.scrollable_image_extension_strength || "medium";
+    const objectDensity = value.scrollable_image_object_density || "medium";
+    const visualStyle = value.scrollable_image_visual_style || "same_room_realistic";
+    const tenantId = value.tenant_id || value.museum_id || "tenant";
+    const roomId = value.id || value.room_key || value.title || "room";
+    const imageHash = stableHash(`${original}-${value.media_id || value.media_url || value.background_media_url || ""}`);
+    const deterministicSeed = `${tenantId}-${roomId}-${imageHash}-${extensionStrength}-${objectDensity}-${visualStyle}-${randomness}`;
+
+    // Same image + same settings as the last successful generation: the result is
+    // already the deterministic output for these inputs, so re-running "Generate"
+    // would be a no-op. Only "Generate variation" should produce a fresh result.
+    if (!variation && hasResult && value.scrollable_image_seed === deterministicSeed) {
+      toast.info('Settings unchanged since the last generation — the result is already up to date. Use "Generate variation" for a different result.');
+      return;
+    }
+
     // Ensure the original is captured the moment we generate.
     if (!value.scrollable_image_original_url) update({ scrollable_image_original_url: original });
     setBusy(true);
     update({ scrollable_image_generation_status: "pending", scrollable_image_generation_error: null, scrollable_image_approved: false });
     try {
-      const randomness = value.scrollable_image_randomness ?? 0.12;
-      const extensionStrength = value.scrollable_image_extension_strength || "medium";
-      const objectDensity = value.scrollable_image_object_density || "medium";
-      const visualStyle = value.scrollable_image_visual_style || "same_room_realistic";
-      const tenantId = value.tenant_id || value.museum_id || "tenant";
-      const roomId = value.id || value.room_key || value.title || "room";
-      const imageHash = stableHash(`${original}-${value.media_id || value.media_url || value.background_media_url || ""}`);
-      const deterministicSeed = `${tenantId}-${roomId}-${imageHash}-${extensionStrength}-${objectDensity}-${visualStyle}-${randomness}`;
       const res = await base44.functions.invoke("generateScrollableImageExtension", {
         original_image_url: original,
         extension_strength: extensionStrength,
