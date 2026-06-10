@@ -1,50 +1,102 @@
 import { useState } from "react";
-import { BookOpen, ChevronDown, ChevronUp, Rocket, ShieldCheck, History, Layers, AlertTriangle } from "lucide-react";
+import {
+  BookOpen,
+  ChevronDown,
+  ChevronUp,
+  LayoutGrid,
+  Wand2,
+  Map,
+  Activity,
+  ShieldCheck,
+  ArrowUpRightFromCircle,
+  History,
+  Globe,
+  Sparkles,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const SECTIONS = [
   {
-    icon: Layers,
-    title: "1. Draft here, publish separately",
+    icon: LayoutGrid,
+    title: "What this page is",
     body: [
-      "Everything you edit on this page (rooms, media, narration, layout) is saved as a DRAFT in ExperienceConfig when you click Save.",
-      "Saving a draft never makes it visible to visitors. Drafts are your private workspace — experiment freely.",
-      "Nothing the public sees changes until you explicitly publish (see step 2).",
+      "This is the Experience Builder — the canonical editor for every walkthrough a tenant offers (Walkthrough 1 through 5).",
+      "Everything here works on a DRAFT copy of the experience, stored in ExperienceConfig. Visitors never see your draft directly — they only ever see what was published (more on that below).",
+      "Use the walkthrough selector and museum filter at the top to choose which experience and which tenant you're editing.",
     ],
   },
   {
-    icon: Rocket,
-    title: "2. Publishing creates a snapshot",
+    icon: Sparkles,
+    title: "Editor modes: Very Easy, Super Easy, and Advanced",
     body: [
-      "Use the \"Publish\" button (in the toolbar above) to open the Publish dialog.",
-      "Pick which walkthrough(s) you want live, then confirm. This compiles your current drafts into a new, immutable PublishedExperienceManifest — a frozen snapshot of titles, rooms, media, and order.",
-      "The tenant's public pages (museum home, Explore cards, and every /tour/N walkthrough) are repointed to this new manifest version atomically.",
+      "Very Easy mode is the guided default — it leans on autofill and presets to produce a complete, coherent experience with minimal manual input, and runs a lighter readiness check before publish.",
+      "Super Easy mode is a simplified front end over the same data, aimed at fast one-pass setup.",
+      "Advanced (manual) mode exposes every field on every room — narration, media, hotspots, CTAs, branching, accessibility, adaptive modes, and per-type configuration (exhibition, archive, AI conversation, performance stage, timeline, gamification, reflection chamber, branching choice, onboarding guide, and more).",
+      "You can switch modes at any time; switching doesn't discard your rooms, it just changes which tools and validations are shown.",
     ],
   },
   {
-    icon: ShieldCheck,
-    title: "3. Quality gates must pass",
+    icon: Map,
+    title: "Journey Map, Timeline, and room navigation",
     body: [
-      "Publishing is blocked if any included walkthrough has zero visible rooms, a room with no title, or a room with no valid media (image/video) URL.",
-      "It's also blocked if the museum itself has no name/description set for its public card.",
-      "Fix the listed issues in the editor, save your draft, and try Publish again.",
+      "The Journey Map gives a bird's-eye view of every room in the current walkthrough, its order, and its type — click any room to jump straight to it in the editor.",
+      "The Experience Timeline shows pacing: estimated duration per room and the running total, plus per-room intensity metrics (emotional, educational, interaction, sensory).",
+      "Rooms can be reordered, duplicated, or added/removed from the room list. Each room has a 'visibility' setting (visible, draft, hidden) — only 'visible' rooms are eligible to appear in a published manifest.",
+    ],
+  },
+  {
+    icon: Wand2,
+    title: "Autofill, presets, and media tools",
+    body: [
+      "Museum Preset Autofill can populate an entire walkthrough from a curated starting template — useful for quickly bootstrapping a new museum or walkthrough slot.",
+      "Global Experience Autofill offers targeted helpers: fill the active room, fill the whole experience, generate/repair media bindings, generate a cinematic layout, or generate narrative text.",
+      "Media bindings (image, video, audio, panorama, 3D model, scrollable images) are normalized automatically — set a primary media URL and the system derives sensible background/foreground/type defaults for you.",
+    ],
+  },
+  {
+    icon: Activity,
+    title: "Quality scoring, validation, and migration tools",
+    body: [
+      "The Experience Quality Panel scores the current draft across dimensions like publish safety, pacing, and sensory balance — use it as a guide for polish, not a hard gate.",
+      "Validation messages (shown in the amber panel near the top) flag missing titles, missing media, and other issues per room. These are informational while you're drafting — they only become a hard requirement at publish time.",
+      "The Migration Readiness Panel and legacy backups help when bringing older scene/slide formats into the current room schema, so older content can be edited safely without losing the original data.",
+    ],
+  },
+  {
+    icon: ArrowUpRightFromCircle,
+    title: "Publishing: how a draft becomes public",
+    body: [
+      "The Publish button opens a dialog where you choose which walkthrough(s) to include in the next public release.",
+      "Publishing compiles your current drafts into a PublishedExperienceManifest — a complete, self-contained, immutable snapshot of titles, descriptions, room order, media, and the museum's public 'card' (name, description, region, cover image).",
+      "Before a manifest is created, the compiler checks: every included walkthrough has at least one visible room, every visible room has a title and a valid media URL, and the museum has a name/description for its public card. If any check fails, publishing stops and the issues are listed so you can fix them in the editor and try again.",
+      "A successful publish atomically repoints the tenant's published_manifest_id/version to the new manifest — the change appears everywhere on the public site (museum home, Explore cards, and every /tour/N route) at once.",
     ],
   },
   {
     icon: History,
-    title: "4. Versioning and rollback",
+    title: "Versions, rollback, and history",
     body: [
-      "Every successful publish creates a new manifest version (v1, v2, v3, ...) — old versions are never edited or deleted.",
-      "The Publish dialog's \"Publish history\" panel lists past versions. Click Rollback on any older version to instantly repoint the live site back to it — no republish needed.",
-      "Because old versions are kept forever, rollback is always safe and instant.",
+      "Every publish creates a new manifest version (v1, v2, v3, ...). Past versions are kept forever — they're never edited or deleted, so they're always available as a safe restore point.",
+      "The Publish dialog's history panel lists previous versions with their publish time and author. Selecting Rollback on an older version instantly repoints the live site to that version — no recompiling, no waiting.",
+      "Because rollback just changes a pointer, it's effectively instant and risk-free. If a new publish introduces a problem, rolling back restores the exact prior public state.",
     ],
   },
   {
-    icon: AlertTriangle,
-    title: "5. What visitors see if nothing is published",
+    icon: ShieldCheck,
+    title: "Drafts and the public site never mix",
     body: [
-      "Until the first successful publish, public routes (museum home, walkthrough tours, Explore cards) show \"This experience has not been published yet.\" instead of placeholder or fabricated content.",
-      "There is no fallback content — what you see live is always exactly what was published, or nothing.",
+      "Saving a draft (Save Draft) updates ExperienceConfig only — it never changes what's live, no matter how many times you save.",
+      "The public site reads exclusively from the currently pointed-to PublishedExperienceManifest. There's no merging of draft and published content, and no fallback or placeholder content is shown.",
+      "If a tenant has never published, public routes for that tenant simply say the experience hasn't been published yet — this is expected for brand-new tenants and is not an error.",
+    ],
+  },
+  {
+    icon: Globe,
+    title: "Multi-walkthrough museums",
+    body: [
+      "A museum can publish one or several walkthroughs at once. Each included walkthrough becomes its own entry in the manifest, in the order you select.",
+      "Visitors reach a specific walkthrough via /museum/:tenantSlug/tour/1, /tour/2, etc. (with /begin-tour and the legacy /begin-tour-2..5 aliases continuing to work).",
+      "If a museum publishes only one walkthrough, the museum home page shows that walkthrough's rooms as individual stations; with multiple walkthroughs, it shows one card per walkthrough.",
     ],
   },
 ];
@@ -57,8 +109,8 @@ export default function TheV2Guide() {
       <button type="button" onClick={() => setOpen((v) => !v)} className="flex w-full items-center justify-between gap-3 text-left">
         <div className="flex items-center gap-2">
           <BookOpen className="h-4 w-4 text-primary" />
-          <span className="text-sm font-semibold">TheV2 — Guide to Drafting &amp; Publishing</span>
-          <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">Read me first</span>
+          <span className="text-sm font-semibold">TheV2 — Experience Builder Guide</span>
+          <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">Reference</span>
         </div>
         <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0">
           {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -66,23 +118,29 @@ export default function TheV2Guide() {
       </button>
 
       {open && (
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          {SECTIONS.map((section) => {
-            const Icon = section.icon;
-            return (
-              <div key={section.title} className="rounded-xl border border-border/50 bg-card/50 p-3">
-                <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
-                  <Icon className="h-4 w-4 text-primary" />
-                  {section.title}
+        <div className="mt-4 space-y-3">
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            A complete walkthrough of how this editor works, from drafting a room to publishing it for visitors and rolling back if needed.
+            Nothing on this page is a required step — it's a reference you can open whenever you need a refresher.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {SECTIONS.map((section) => {
+              const Icon = section.icon;
+              return (
+                <div key={section.title} className="rounded-xl border border-border/50 bg-card/50 p-3">
+                  <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                    <Icon className="h-4 w-4 text-primary" />
+                    {section.title}
+                  </div>
+                  <ul className="space-y-1.5 text-xs leading-relaxed text-muted-foreground">
+                    {section.body.map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
                 </div>
-                <ul className="space-y-1.5 text-xs leading-relaxed text-muted-foreground">
-                  {section.body.map((line) => (
-                    <li key={line}>{line}</li>
-                  ))}
-                </ul>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
