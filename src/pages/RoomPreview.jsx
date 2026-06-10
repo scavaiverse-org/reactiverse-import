@@ -109,7 +109,7 @@ export default function RoomPreview() {
 
   const spriteLayoutMutation = useMutation({
     mutationFn: async () => {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://golunqdunvmubuprufmp.supabase.co';
       const prompt = `Suggest a cinematic 2.5D visual sprite layout for this Asian Operatic Museum room preview. Return ONLY a JSON object with a "sprites" array — no explanation, no markdown. Each sprite must have: id (string), label (string), type (one of: glow shimmer warmth shadow ring), x (number 0-100), y (number 0-100), width (number), height (number), opacity (number 0-1). Return 5 to 8 sprites. Room title: ${roomConfig.title}. Hotspots: ${hotspots.map(h => `${h.label} at ${h.x},${h.y}`).join("; ")}.`;
       const res = await fetch(`${supabaseUrl}/functions/v1/cultural-guide`, {
         method: "POST",

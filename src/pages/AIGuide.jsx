@@ -210,7 +210,7 @@ async function getAIResponse(message, guideConfig, tenant, conversationHistory =
     .slice(-10)
     .map((msg) => `${msg.role === "user" ? "Visitor" : guideName}: ${msg.content}`)
     .join("\n");
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://golunqdunvmubuprufmp.supabase.co';
   const res = await fetch(`${supabaseUrl}/functions/v1/cultural-guide`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
