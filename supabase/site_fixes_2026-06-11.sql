@@ -1,19 +1,25 @@
--- Cleanup: remove duplicate walkthrough configs left by an earlier migration
--- (they were hidden by row security until the public-read fix) and scrub the
--- "Asia Operatic Museum" typo from all remaining content tables.
--- Paste into Supabase SQL Editor and Run.
+-- Site fixes 2026-06-11 — run this ONE file in the Supabase SQL Editor.
+-- It includes everything from cleanup_duplicate_configs.sql plus the
+-- ticket-reservation permission fix, all idempotent (safe to run twice).
 
 BEGIN;
 
--- 1. Drop the older duplicate walkthrough configs (these two still carry the
---    typo; the typo-fixed copies imported from the Base44 exports remain)
+-- 1. Let visitors create ticket reservations (the policy from the migration
+--    files was never applied to the live database, so every public
+--    reservation was rejected)
+DROP POLICY IF EXISTS tickets_public_insert ON public.tickets;
+CREATE POLICY tickets_public_insert ON public.tickets
+  FOR INSERT WITH CHECK (true);
+
+-- 2. Remove duplicate walkthrough configs left by an earlier migration
+--    (typo'd copies; the corrected imports remain)
 DELETE FROM public.experience_configs
 WHERE id IN (
   '0a1f09c9-ee5d-5719-8c45-f3d8a291a758',
   'b9bbe3a3-6ac7-515b-a2b8-d6a8709efa2a'
 );
 
--- 2. Scrub the typo from text and JSON fields across content tables
+-- 3. Scrub the "Asia Operatic Museum" typo from all remaining content tables
 UPDATE public.experience_configs
 SET tenant_name = REPLACE(tenant_name, 'Asia Operatic Museum', 'Asian Operatic Museum'),
     title = REPLACE(title, 'Asia Operatic Museum', 'Asian Operatic Museum'),
@@ -42,6 +48,3 @@ SET title = REPLACE(title, 'Asia Operatic Museum', 'Asian Operatic Museum'),
 WHERE (coalesce(title,'') || coalesce(subtitle,'') || coalesce(body,'')) LIKE '%Asia Operatic Museum%';
 
 COMMIT;
-
--- Verification (optional):
--- SELECT id, title, walkthrough_key FROM experience_configs WHERE tenant_id = '91bc9b6c-e084-457f-9828-c3899110568c';

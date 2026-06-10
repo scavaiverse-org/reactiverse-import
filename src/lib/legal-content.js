@@ -88,7 +88,7 @@ export const LEGAL_PAGES = {
     sections: [
       {
         heading: "Get in Touch",
-        body: "For museum visits, corporate enquiries, accessibility support, vendor participation, or platform partnerships, please reach out to the SCAVerse team through the official enquiry workflow.",
+        body: "For quick answers about visits, tickets, add-ons, and accessibility, ask ARIA — the museum's AI guide — available on every museum page. For vendor participation, apply directly through the vendor application form on the Vendors page. For corporate enquiries and platform partnerships, use the Become a Tenant page to start a conversation with the SCAVerse team.",
       },
       {
         heading: "Response Times",

@@ -213,10 +213,15 @@ export function TicketGateway() {
       commerce_interest: false,
       ai_help_used: false,
     };
-    const created = await base44.entities.Ticket.create(payload);
-    saveJourney(tenant?.id, { reservation: { ...payload, id: created?.id, ticket_label: selected.label } });
-    base44.entities.AnalyticsEvent.create({ tenant_id: tenant?.id, tenant_name: tenant?.name, event_type: "ticket_reservation_created", source_page: "tickets", event_data: { ticket_type: selected.id, quantity: payload.quantity, source_step: "tickets" } }).catch(() => {});
-    navigate(museumPath(slug, "tickets-5"));
+    try {
+      const created = await base44.entities.Ticket.create(payload);
+      saveJourney(tenant?.id, { reservation: { ...payload, id: created?.id, ticket_label: selected.label } });
+      base44.entities.AnalyticsEvent.create({ tenant_id: tenant?.id, tenant_name: tenant?.name, event_type: "ticket_reservation_created", source_page: "tickets", event_data: { ticket_type: selected.id, quantity: payload.quantity, source_step: "tickets" } }).catch(() => {});
+      navigate(museumPath(slug, "tickets-5"));
+    } catch (error) {
+      console.error("[tickets] reservation failed:", error);
+      toast.error("We couldn't save your reservation. Please try again or contact the museum.");
+    }
   };
 
   return (

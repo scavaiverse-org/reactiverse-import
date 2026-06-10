@@ -18,6 +18,7 @@ const footerLinks = [
       { label: "Terms", path: "/terms" },
       { label: "Refund Policy", path: "/refund-policy" },
       { label: "Accessibility", path: "/accessibility" },
+      { label: "Contact", path: "/contact" },
     ],
   },
 ];

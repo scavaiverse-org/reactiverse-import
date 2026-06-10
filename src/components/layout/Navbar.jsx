@@ -7,6 +7,9 @@ import PublicHeaderShell, { PublicHeaderLogo } from "./PublicHeaderShell";
 
 const SUPERAGENT_URL = "https://app.base44.com/superagent/6a2544656783af4b6e8309c9";
 
+// Legal/contact links live in the footer; keeping the top bar to core
+// destinations stops the pill labels being squeezed and clipped on
+// smaller desktop widths.
 const publicNav = [
   { label: "Consumer Platform", path: "/platform/overview" },
   { label: "Available Museums", path: "/virtual-experience" },
@@ -14,25 +17,17 @@ const publicNav = [
   { label: "Walkthrough", path: `/museum/${DEFAULT_MUSEUM_SLUG}/walkthrough` },
   { label: "AI Guide", path: `/museum/${DEFAULT_MUSEUM_SLUG}/guide` },
   { label: "Become Tenant", path: "/become-a-tenant" },
-  { label: "Privacy", path: "/privacy" },
-  { label: "Terms", path: "/terms" },
-  { label: "Refund Policy", path: "/refund-policy" },
-  { label: "Contact", path: "/contact" },
-  { label: "Accessibility", path: "/accessibility" },
   { label: "Login", path: "/login" },
 ];
 
 const mobilePublicNav = [
   ...publicNav,
-  { label: "Super", path: SUPERAGENT_URL, external: true },
-  { label: "Museum Commerce", path: `/museum/${DEFAULT_MUSEUM_SLUG}/commerce` },
-  { label: "Museum Walkthrough", path: `/museum/${DEFAULT_MUSEUM_SLUG}/walkthrough` },
-  { label: "AI Guide", path: `/museum/${DEFAULT_MUSEUM_SLUG}/guide` },
   { label: "Privacy", path: "/privacy" },
   { label: "Terms", path: "/terms" },
   { label: "Refund Policy", path: "/refund-policy" },
   { label: "Contact", path: "/contact" },
   { label: "Accessibility", path: "/accessibility" },
+  { label: "Super", path: SUPERAGENT_URL, external: true },
 ];
 
 export default function Navbar() {
@@ -49,7 +44,7 @@ export default function Navbar() {
               <Link
                 key={link.path}
                 to={link.path}
-                className={`rounded-full border px-4 py-2 font-ui text-xs font-semibold tracking-[0.08em] transition-colors ${
+                className={`shrink-0 whitespace-nowrap rounded-full border px-4 py-2 font-ui text-xs font-semibold tracking-[0.08em] transition-colors ${
                   location.pathname === link.path
                     ? "border-primary/45 bg-primary/10 text-primary"
                                          : "border-transparent text-muted-foreground hover:border-border/60 hover:bg-card/50 hover:text-foreground"

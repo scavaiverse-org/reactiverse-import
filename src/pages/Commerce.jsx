@@ -79,7 +79,7 @@ function resolveCommercePageContent(config, tenantSlug) {
           rating: card.rating,
         })).filter((product) => product.name && product.image)
       : FALLBACK_FEATURED_PRODUCTS,
-    vendorTitle: vendorSection.title || "Want to sell on XRetail?",
+    vendorTitle: vendorSection.title || "Want to sell with the museum?",
     vendorBody: vendorSection.body || vendorSection.description || "Join our vendor ecosystem and reach thousands of culturally-engaged visitors.",
     vendorCta: {
       label: vendorCta?.label || vendorCta?.title || vendorCta?.ctaLabel || "Vendor Partnership",
