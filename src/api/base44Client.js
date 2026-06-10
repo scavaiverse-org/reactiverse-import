@@ -58,6 +58,7 @@ const entityTableMap = {
   PromptExecution: 'prompt_executions',
   PublicContent: 'public_content',
   PublishLog: 'publish_logs',
+  PublishedExperienceManifest: 'published_experience_manifests',
   QASentinelCheck: 'qa_sentinel_checks',
   QASentinelEvent: 'qa_sentinel_events',
   QASentinelRun: 'qa_sentinel_runs',

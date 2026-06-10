@@ -1,0 +1,39 @@
+{
+  "name": "PublishedExperienceManifest",
+  "type": "object",
+  "properties": {
+    "tenant_id": { "type": "string" },
+    "museum_id": { "type": "string" },
+    "tenant_slug": { "type": "string" },
+    "manifest_version": { "type": "number" },
+    "schema_version": { "type": "number", "default": 1 },
+    "card": {
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "cover_media_url": { "type": "string" },
+        "region": { "type": "string" },
+        "walkthrough_count": { "type": "number" }
+      }
+    },
+    "walkthroughs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "walkthrough_key": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "order": { "type": "number" },
+          "rooms": { "type": "array", "items": { "type": "object" } }
+        }
+      }
+    },
+    "published_at": { "type": "string" },
+    "published_by": { "type": "string" },
+    "source_experience_config_ids": { "type": "array", "items": { "type": "string" } },
+    "integrity": { "type": "object" }
+  },
+  "required": ["tenant_id", "manifest_version", "card", "walkthroughs"]
+}

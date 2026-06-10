@@ -78,6 +78,13 @@
       "type": "number",
       "default": 0
     },
+    "published_manifest_id": {
+      "type": "string"
+    },
+    "published_manifest_version": {
+      "type": "number",
+      "default": 0
+    },
     "created_at": {
       "type": "string"
     },

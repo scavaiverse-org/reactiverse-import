@@ -8,6 +8,7 @@ import { Upload } from "lucide-react";
 import { detectMediaTypeFromUrl } from "@/lib/walkthrough-media-bindings";
 
 const newQuestion = () => ({ id: crypto.randomUUID(), question: "", question_type: "multiple_choice", options: [{ id: crypto.randomUUID(), label: "Option", is_correct: true }], correct_answer: "", explanation: "", points: 5 });
+const newOption = () => ({ id: crypto.randomUUID(), label: "Option", is_correct: false });
 const newMission = () => ({ id: crypto.randomUUID(), title: "Mission", description: "", required_hotspot_id: "", completion_message: "" });
 
 export default function GamificationPageEditor({ room, onChange }) {
@@ -35,8 +36,49 @@ export default function GamificationPageEditor({ room, onChange }) {
         <label className="space-y-2"><Label>Failure message</Label><Input value={config.failure_message || ""} onChange={(e) => setConfig({ failure_message: e.target.value })} /></label>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-3"><div className="flex items-center justify-between"><h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Questions</h4><Button size="sm" variant="outline" onClick={() => setConfig({ questions: [...(config.questions || []), newQuestion()] })}>Add question</Button></div>{(config.questions || []).map((question, index) => <div key={question.id || index} className="space-y-2 rounded-xl border border-white/10 bg-background/40 p-3"><Input value={question.question || ""} onChange={(e) => setConfig({ questions: config.questions.map((item, i) => i === index ? { ...question, question: e.target.value } : item) })} placeholder="Question" /><Input value={question.correct_answer || ""} onChange={(e) => setConfig({ questions: config.questions.map((item, i) => i === index ? { ...question, correct_answer: e.target.value } : item) })} placeholder="Correct answer" /><Button variant="outline" onClick={() => setConfig({ questions: config.questions.filter((_, i) => i !== index) })}>Remove</Button></div>)}</div>
-        <div className="space-y-3"><div className="flex items-center justify-between"><h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Missions</h4><Button size="sm" variant="outline" onClick={() => setConfig({ missions: [...(config.missions || []), newMission()] })}>Add mission</Button></div>{(config.missions || []).map((mission, index) => <div key={mission.id || index} className="space-y-2 rounded-xl border border-white/10 bg-background/40 p-3"><Input value={mission.title || ""} onChange={(e) => setConfig({ missions: config.missions.map((item, i) => i === index ? { ...mission, title: e.target.value } : item) })} placeholder="Mission title" /><Textarea value={mission.description || ""} onChange={(e) => setConfig({ missions: config.missions.map((item, i) => i === index ? { ...mission, description: e.target.value } : item) })} placeholder="Mission description" /><Button variant="outline" onClick={() => setConfig({ missions: config.missions.filter((_, i) => i !== index) })}>Remove</Button></div>)}</div>
+        <div className="space-y-3"><div className="flex items-center justify-between"><h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Questions</h4><Button size="sm" variant="outline" onClick={() => setConfig({ questions: [...(config.questions || []), newQuestion()] })}>Add question</Button></div>{(config.questions || []).map((question, index) => {
+          const updateQuestion = (patch) => setConfig({ questions: config.questions.map((item, i) => i === index ? { ...question, ...patch } : item) });
+          const updateOption = (optionIndex, patch) => updateQuestion({ options: question.options.map((opt, i) => i === optionIndex ? { ...opt, ...patch } : opt) });
+          return (
+            <div key={question.id || index} className="space-y-2 rounded-xl border border-white/10 bg-background/40 p-3">
+              <Input value={question.question || ""} onChange={(e) => updateQuestion({ question: e.target.value })} placeholder="Question" />
+              <select value={question.question_type || "multiple_choice"} onChange={(e) => updateQuestion({ question_type: e.target.value })} className="w-full rounded-lg border border-input bg-secondary px-3 py-2 text-sm">
+                <option value="multiple_choice">Multiple choice</option>
+                <option value="true_false">True / False</option>
+                <option value="short_answer">Short answer</option>
+              </select>
+              {question.question_type === "short_answer" ? (
+                <Input value={question.correct_answer || ""} onChange={(e) => updateQuestion({ correct_answer: e.target.value })} placeholder="Correct answer" />
+              ) : (
+                <div className="space-y-2">
+                  {(question.options || []).map((option, optionIndex) => (
+                    <div key={option.id || optionIndex} className="flex items-center gap-2">
+                      <input type="checkbox" checked={!!option.is_correct} onChange={(e) => updateOption(optionIndex, { is_correct: e.target.checked })} title="Correct answer" />
+                      <Input value={option.label || ""} onChange={(e) => updateOption(optionIndex, { label: e.target.value })} placeholder="Option label" />
+                      <Button variant="outline" size="sm" onClick={() => updateQuestion({ options: question.options.filter((_, i) => i !== optionIndex) })}>Remove</Button>
+                    </div>
+                  ))}
+                  <Button size="sm" variant="outline" onClick={() => updateQuestion({ options: [...(question.options || []), newOption()] })}>Add option</Button>
+                </div>
+              )}
+              <Textarea value={question.explanation || ""} onChange={(e) => updateQuestion({ explanation: e.target.value })} placeholder="Explanation shown after answering" rows={2} />
+              <Input type="number" value={question.points || 0} onChange={(e) => updateQuestion({ points: Number(e.target.value) })} placeholder="Points" />
+              <Button variant="outline" onClick={() => setConfig({ questions: config.questions.filter((_, i) => i !== index) })}>Remove question</Button>
+            </div>
+          );
+        })}</div>
+        <div className="space-y-3"><div className="flex items-center justify-between"><h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Missions</h4><Button size="sm" variant="outline" onClick={() => setConfig({ missions: [...(config.missions || []), newMission()] })}>Add mission</Button></div>{(config.missions || []).map((mission, index) => {
+          const updateMission = (patch) => setConfig({ missions: config.missions.map((item, i) => i === index ? { ...mission, ...patch } : item) });
+          return (
+            <div key={mission.id || index} className="space-y-2 rounded-xl border border-white/10 bg-background/40 p-3">
+              <Input value={mission.title || ""} onChange={(e) => updateMission({ title: e.target.value })} placeholder="Mission title" />
+              <Textarea value={mission.description || ""} onChange={(e) => updateMission({ description: e.target.value })} placeholder="Mission description" />
+              <Input value={mission.required_hotspot_id || ""} onChange={(e) => updateMission({ required_hotspot_id: e.target.value })} placeholder="Required hotspot id (optional)" />
+              <Input value={mission.completion_message || ""} onChange={(e) => updateMission({ completion_message: e.target.value })} placeholder="Completion message" />
+              <Button variant="outline" onClick={() => setConfig({ missions: config.missions.filter((_, i) => i !== index) })}>Remove</Button>
+            </div>
+          );
+        })}</div>
       </div>
     </section>
   );

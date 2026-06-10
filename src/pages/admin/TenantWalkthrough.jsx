@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Eye, Save } from "lucide-react";
+import { AlertTriangle, Save } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,8 @@ import MigrationReadinessPanel from "@/components/admin/walkthrough/MigrationRea
 import RolloutControlPanel from "@/components/admin/walkthrough/RolloutControlPanel";
 import MuseumPresetAutofill from "@/components/admin/walkthrough/MuseumPresetAutofill";
 import AdminPanelTabGuidesDownload from "@/components/admin/AdminPanelTabGuidesDownload";
+import PublishMuseumDialog from "@/components/admin/walkthrough/PublishMuseumDialog";
+import TheV2Guide from "@/components/admin/walkthrough/TheV2Guide";
 import SuperEasyExperienceEditor from "@/components/admin/walkthrough/SuperEasyExperienceEditor";
 import GlobalExperienceAutofill from "@/components/admin/walkthrough/GlobalExperienceAutofill";
 import { WALKTHROUGH_EDITOR_TYPE, WALKTHROUGHS, createRoomByType, duplicateRoom, extractRoomsFromConfig, moveRoom, normalizeRooms, walkthroughLabel } from "@/lib/walkthrough-admin";
@@ -72,39 +74,21 @@ export default function TenantWalkthrough() {
 
   const updateRoom = (index, room) => setRooms((prev) => normalizeRooms(prev.map((item, i) => i === index ? room : item), walkthroughKey));
 
-  const getScrollablePublishErrors = (items = []) => items.flatMap((room, index) => {
-    if (!room.scrollable_image_enabled) return [];
-    const label = room.title || room.room_key || `Room ${index + 1}`;
-    const errors = [];
-    if (!(room.scrollable_image_original_url || room.background_media_url || room.media_url)) errors.push(`${label}: scrollable image needs an original image.`);
-    if (!room.scrollable_image_left_extension_url) errors.push(`${label}: left extension is missing.`);
-    if (!room.scrollable_image_right_extension_url) errors.push(`${label}: right extension is missing.`);
-    if (!room.scrollable_image_extended_url) errors.push(`${label}: stitched public panorama is missing.`);
-    if (room.scrollable_image_render_mode !== "single_stitched_panorama") errors.push(`${label}: public render mode must be stitched panorama.`);
-    if (!room.scrollable_image_approved) errors.push(`${label}: stitched panorama must be approved before publishing.`);
-    return errors;
-  });
-
   const saveMutation = useMutation({
     mutationFn: async (input = {}) => {
-      const nextStatus = typeof input === "string" ? input : input.status || status;
-      if (nextStatus === "published" && !WALKTHROUGHS.includes(walkthroughKey)) throw new Error(`"${walkthroughKey}" is not a publishable walkthrough slot. Choose one of: ${WALKTHROUGHS.join(", ")}.`);
       const sourceRooms = typeof input === "object" && input.rooms ? input.rooms : rooms;
       const normalizedMode = editorMode === "super_easy" ? "very_easy" : editorMode;
       const isVeryEasy = normalizedMode === "very_easy";
       const normalizedRooms = normalizeRooms(deepClone(sourceRooms), walkthroughKey);
-      const plan = isVeryEasy && nextStatus === "published" ? buildVeryEasyPublishPlan({ rooms: normalizedRooms, walkthroughKey, tenant: selectedTenant }) : null;
-      const canonical = buildCanonicalExperienceConfig({ mode: normalizedMode, rooms: plan?.rooms || normalizedRooms, walkthroughKey });
+      const canonical = buildCanonicalExperienceConfig({ mode: normalizedMode, rooms: normalizedRooms, walkthroughKey });
       const publicRooms = canonical.rooms;
       const baseErrors = isVeryEasy ? validateVeryEasyPublishReadiness(publicRooms) : validateWalkthroughRooms(publicRooms);
       const integrity = isVeryEasy ? { errors: [] } : validateExperienceIntegrity(publicRooms);
-      const scrollablePublishErrors = nextStatus === "published" ? getScrollablePublishErrors(publicRooms) : [];
-      const errors = [...baseErrors, ...integrity.errors.filter((error) => !baseErrors.includes(error)), ...scrollablePublishErrors];
+      const errors = [...baseErrors, ...integrity.errors.filter((error) => !baseErrors.includes(error))];
       const nextWarnings = getWalkthroughWarnings(publicRooms);
       const nextQuality = scoreWalkthroughQuality(publicRooms);
       setValidationErrors(errors);
       setWarnings(nextWarnings);
-      if (nextStatus === "published" && errors.length) throw new Error(errors.slice(0, 3).join(" ") || "Publish needs one more automatic fix.");
 
       const now = new Date().toISOString();
       const payload = {
@@ -115,7 +99,7 @@ export default function TenantWalkthrough() {
         walkthrough_key: walkthroughKey,
         title: walkthroughLabel(walkthroughKey),
         description: "AOM Immersive Experience Builder configuration",
-        status: nextStatus,
+        status: "draft",
         legacy_backup_before_dynamic_walkthrough_migration: record?.legacy_backup_before_dynamic_walkthrough_migration || createLegacyBackup(record || {}),
         walkthrough_config: {
           ...(record?.walkthrough_config || {}),
@@ -134,11 +118,9 @@ export default function TenantWalkthrough() {
             active_mode: normalizedMode,
             canonical_version: canonical.version,
             integrity: canonical.integrity,
-            fixes_applied: plan?.fixesApplied || [],
             feature_layer: "very_easy_global_autofill_append_only"
           },
-          draft_state: nextStatus === "draft" ? "saved_with_warnings_allowed" : "published",
-          published_at: nextStatus === "published" ? now : record?.walkthrough_config?.published_at,
+          draft_state: "saved_with_warnings_allowed",
           updated_at: now,
         },
         rooms: publicRooms,
@@ -189,6 +171,7 @@ export default function TenantWalkthrough() {
 
   return (
     <main className="space-y-6">
+      <TheV2Guide />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-primary">Tenant Admin</p>
@@ -200,7 +183,7 @@ export default function TenantWalkthrough() {
           <Badge className="bg-primary/10 text-primary">Publish safety {qualityScores.publish_safety || 0}</Badge>
           <AdminPanelTabGuidesDownload />
           <Button variant="outline" onClick={() => saveMutation.mutate("draft")} disabled={saveMutation.isPending}><Save className="h-4 w-4" /> Save Draft</Button>
-          <Button onClick={() => { setStatus("published"); saveMutation.mutate("published"); }} disabled={saveMutation.isPending}><Eye className="h-4 w-4" /> Publish</Button>
+          <PublishMuseumDialog tenant={selectedTenant} museumId={museumFilter || selectedTenant.id} />
         </div>
       </div>
 
@@ -275,8 +258,7 @@ export default function TenantWalkthrough() {
             const publishRooms = prepareVeryEasyPublishRooms({ rooms, walkthroughKey, tenant: selectedTenant });
             setRooms(publishRooms);
             setActiveRoom(0);
-            setStatus("published");
-            saveMutation.mutate({ status: "published", rooms: publishRooms });
+            saveMutation.mutate({ status: "draft", rooms: publishRooms });
           }}
           saving={saveMutation.isPending}
         />

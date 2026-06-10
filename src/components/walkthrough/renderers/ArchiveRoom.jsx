@@ -8,13 +8,27 @@ import { getScrollableImageSettings } from "@/lib/scrollable-image";
 export default function ArchiveRoom({ room }) {
   const config = room.archive_config || {};
   const [query, setQuery] = useState("");
-  const documents = useMemo(() => (config.documents || []).filter((doc) => `${doc.title} ${doc.description} ${doc.category}`.toLowerCase().includes(query.toLowerCase())), [config.documents, query]);
+  const [activeCategory, setActiveCategory] = useState("");
+  const categories = config.categories || [];
+  const documents = useMemo(() => (config.documents || []).filter((doc) => {
+    const matchesQuery = `${doc.title} ${doc.description} ${doc.category}`.toLowerCase().includes(query.toLowerCase());
+    const matchesCategory = !activeCategory || doc.category === activeCategory;
+    return matchesQuery && matchesCategory;
+  }), [config.documents, query, activeCategory]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-24">
       <p className="text-xs uppercase tracking-[0.28em] text-primary">Archive Room</p>
       <h1 className="mt-3 font-display text-5xl font-bold">{room.title || config.archive_title}</h1>
       {config.searchable !== false && <Input className="mt-6 max-w-md" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search archive..." />}
+      {categories.length > 0 && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button type="button" onClick={() => setActiveCategory("")} className={`rounded-full border px-3 py-1 text-xs ${!activeCategory ? "border-primary bg-primary text-primary-foreground" : "border-white/15 bg-white/5 text-muted-foreground hover:border-primary/40"}`}>All</button>
+          {categories.map((category) => (
+            <button key={category} type="button" onClick={() => setActiveCategory(category)} className={`rounded-full border px-3 py-1 text-xs capitalize ${activeCategory === category ? "border-primary bg-primary text-primary-foreground" : "border-white/15 bg-white/5 text-muted-foreground hover:border-primary/40"}`}>{category}</button>
+          ))}
+        </div>
+      )}
       <div className="mt-8 grid gap-4 md:grid-cols-3">
         {documents.map((doc, index) => {
           const url = doc.file_url || doc.media_url;

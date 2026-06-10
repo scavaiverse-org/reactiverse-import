@@ -2,12 +2,13 @@ import { useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
-import { Bot, Boxes, CalendarDays, Crown, DoorOpen, Info, Play, ShieldCheck, Sparkles, Star, Ticket, Users } from "lucide-react";
+import { CalendarDays, Crown, Info, Play, ShieldCheck, Sparkles, Star, Ticket, Users } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { museumPath } from "@/lib/domain-registry";
+import { fetchPublishedManifest } from "@/lib/manifest-public";
 import TenantNavbar from "./TenantNavbar";
 import TenantOverlay from "./TenantOverlay";
 import TenantVideoHero from "./TenantVideoHero";
@@ -28,13 +29,6 @@ const ticketPlans = [
   { title: "VIP Guided Tour", price: "Premium", icon: Crown, body: "Priority access, guided rooms, exclusive content, and concierge support." },
   { title: "Family Pass", price: "Bundle", icon: Users, body: "Family-friendly access with shared activities and accessible pacing." },
   { title: "Event Bundle", price: "Limited", icon: CalendarDays, body: "Timed event access, cultural programming, and post-visit resources." },
-];
-
-const tourModes = [
-  { title: "Guided Mode", icon: Play, body: "Follow a cinematic route curated for first-time visitors." },
-  { title: "Free Explore", icon: DoorOpen, body: "Move through rooms and exhibit portals at your own pace." },
-  { title: "AI Docent", icon: Bot, body: "Ask contextual questions while exploring this tenant museum." },
-  { title: "Room Preview", icon: Boxes, body: "Select a room portal before entering the full walkthrough." },
 ];
 
 function useTenantPageData(tenant, pageType) {
@@ -71,9 +65,14 @@ function useTenantPageData(tenant, pageType) {
   return { config: pageConfigs[0], media, exhibits, musicAsset: music.find((item) => item.enabled !== false) || null };
 }
 
-function resolveHero(tenant, config, pageType, variant) {
+function resolveHero(tenant, config, pageType, variant, manifest) {
   const section = (config?.sections || []).find((item) => item.sectionKey === "hero") || {};
   const label = pageType === "tickets" ? "Ticketing Gateway" : pageType === "about" ? "Museum Story" : pageType === "tour" ? "Begin Tour" : "Tenant Platform";
+  if ((pageType === "home" || pageType === "tour") && manifest?.card) {
+    const title = section.title || manifest.card.title || tenant?.name || "Museum Platform";
+    const body = section.description || section.subtitle || manifest.card.description || tenant?.description || "";
+    return { eyebrow: section.eyebrow || label, title, body };
+  }
   const title = section.title || (pageType === "tickets" ? `Choose your ${tenant?.name || "museum"} access` : pageType === "about" ? `The story behind ${tenant?.name || "this museum"}` : pageType === "tour" ? `Begin your ${tenant?.name || "museum"} journey` : tenant?.theme_config?.hero_title || tenant?.name || "Museum Platform");
   const body = section.description || section.subtitle || tenant?.description || "Enter a tenant-owned public platform with immersive rooms, tickets, stories, tours, marketplace access, and AI-guided discovery.";
   return { eyebrow: section.eyebrow || label, title, body };
@@ -137,29 +136,31 @@ function AboutContent({ tenant }) {
   );
 }
 
-function BeginTourContent() {
+function BeginTourContent({ slug, manifest }) {
+  const walkthroughs = manifest?.walkthroughs || [];
+
   return (
     <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
       <div className="mb-8">
         <p className="font-display text-[10px] font-medium uppercase tracking-[0.5em] text-primary/70">Begin tour</p>
         <h2 className="mt-3 font-heading text-4xl font-bold text-foreground">Your museum tour starts here.</h2>
       </div>
-      <div className="grid gap-5 md:grid-cols-3">
-        {tourModes.slice(0, 3).map((mode, index) => {
-          const Icon = mode.icon;
-          return (
-            <div key={mode.title} className="rounded-[2rem] border border-border/40 bg-card/50 p-6 backdrop-blur-xl">
-              <Icon className="mb-5 h-6 w-6 text-primary" />
-              <h3 className="font-heading text-2xl font-bold text-foreground">{mode.title}</h3>
-              <p className="mt-4 text-sm leading-7 text-muted-foreground">{mode.body}</p>
-            </div>
-          );
-        })}
-      </div>
-      <div className="mt-8 rounded-[2rem] border border-primary/20 bg-primary/10 p-8 text-center backdrop-blur-xl">
-        <h3 className="font-heading text-3xl font-bold text-foreground">Tour entry is ready.</h3>
-        <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">This canonical entry page keeps visitors inside the approved tenant museum flow.</p>
-      </div>
+      {walkthroughs.length === 0 ? (
+        <div className="rounded-[2rem] border border-primary/20 bg-primary/10 p-8 text-center backdrop-blur-xl">
+          <h3 className="font-heading text-3xl font-bold text-foreground">This experience has not been published yet.</h3>
+        </div>
+      ) : (
+        <div className="grid gap-5 md:grid-cols-3">
+          {walkthroughs.map((walkthrough, index) => (
+            <Link key={walkthrough.walkthrough_key} to={museumPath(slug, `tour/${index + 1}`)} className="rounded-[2rem] border border-border/40 bg-card/50 p-6 backdrop-blur-xl transition-colors hover:border-primary/40">
+              <Play className="mb-5 h-6 w-6 text-primary" />
+              <h3 className="font-heading text-2xl font-bold text-foreground">{walkthrough.title}</h3>
+              <p className="mt-4 text-sm leading-7 text-muted-foreground">{walkthrough.description}</p>
+              <p className="mt-4 text-xs uppercase tracking-widest text-primary">{walkthrough.rooms.length} room{walkthrough.rooms.length === 1 ? "" : "s"}</p>
+            </Link>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
@@ -181,7 +182,13 @@ export default function TenantPublicPage({ pageType = "home", variant = 1 }) {
     logo_url: config?.structuredData?.logoUrl || tenant?.logo_url,
     theme_config: { ...(tenant?.theme_config || {}), tenant_badge: config?.structuredData?.tenantBadge || tenant?.theme_config?.tenant_badge },
   }), [tenant, config]);
-  const hero = useMemo(() => resolveHero(effectiveTenant, config, pageType, variant), [effectiveTenant, config, pageType, variant]);
+  const { data: manifest } = useQuery({
+    queryKey: ["published-manifest", tenant?.id, tenant?.published_manifest_id],
+    queryFn: () => fetchPublishedManifest(tenant),
+    enabled: !!tenant?.id && (pageType === "home" || pageType === "tour"),
+    initialData: null,
+  });
+  const hero = useMemo(() => resolveHero(effectiveTenant, config, pageType, variant, manifest), [effectiveTenant, config, pageType, variant, manifest]);
   const cinematicCard = (config?.cards || []).find((item) => item.cardKey === "cinematic") || {};
   const cta = (key, fallback) => (config?.ctaSlots || []).find((item) => item.ctaKey === key)?.label || fallback;
   const ctaRoute = (key, fallback) => (config?.ctaSlots || []).find((item) => item.ctaKey === key)?.route || fallback;
@@ -226,7 +233,7 @@ export default function TenantPublicPage({ pageType = "home", variant = 1 }) {
       {pageType === "home" && <HomeContent slug={slug} exhibits={exhibits} />}
       {pageType === "tickets" && <TicketsContent slug={slug} />}
       {pageType === "about" && <AboutContent tenant={tenant} />}
-      {pageType === "tour" && <BeginTourContent slug={slug} />}
+      {pageType === "tour" && <BeginTourContent slug={slug} manifest={manifest} />}
     </main>
   );
 }

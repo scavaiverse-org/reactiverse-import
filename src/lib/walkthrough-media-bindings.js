@@ -182,8 +182,12 @@ export function getPublicMediaSlots(room = {}) {
   );
   const audio = firstSource(
     withType(room.audio_url, "audio"),
-    withType(room.exhibition_config?.ambience_audio_url, "audio"),
-    withType(room.narrator_audio_url || room.exhibition_config?.narrator_audio_url || room.onboarding_config?.guide_voice_url, "audio")
+    withType(room.exhibition_config?.ambience_audio_url, "audio")
+  );
+  const narration = firstSource(
+    withType(room.narrator_audio_url, "audio"),
+    withType(room.exhibition_config?.narrator_audio_url, "audio"),
+    withType(room.onboarding_config?.guide_voice_url, "audio")
   );
   const main = withType(room.media_url, room.media_type, room);
   const typeSpecific = firstSource(
@@ -194,7 +198,7 @@ export function getPublicMediaSlots(room = {}) {
     withType(room.gamification_config?.badge_icon_url, "image", room.gamification_config),
     withType(room.finale_config?.media_url, room.finale_config?.media_type, room.finale_config)
   );
-  return { background, main, foreground, audio, typeSpecific };
+  return { background, main, foreground, audio, narration, typeSpecific };
 }
 
 export function ensureMediaTypes(room = {}) {

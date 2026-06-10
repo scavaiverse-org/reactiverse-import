@@ -3,146 +3,44 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Accessibility, ChevronLeft, ChevronRight, Info, Moon, Volume2, VolumeX, X } from "lucide-react";
-import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ThreeBackground from "@/components/layout/ThreeBackground";
 import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { DEFAULT_MUSEUM_SLUG, museumPath } from "@/lib/domain-registry";
-import { WALKTHROUGHS, extractRoomsFromConfig, normalizeRooms } from "@/lib/walkthrough-admin";
-import { getPublicMediaSlots, ensureMediaTypes } from "@/lib/walkthrough-media-bindings";
+import { WALKTHROUGHS } from "@/lib/walkthrough-admin";
+import { ensureMediaTypes, getPublicMediaSlots } from "@/lib/walkthrough-media-bindings";
 import { resolveNextRoomIndex } from "@/lib/walkthrough-routing";
 import { trackWalkthroughEvent } from "@/lib/walkthrough-analytics";
+import { fetchPublishedManifest, getWalkthroughByIndex } from "@/lib/manifest-public";
 import SceneAudio from "@/components/walkthrough/SceneAudio";
 import WalkthroughMediaLayer from "@/components/walkthrough/WalkthroughMediaLayer";
 import ResolvedMedia from "@/components/walkthrough/ResolvedMedia";
 import renderRoomByType from "@/components/walkthrough/renderers/renderRoomByType";
 import { getSafeMediaUrl, getSafeNavigationUrl } from "@/lib/walkthrough-media-url";
 
-const fallbackScenes = [
-  { title: "Arrival Hall", narrative: "Welcome to the museum. Before you stands the threshold to a world where stories have been told through song, movement, and spectacle for centuries.", image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1200&h=800&fit=crop", ambience: "Temple bells and distant music", hotspots: [{ id: "welcome", label: "Welcome Seal", title: "Welcome Seal", description: "The ceremonial seal that greets every visitor." }] },
-  { title: "Five Kings Gallery", narrative: "Silk, symbol, and centuries of tradition converge here.", image: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=1200&h=800&fit=crop", ambience: "Silk rustling, gentle chimes", hotspots: [{ id: "lineage", label: "Royal Lineage", title: "Royal Lineage", description: "Ancestral stories and symbols." }] },
-  { title: "Final Reflection", page_type: "finale_room", narrative: "Your journey concludes here. Pause, reflect, and choose how you would like to continue.", image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200&h=800&fit=crop", ambience: "Reflective stillness" },
-];
-
-function resolvePageHeroSection(pageConfig = null) {
-  return (pageConfig?.sections || []).find((section) => section.sectionKey === "hero") || pageConfig?.sections?.[0] || null;
-}
-
-function resolvePageConfigCtas(pageConfig = null) {
-  return (pageConfig?.ctaSlots || [])
-    .filter((cta) => cta?.visibility !== false && cta?.route)
-    .sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0))
-    .map((cta, index) => ({
-      id: cta.ctaKey || `page_cta_${index + 1}`,
-      label: cta.label || `Action ${index + 1}`,
-      route: cta.route,
-      style: index === 0 ? "primary" : "secondary",
-    }));
-}
-
-function resolvePageMediaUrl(pageConfig = null, mediaRecords = []) {
-  const slot = (pageConfig?.mediaSlots || []).find((item) => item.sectionKey === "hero" || item.renderType === "background");
-  if (slot?.mediaId) {
-    const record = mediaRecords.find((item) => item.id === slot.mediaId);
-    if (record?.storageUrl || record?.sourceUrl) return record.storageUrl || record.sourceUrl;
-  }
-  return pageConfig?.heroMedia?.fileUrl || pageConfig?.heroMedia?.url || "";
-}
-
-function createFallbackRecord(pageConfig = null, pageMediaUrl = "", walkthroughKey = "walkthrough1") {
-  const heroSection = resolvePageHeroSection(pageConfig);
-  const pageCtas = resolvePageConfigCtas(pageConfig);
-  const pageCards = Array.isArray(pageConfig?.cards) ? pageConfig.cards.filter((card) => card?.title || card?.body || card?.description) : [];
-
-  if (heroSection || pageCards.length) {
-    const introNarrative = heroSection?.description || heroSection?.subtitle || fallbackScenes[0].narrative;
-    const cardRooms = pageCards.slice(0, 2).map((card, index) => ({
-      id: `config_card_${index + 1}`,
-      page_type: "walkthrough_exhibition",
-      order: index + 2,
-      room_key: `Config${index + 2}`,
-      title: card.title || `Gallery ${index + 1}`,
-      narration: card.body || card.description || fallbackScenes[1].narrative,
-      description: card.description || card.body || "",
-      media_url: card.image_url || card.media_url || pageMediaUrl || fallbackScenes[1].image,
-      background_media_url: card.image_url || card.media_url || pageMediaUrl || fallbackScenes[1].image,
-      exhibition_config: {
-        scene_title: card.title || `Gallery ${index + 1}`,
-        scene_narrative: card.body || card.description || fallbackScenes[1].narrative,
-      },
-    }));
-
-    const configuredRooms = [
-      {
-        id: "config_intro",
-        page_type: "onboarding_guide",
-        order: 1,
-        room_key: "Config1",
-        title: heroSection?.title || pageConfig?.pageTitle || fallbackScenes[0].title,
-        narration: introNarrative,
-        description: introNarrative,
-        media_url: pageMediaUrl || fallbackScenes[0].image,
-        background_media_url: pageMediaUrl || fallbackScenes[0].image,
-        onboarding_config: {
-          intro_text: introNarrative,
-          guide_name: heroSection?.eyebrow || "Guide",
-          choices: [],
-        },
-      },
-      ...(cardRooms.length ? cardRooms : [{
-        id: "config_gallery",
-        page_type: "walkthrough_exhibition",
-        order: 2,
-        room_key: "Config2",
-        title: pageConfig?.pageName || fallbackScenes[1].title,
-        narration: introNarrative,
-        description: introNarrative,
-        media_url: pageMediaUrl || fallbackScenes[1].image,
-        background_media_url: pageMediaUrl || fallbackScenes[1].image,
-        exhibition_config: {
-          scene_title: pageConfig?.pageName || fallbackScenes[1].title,
-          scene_narrative: introNarrative,
-        },
-      }]),
-      {
-        id: "config_finale",
-        page_type: "finale_room",
-        order: cardRooms.length ? cardRooms.length + 2 : 3,
-        room_key: `Config${cardRooms.length ? cardRooms.length + 2 : 3}`,
-        title: pageConfig?.pageTitle || fallbackScenes[2].title,
-        narration: pageConfig?.seo?.description || heroSection?.subtitle || fallbackScenes[2].narrative,
-        description: pageConfig?.seo?.description || heroSection?.subtitle || fallbackScenes[2].narrative,
-        media_url: pageMediaUrl || fallbackScenes[2].image,
-        background_media_url: pageMediaUrl || fallbackScenes[2].image,
-        finale_config: {
-          achievement_title: pageConfig?.pageTitle || "Journey Complete",
-          completion_message: pageConfig?.seo?.description || heroSection?.subtitle || fallbackScenes[2].narrative,
-          next_ctas: pageCtas,
-        },
-        ctas: pageCtas,
-      },
-    ];
-
-    return { walkthrough_key: walkthroughKey, walkthrough_config: { version: 3, walkthrough_key: walkthroughKey, rooms: configuredRooms } };
-  }
-
-  return { walkthrough_key: walkthroughKey, walkthrough_config: { version: 3, walkthrough_key: walkthroughKey, rooms: fallbackScenes.map((scene, index) => ({ ...scene, id: `fallback_${index + 1}`, page_type: scene.page_type || "walkthrough_exhibition", order: index + 1, room_key: `Fallback${index + 1}`, title: scene.title, narration: scene.narrative, media_url: scene.image, background_media_url: scene.image, finale_config: { completion_message: scene.narrative, achievement_title: "Journey Complete" } })) } };
-}
-
 function isAudioUrl(url = "") {
   return /\.(mp3|wav|ogg|m4a)(\?|$)/i.test(String(url));
 }
 
-function getRoomAudioUrl(room = {}) {
-  const audioSlot = getPublicMediaSlots(room || {}).audio;
-  const configAudio = room.audio_url || room.audioUrl || room.narration_audio_url || room.narrationAudioUrl || room.ambience_audio_url || room.ambienceAudioUrl;
+function getRoomAudioUrls(room = {}) {
+  const slots = getPublicMediaSlots(room || {});
+  const configAmbience = room.audio_url || room.audioUrl || room.ambience_audio_url || room.ambienceAudioUrl;
   const mainMediaAudio = room.media_type === "audio" || isAudioUrl(room.media_url) ? room.media_url : "";
-  return getSafeMediaUrl(audioSlot?.url || configAudio || mainMediaAudio || "");
+  const ambience = getSafeMediaUrl(slots.audio?.url || configAmbience || mainMediaAudio || "");
+  const configNarration = room.narrator_audio_url || room.narratorAudioUrl || room.narration_audio_url || room.narrationAudioUrl;
+  const narration = getSafeMediaUrl(slots.narration?.url || configNarration || "");
+  return { ambience, narration };
+}
+
+function getRoomAudioUrl(room = {}) {
+  const { ambience, narration } = getRoomAudioUrls(room);
+  return ambience || narration;
 }
 
 function toAudioScene(room) {
-  return { id: room.id, title: room.title, audio_url: getRoomAudioUrl(room) };
+  const { ambience, narration } = getRoomAudioUrls(room);
+  return { id: room.id, title: room.title, audio_url: ambience, narration_audio_url: narration };
 }
 
 function getInteractionMedia(item = {}) {
@@ -157,11 +55,23 @@ function getInteractionRoute(item = {}) {
   return getSafeNavigationUrl(item.cta_route || item.route || item.url || "");
 }
 
+function resolveWalkthroughIndex(params) {
+  if (params.walkthroughIndex) {
+    const parsed = Number(params.walkthroughIndex);
+    if (Number.isFinite(parsed) && parsed >= 1) return parsed;
+  }
+  if (params.walkthroughKey) {
+    const slot = WALKTHROUGHS.indexOf(params.walkthroughKey);
+    if (slot >= 0) return slot + 1;
+  }
+  return 1;
+}
+
 export default function Walkthrough() {
   const { tenant } = useActiveTenant();
   const navigate = useNavigate();
-  const { walkthroughKey: routeWalkthroughKey } = useParams();
-  const walkthroughKey = WALKTHROUGHS.includes(routeWalkthroughKey) ? routeWalkthroughKey : WALKTHROUGHS[0];
+  const params = useParams();
+  const walkthroughIndex = resolveWalkthroughIndex(params);
   const [currentRoomIndex, setCurrentRoomIndex] = useState(0);
   const [activeHotspot, setActiveHotspot] = useState(null);
   const [activeArtifact, setActiveArtifact] = useState(null);
@@ -170,62 +80,19 @@ export default function Walkthrough() {
   const [accessibilityMode, setAccessibilityMode] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
 
-  const { data: experienceConfigs = [] } = useQuery({
-    queryKey: ["public-walkthrough-config", tenant?.id, walkthroughKey],
-    queryFn: () => tenant ? base44.entities.ExperienceConfig.filter({ tenant_id: tenant.id, module_key: "walkthrough", walkthrough_key: walkthroughKey, status: "published" }, "-updated_at", 10) : Promise.resolve([]),
+  const { data: manifest } = useQuery({
+    queryKey: ["published-manifest", tenant?.id, tenant?.published_manifest_id],
+    queryFn: () => fetchPublishedManifest(tenant),
     enabled: !!tenant?.id,
-    initialData: [],
+    initialData: null,
   });
 
-  const { data: pageConfigs = [] } = useQuery({
-    queryKey: ["public-walkthrough-page-config", tenant?.id],
-    queryFn: () => tenant ? base44.entities.MuseumPageConfig.filter({ tenantId: tenant.id, pageKey: "walkthrough", publishState: "published" }, "-lastPublishedAt", 1) : Promise.resolve([]),
-    enabled: !!tenant?.id,
-    initialData: [],
-  });
-
-  const { data: tenantMedia = [] } = useQuery({
-    queryKey: ["public-walkthrough-page-media", tenant?.id],
-    queryFn: () => tenant ? base44.entities.TenantMedia.filter({ tenantId: tenant.id, publishState: "published" }, "-updatedAt", 50) : Promise.resolve([]),
-    enabled: !!tenant?.id,
-    initialData: [],
-  });
-
-  const tenantSafeConfigs = experienceConfigs.filter((config) => {
-    const configWalkthroughKey = config.walkthrough_key || config.walkthrough_config?.walkthrough_key || walkthroughKey;
-    return (!config.museum_id || config.museum_id === tenant?.id) && configWalkthroughKey === walkthroughKey;
-  });
-  const pageConfig = pageConfigs[0] || null;
-  const pageHeroSection = useMemo(() => resolvePageHeroSection(pageConfig), [pageConfig]);
-  const pageCtas = useMemo(() => resolvePageConfigCtas(pageConfig), [pageConfig]);
-  const pageMediaUrl = useMemo(() => resolvePageMediaUrl(pageConfig, tenantMedia), [pageConfig, tenantMedia]);
-  const record = tenantSafeConfigs.find((config) => config.status === "published") || createFallbackRecord(pageConfig, pageMediaUrl, walkthroughKey);
-  const rooms = useMemo(() => normalizeRooms(extractRoomsFromConfig(record, walkthroughKey), walkthroughKey).filter((room) => room.visibility !== "hidden"), [record?.id, record?.updated_at, record?.last_updated, record?.walkthrough_config?.updated_at, walkthroughKey]);
+  const walkthrough = getWalkthroughByIndex(manifest, walkthroughIndex);
+  const rooms = useMemo(() => (walkthrough?.rooms || []).map((room) => ensureMediaTypes(room)), [walkthrough]);
   const room = rooms[Math.min(currentRoomIndex, rooms.length - 1)] || rooms[0];
-  const resolvedRoom = useMemo(() => {
-    if (!room) return room;
-    const pageNarrative = pageHeroSection?.description || pageHeroSection?.subtitle || "";
-    const ctas = room.ctas?.length ? room.ctas : pageCtas;
-    return ensureMediaTypes({
-      ...room,
-      title: room.title || pageHeroSection?.title || pageConfig?.pageTitle || fallbackScenes[0].title,
-      narration: room.narration || pageNarrative || room.description,
-      description: room.description || pageNarrative || room.narration,
-      media_url: room.media_url || pageMediaUrl || "",
-      background_media_url: room.background_media_url || pageMediaUrl || room.media_url || "",
-      accessibility: {
-        ...(room.accessibility || {}),
-        alt_text: room.accessibility?.alt_text || pageHeroSection?.title || pageConfig?.pageTitle || room.title || "Walkthrough media",
-      },
-      ctas,
-      finale_config: {
-        ...(room.finale_config || {}),
-        next_ctas: room.finale_config?.next_ctas?.length ? room.finale_config.next_ctas : ctas,
-      },
-    });
-  }, [room, pageHeroSection, pageConfig, pageMediaUrl, pageCtas]);
   const tenantSlug = tenant?.slug || DEFAULT_MUSEUM_SLUG;
-  const museumId = record?.museum_id || tenant?.id;
+  const museumId = manifest?.museum_id || tenant?.id;
+  const walkthroughKey = walkthrough?.walkthrough_key;
 
   const track = (eventName, data = {}) => trackWalkthroughEvent({ eventName, tenant, museumId, walkthroughKey, room, data });
 
@@ -260,20 +127,27 @@ export default function Walkthrough() {
   const handleArtifactOpen = (artifact) => { setActiveArtifact(artifact); track("walkthrough_artifact_opened", { artifact_id: artifact.id, title: artifact.title }); };
   const complete = () => { track("walkthrough_completed"); navigate(museumPath(tenantSlug, "completion")); };
 
-  if (!resolvedRoom) return <div className="flex min-h-screen items-center justify-center bg-background text-muted-foreground">No walkthrough rooms available.</div>;
+  if (!manifest || !walkthrough || !room) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-4 text-center text-muted-foreground">
+        <p className="text-lg font-medium text-foreground">This experience has not been published yet.</p>
+        <Button variant="outline" onClick={() => navigate(museumPath(tenantSlug, "home"))}>Back to Museum Home</Button>
+      </div>
+    );
+  }
 
-  const hasRoomAudio = !!getRoomAudioUrl(resolvedRoom);
+  const hasRoomAudio = !!getRoomAudioUrl(room);
   const audioControlTitle = hasRoomAudio ? (muted ? "Play audio" : "Mute audio") : "No audio available for this room.";
-  const context = { next: goNext, choice: handleChoice, goToRoom, activeHotspot, hotspotOpen: handleHotspotOpen, artifactOpen: handleArtifactOpen, track, complete, resolveRoute, calmMode, accessibilityMode, reducedMotion };
+  const context = { next: goNext, choice: handleChoice, goToRoom, activeHotspot, hotspotOpen: handleHotspotOpen, artifactOpen: handleArtifactOpen, track, complete, resolveRoute, calmMode, accessibilityMode, reducedMotion, currentRoomIndex, totalRooms: rooms.length };
 
   return (
     <div className={`relative min-h-screen overflow-hidden bg-background text-foreground ${calmMode ? "saturate-75 contrast-95" : ""} ${accessibilityMode ? "text-[112.5%]" : ""}`}>
       <ThreeBackground />
-      {hasRoomAudio && <SceneAudio scene={toAudioScene(resolvedRoom)} muted={muted || calmMode} />}
+      {hasRoomAudio && <SceneAudio scene={toAudioScene(room)} muted={muted || calmMode} />}
 
       <AnimatePresence mode="wait">
-        <motion.div key={resolvedRoom.id} initial={reducedMotion ? false : { opacity: 0, scale: 1.04 }} animate={{ opacity: 1, scale: 1 }} exit={reducedMotion ? undefined : { opacity: 0, scale: 0.97 }} transition={{ duration: reducedMotion ? 0 : 0.7 }} className="absolute inset-0">
-          <WalkthroughMediaLayer room={resolvedRoom} />
+        <motion.div key={room.id} initial={reducedMotion ? false : { opacity: 0, scale: 1.04 }} animate={{ opacity: 1, scale: 1 }} exit={reducedMotion ? undefined : { opacity: 0, scale: 0.97 }} transition={{ duration: reducedMotion ? 0 : 0.7 }} className="absolute inset-0">
+          <WalkthroughMediaLayer room={room} />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/65 to-background/25" />
           <div className="absolute inset-0 bg-gradient-to-r from-background/80 to-transparent" />
         </motion.div>
@@ -282,8 +156,8 @@ export default function Walkthrough() {
       <div className="relative z-20 flex flex-wrap items-center justify-between gap-3 p-4 sm:p-6">
         <div className="flex flex-wrap items-center gap-2">
           <Badge className="bg-background/60 text-foreground border-border/50 backdrop-blur-sm text-xs">Station {currentRoomIndex + 1} of {rooms.length}</Badge>
-          <Badge variant="outline" className="bg-background/40 backdrop-blur-sm text-xs">{resolvedRoom.page_type?.replaceAll("_", " ")}</Badge>
-          {resolvedRoom.accessibility?.sensory_warning && <Badge variant="outline" className="bg-amber-400/10 text-amber-100">Sensory note</Badge>}
+          <Badge variant="outline" className="bg-background/40 backdrop-blur-sm text-xs">{room.page_type?.replaceAll("_", " ")}</Badge>
+          {room.accessibility?.sensory_warning && <Badge variant="outline" className="bg-amber-400/10 text-amber-100">Sensory note</Badge>}
         </div>
         <div className="flex gap-2">
           <Button size="icon" variant="ghost" className="bg-background/40 backdrop-blur-sm" onClick={() => setCalmMode(!calmMode)} title="Calm mode"><Moon className="h-4 w-4" /></Button>
@@ -292,7 +166,7 @@ export default function Walkthrough() {
         </div>
       </div>
 
-      <main className="relative z-10">{renderRoomByType(resolvedRoom, context)}</main>
+      <main className="relative z-10">{renderRoomByType(room, context)}</main>
 
       {(activeHotspot || activeArtifact) && (() => {
         const activeItem = activeArtifact || activeHotspot;

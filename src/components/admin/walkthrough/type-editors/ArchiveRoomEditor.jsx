@@ -23,7 +23,11 @@ export default function ArchiveRoomEditor({ room, onChange }) {
   return (
     <section className="space-y-4 rounded-2xl border border-primary/15 bg-primary/5 p-4">
       <h3 className="text-sm font-semibold text-primary">Archive Room fields</h3>
-      <label className="space-y-2"><Label>Archive title</Label><Input value={config.archive_title || ""} onChange={(e) => setConfig({ archive_title: e.target.value })} /></label>
+      <div className="grid gap-4 md:grid-cols-2">
+        <label className="space-y-2"><Label>Archive title</Label><Input value={config.archive_title || ""} onChange={(e) => setConfig({ archive_title: e.target.value })} /></label>
+        <label className="space-y-2"><Label>Categories (comma separated)</Label><Input value={(config.categories || []).join(", ")} onChange={(e) => setConfig({ categories: e.target.value.split(",").map((item) => item.trim()).filter(Boolean) })} placeholder="poster, recording, photo, scan" /></label>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={config.searchable !== false} onChange={(e) => setConfig({ searchable: e.target.checked })} /> Searchable</label>
+      </div>
       <div className="flex items-center justify-between"><p className="text-xs uppercase tracking-widest text-muted-foreground">Documents</p><Button size="sm" variant="outline" onClick={() => setConfig({ documents: [...documents, newDocument()] })}>Add document</Button></div>
       {documents.map((doc, index) => (
         <div key={doc.id || index} className="grid gap-2 rounded-xl border border-white/10 bg-background/40 p-3 md:grid-cols-4">

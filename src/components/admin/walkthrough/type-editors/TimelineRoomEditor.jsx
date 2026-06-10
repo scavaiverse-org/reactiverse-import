@@ -23,7 +23,11 @@ export default function TimelineRoomEditor({ room, onChange }) {
   return (
     <section className="space-y-4 rounded-2xl border border-primary/15 bg-primary/5 p-4">
       <h3 className="text-sm font-semibold text-primary">Timeline Room fields</h3>
-      <label className="space-y-2"><Label>Timeline title</Label><Input value={config.timeline_title || ""} onChange={(e) => setConfig({ timeline_title: e.target.value })} /></label>
+      <div className="grid gap-4 md:grid-cols-2">
+        <label className="space-y-2"><Label>Timeline title</Label><Input value={config.timeline_title || ""} onChange={(e) => setConfig({ timeline_title: e.target.value })} /></label>
+        <label className="space-y-2"><Label>Chronology mode</Label><select value={config.chronology_mode || "linear"} onChange={(e) => setConfig({ chronology_mode: e.target.value })} className="w-full rounded-lg border border-input bg-secondary px-3 py-2 text-sm"><option value="linear">Linear (as entered)</option><option value="reverse">Reverse chronological</option><option value="thematic">Thematic grouping</option></select></label>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={config.show_progression_line !== false} onChange={(e) => setConfig({ show_progression_line: e.target.checked })} /> Show progression line</label>
+      </div>
       <div className="flex items-center justify-between"><p className="text-xs uppercase tracking-widest text-muted-foreground">Events</p><Button size="sm" variant="outline" onClick={() => setConfig({ events: [...events, newEvent()] })}>Add event</Button></div>
       {events.map((event, index) => (
         <div key={event.id || index} className="grid gap-2 rounded-xl border border-white/10 bg-background/40 p-3 md:grid-cols-4">

@@ -16,7 +16,8 @@ export default function PerformanceStageRoom({ room }) {
         <h1 className="mt-3 font-display text-5xl font-bold">{room.title || config.stage_title}</h1>
         {media ? (scrollable ? <div className="mt-6 h-[60vh] w-full overflow-hidden rounded-2xl"><ScrollableImageLayer url={media} alt={room.title || config.stage_title} settings={scrollable} /></div> : <ResolvedMedia url={media} mediaType={mediaType} alt={room.title || config.stage_title} className="mt-6 h-[60vh] w-full rounded-2xl object-contain" controls fallbackVisual />) : <WalkthroughFallbackVisual className="mt-6 h-[60vh] w-full rounded-2xl" />}
         <div className="mt-6 grid gap-4 md:grid-cols-2">
-          <div className="rounded-2xl bg-white/10 p-4"><h2 className="font-semibold">Script / Lyrics</h2><p className="mt-2 whitespace-pre-wrap text-sm text-white/70">{room.narration || room.description || config.script_text || config.lyrics_text}</p></div>
+          <div className="rounded-2xl bg-white/10 p-4"><h2 className="font-semibold">Script</h2><p className="mt-2 whitespace-pre-wrap text-sm text-white/70">{room.narration || room.description || config.script_text || "No script provided."}</p></div>
+          {config.lyrics_text && <div className="rounded-2xl bg-white/10 p-4"><h2 className="font-semibold">Lyrics</h2><p className="mt-2 whitespace-pre-wrap text-sm text-white/70">{config.lyrics_text}</p></div>}
           <div className="rounded-2xl bg-white/10 p-4"><h2 className="font-semibold">Translation</h2><p className="mt-2 whitespace-pre-wrap text-sm text-white/70">{config.translation_text || "Add translations for accessibility and learning."}</p></div>
         </div>
       </div>
