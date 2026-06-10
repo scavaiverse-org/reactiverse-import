@@ -94,12 +94,19 @@ function keysToSnake(obj) {
   return obj;
 }
 
+// Keep the original (snake_case) keys AND add camelCase aliases. Parts of the
+// app read Base44-style camelCase (e.g. pageConfig.heroMedia) while others read
+// raw column names (e.g. config.config_json.ticket_types); emitting both keeps
+// every consumer working, including keys nested inside stored JSON payloads.
 function keysToCamel(obj) {
   if (Array.isArray(obj)) return obj.map(keysToCamel);
   if (obj && typeof obj === 'object' && obj.constructor === Object) {
     const out = {};
     for (const [k, v] of Object.entries(obj)) {
-      out[snakeToCamel(k)] = keysToCamel(v);
+      const converted = keysToCamel(v);
+      out[k] = converted;
+      const camel = snakeToCamel(k);
+      if (camel !== k && !(camel in obj)) out[camel] = converted;
     }
     return out;
   }
