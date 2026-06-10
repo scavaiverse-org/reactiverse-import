@@ -12,6 +12,7 @@ import {
   History,
   Globe,
   Sparkles,
+  FileArchive,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -88,6 +89,17 @@ const SECTIONS = [
       "Saving a draft (Save Draft) updates ExperienceConfig only — it never changes what's live, no matter how many times you save.",
       "The public site reads exclusively from the currently pointed-to PublishedExperienceManifest. There's no merging of draft and published content, and no fallback or placeholder content is shown.",
       "If a tenant has never published, public routes for that tenant simply say the experience hasn't been published yet — this is expected for brand-new tenants and is not an error.",
+    ],
+  },
+  {
+    icon: FileArchive,
+    title: "AI ZIP Import",
+    body: [
+      "Import Museum ZIP is a planning assistant — it turns an uploaded folder of images, video, audio, and documents into a proposed draft. It creates drafts only and never publishes anything.",
+      "It does not change the public museum. Publish Museum is still the only action that updates what visitors see.",
+      "Expert Mode creates the richest museum plan (curatorial framing, accessibility text, suggested CTAs and learning outcomes). Easy Mode creates a simpler guided plan with narration and basic structure. Very Easy Mode fills in just the basics — title, description, media, and simple narration — for beginners.",
+      "Always review AI-generated rooms before publishing: check media assignment, fix anything marked 'needs media', and verify any factual claims (dates, names, provenance) yourself — the AI marks unknowns instead of inventing facts, but it can still misread a filename or document.",
+      "Rollback is still available after publishing an AI-assisted draft, the same as any other publish. The public museum is always controlled by the latest selected PublishedExperienceManifest.",
     ],
   },
   {

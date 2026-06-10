@@ -16,6 +16,7 @@ import RolloutControlPanel from "@/components/admin/walkthrough/RolloutControlPa
 import MuseumPresetAutofill from "@/components/admin/walkthrough/MuseumPresetAutofill";
 import AdminPanelTabGuidesDownload from "@/components/admin/AdminPanelTabGuidesDownload";
 import PublishMuseumDialog from "@/components/admin/walkthrough/PublishMuseumDialog";
+import ImportMuseumZipPanel from "@/components/admin/walkthrough/ImportMuseumZipPanel";
 import TheV2Guide from "@/components/admin/walkthrough/TheV2Guide";
 import SuperEasyExperienceEditor from "@/components/admin/walkthrough/SuperEasyExperienceEditor";
 import GlobalExperienceAutofill from "@/components/admin/walkthrough/GlobalExperienceAutofill";
@@ -186,6 +187,14 @@ export default function TenantWalkthrough() {
           <PublishMuseumDialog tenant={selectedTenant} museumId={museumFilter || selectedTenant.id} />
         </div>
       </div>
+
+      <ImportMuseumZipPanel
+        tenant={selectedTenant}
+        museumId={museumFilter || selectedTenant.id}
+        walkthroughKey={walkthroughKey}
+        record={record}
+        onDraftWritten={() => queryClient.invalidateQueries({ queryKey: ["tenant-walkthrough-config"] })}
+      />
 
       {(validationErrors.length > 0 || warnings.length > 0) && (
         <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm text-amber-100">
