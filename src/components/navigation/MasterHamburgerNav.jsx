@@ -11,6 +11,7 @@ import { DEFAULT_MUSEUM_SLUG } from "@/lib/domain-registry";
 // Pages every visitor can reach, signed in or not.
 const PLATFORM_LINKS = [
   { label: "Platform Home", path: "/" },
+  { label: "Onboarding", path: "/onboarding" },
   { label: "Platform Overview", path: "/platform/overview" },
   { label: "Become a Tenant", path: "/become-a-tenant" },
   { label: "Virtual Experience", path: "/virtual-experience" },

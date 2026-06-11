@@ -4,22 +4,18 @@ import { useNavigate } from "react-router-dom";
 import { RotateCcw, Sparkles, Volume2, VolumeX, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import useOnboardingAudio from "@/components/audio/useOnboardingAudio";
-import OnboardingSlide from "./OnboardingSlide";
-import OnboardingProgress from "./OnboardingProgress";
+import OnboardingFlow from "./OnboardingFlow";
 import CinematicTextureLayer from "./CinematicTextureLayer";
 import GoldDustField from "./GoldDustField";
 import OperaLightSweep from "./OperaLightSweep";
-import { SCOVERS_ONBOARDING_SLIDES, SCOVERS_ONBOARDING_VIDEO_URL } from "@/lib/scovers-onboarding-content";
+import { SCOVERS_ONBOARDING_VIDEO_URL } from "@/lib/scovers-onboarding-content";
 
 export default function HomepageOnboardingOverlay({ open, onClose, onMarkSeen }) {
-  const [current, setCurrent] = useState(0);
   const [reduceMotion, setReduceMotion] = useState(false);
+  const [resetKey, setResetKey] = useState(0);
   const cardRef = useRef(null);
   const videoRef = useRef(null);
   const navigate = useNavigate();
-  const slides = SCOVERS_ONBOARDING_SLIDES;
-  const slide = slides[current];
-  const isFinal = current === slides.length - 1;
   const { musicAsset, autoplayBlocked, musicEnabled, enableAudio, replayMusic, stopMusic } = useOnboardingAudio({ open, targetKey: "home_onboarding_intro" });
 
   useEffect(() => {
@@ -84,32 +80,19 @@ export default function HomepageOnboardingOverlay({ open, onClose, onMarkSeen })
     enableAudio();
   };
 
-  const handleRoute = async (route) => {
+  const handleNavigate = async (route) => {
     await stopMusic({ reset: true, fade: true });
     onMarkSeen();
     navigate(route);
   };
 
-  const handleNext = async () => {
-    if (slide.primaryCtaRoute && slide.primaryCtaRoute !== "__NEXT__") {
-      await handleRoute(slide.primaryCtaRoute);
-      return;
-    }
-    if (isFinal) {
-      setCurrent(0);
-      replayVideo();
-      replayMusic();
-      return;
-    }
-    setCurrent((value) => value + 1);
-  };
-
-  const handleSkip = async () => {
-    await handleRoute(slide.secondaryCtaRoute || "/platform/overview");
+  const handleClose = () => {
+    stopMusic();
+    onClose();
   };
 
   const handleReplay = () => {
-    setCurrent(0);
+    setResetKey((value) => value + 1);
     replayVideo();
     replayMusic();
   };
@@ -176,7 +159,7 @@ export default function HomepageOnboardingOverlay({ open, onClose, onMarkSeen })
                 </Button>
                 <button
                   type="button"
-                  onClick={handleSkip}
+                  onClick={handleClose}
                   aria-label="Close intro"
                   className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200/25 bg-slate-200/10 text-slate-100/70 hover:bg-slate-200/20 hover:text-white"
                 >
@@ -186,20 +169,7 @@ export default function HomepageOnboardingOverlay({ open, onClose, onMarkSeen })
             </div>
 
             <div className="relative z-10">
-              <AnimatePresence mode="wait">
-                <OnboardingSlide key={slide.key} slide={slide} reduceMotion={reduceMotion} />
-              </AnimatePresence>
-
-              <OnboardingProgress
-                current={current}
-                total={slides.length}
-                chapter={slide.chapter}
-                primaryLabel={slide.primaryCtaLabel}
-                canGoBack={current > 0}
-                onBack={() => setCurrent((value) => Math.max(0, value - 1))}
-                onNext={handleNext}
-                onSkip={handleSkip}
-              />
+              <OnboardingFlow onNavigate={handleNavigate} resetKey={resetKey} />
             </div>
           </motion.div>
         </motion.div>

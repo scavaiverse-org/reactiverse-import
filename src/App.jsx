@@ -329,7 +329,7 @@ const AuthenticatedApp = () => {
       {/* Legacy redirects only; no legacy mixed rendering */}
       <Route path="/home" element={<Navigate to={museumPath(DEFAULT_MUSEUM_SLUG, "home")} replace />} />
       <Route path="/museum" element={<Navigate to={museumPath(DEFAULT_MUSEUM_SLUG, "home")} replace />} />
-      <Route path="/onboarding" element={<Navigate to={museumPath(DEFAULT_MUSEUM_SLUG, "home")} replace />} />
+      <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/walkthrough" element={<Navigate to={museumPath(DEFAULT_MUSEUM_SLUG, "begin-tour")} replace />} />
       <Route path="/guide" element={<Navigate to={museumPath(DEFAULT_MUSEUM_SLUG, "home")} replace />} />
       <Route path="/ai-guide" element={<Navigate to={museumPath(DEFAULT_MUSEUM_SLUG, "home")} replace />} />
