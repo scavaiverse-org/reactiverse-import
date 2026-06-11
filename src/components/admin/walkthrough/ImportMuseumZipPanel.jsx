@@ -4,6 +4,7 @@ import { AlertTriangle, CheckCircle2, FileArchive, Loader2, RefreshCw, Trash2, U
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { extractZipInventory } from "@/lib/zip-import/extract";
 import { buildMuseumPlan, buildHeuristicMuseumPlan } from "@/lib/zip-import/plan-builder";
 import { buildZipImportDraftPayload } from "@/lib/zip-import/draft-writer";
@@ -16,6 +17,7 @@ const MODES = [
 ];
 
 export default function ImportMuseumZipPanel({ tenant, museumId, walkthroughKey, record, onDraftWritten }) {
+  const [open, setOpen] = useState(false);
   const fileInputRef = useRef(null);
   const [phase, setPhase] = useState("idle"); // idle | extracting | ready | planning | reviewing
   const [mode, setMode] = useState("very_easy");
@@ -50,6 +52,7 @@ export default function ImportMuseumZipPanel({ tenant, museumId, walkthroughKey,
       setPhase("idle");
       setExtraction(null);
       setPlan(null);
+      setOpen(false);
     },
   });
 
@@ -127,16 +130,26 @@ export default function ImportMuseumZipPanel({ tenant, museumId, walkthroughKey,
   };
 
   return (
-    <section className="rounded-3xl border border-white/10 bg-white/[0.035] p-4">
-      <div className="mb-4">
-        <h2 className="flex items-center gap-2 font-display text-xl font-bold"><FileArchive className="h-5 w-5 text-primary" /> Import Museum ZIP</h2>
-        <p className="text-xs text-muted-foreground">
-          Upload an exhibition folder (images, video, audio, documents, notes) as a ZIP. This generates a proposed draft for{" "}
-          <span className="font-semibold text-foreground">{walkthroughLabel(walkthroughKey)}</span> only — nothing is published.
-          Review and edit the proposal, then save it as a draft. The public museum changes only when you press{" "}
-          <span className="font-semibold text-foreground">Publish Museum</span>.
-        </p>
-      </div>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) reset();
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button variant="outline"><FileArchive className="h-4 w-4" /> Import Museum ZIP</Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2"><FileArchive className="h-5 w-5 text-primary" /> Import Museum ZIP</DialogTitle>
+          <DialogDescription>
+            Upload an exhibition folder (images, video, audio, documents, notes) as a ZIP. This generates a proposed draft for{" "}
+            <span className="font-semibold text-foreground">{walkthroughLabel(walkthroughKey)}</span> only — nothing is published.
+            Review and edit the proposal, then save it as a draft. The public museum changes only when you press{" "}
+            <span className="font-semibold text-foreground">Publish Museum</span>.
+          </DialogDescription>
+        </DialogHeader>
 
       {phase === "idle" && (
         <div className="rounded-2xl border border-dashed border-white/15 bg-background/30 p-6 text-center">
@@ -202,7 +215,8 @@ export default function ImportMuseumZipPanel({ tenant, museumId, walkthroughKey,
           onCancel={reset}
         />
       )}
-    </section>
+      </DialogContent>
+    </Dialog>
   );
 }
 

@@ -184,17 +184,16 @@ export default function TenantWalkthrough() {
           <Badge className="bg-primary/10 text-primary">Publish safety {qualityScores.publish_safety || 0}</Badge>
           <AdminPanelTabGuidesDownload />
           <Button variant="outline" onClick={() => saveMutation.mutate("draft")} disabled={saveMutation.isPending}><Save className="h-4 w-4" /> Save Draft</Button>
+          <ImportMuseumZipPanel
+            tenant={selectedTenant}
+            museumId={museumFilter || selectedTenant.id}
+            walkthroughKey={walkthroughKey}
+            record={record}
+            onDraftWritten={() => queryClient.invalidateQueries({ queryKey: ["tenant-walkthrough-config"] })}
+          />
           <PublishMuseumDialog tenant={selectedTenant} museumId={museumFilter || selectedTenant.id} />
         </div>
       </div>
-
-      <ImportMuseumZipPanel
-        tenant={selectedTenant}
-        museumId={museumFilter || selectedTenant.id}
-        walkthroughKey={walkthroughKey}
-        record={record}
-        onDraftWritten={() => queryClient.invalidateQueries({ queryKey: ["tenant-walkthrough-config"] })}
-      />
 
       {(validationErrors.length > 0 || warnings.length > 0) && (
         <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm text-amber-100">
