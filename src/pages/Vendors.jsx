@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { Link } from "react-router-dom";
 import { museumPath } from "@/lib/domain-registry";
+import { buildVendorPricing } from "@/lib/vendor-pricing";
 
 const FALLBACK_BENEFITS = [
   { icon: ShieldCheck, title: "Premium Placement", desc: "Curated placement within the museum ecosystem and virtual walkthrough" },
@@ -20,13 +21,6 @@ const FALLBACK_BENEFITS = [
   { icon: Users, title: "Visitor Reach", desc: "Access to our growing base of museum visitors and cultural enthusiasts" },
   { icon: Zap, title: "AI-Powered Discovery", desc: "Our AI guide recommends your products to relevant visitor segments" },
 ];
-
-const FALLBACK_SLOT_TYPES = [
-  { value: "standard", label: "Standard Listing", price: "SGD 300 one-time", desc: "Storefront listing setup, product photography guidelines, and 12% commission per sale." },
-  { value: "featured", label: "Featured Placement", price: "SGD 300 one-time + SGD 150/mo", desc: "Everything in Standard, plus homepage and room-exit placement (max 4 slots at a time). 12% commission per sale." },
-];
-
-const VENDOR_COMMISSION_NOTE = "All vendors: SGD 300 one-time onboarding fee covers storefront setup. SCAVerse takes a 12% commission on marketplace sales — you keep your own fulfilment.";
 
 const ICONS = { ShieldCheck, TrendingUp, Users, Zap, Store };
 
@@ -38,7 +32,7 @@ function resolveIcon(iconName, fallbackIcon = Store) {
   return ICONS[iconName] || fallbackIcon;
 }
 
-function resolveVendorsPageContent(config, tenantSlug) {
+function resolveVendorsPageContent(config, tenantSlug, vendorPricing) {
   const hasConfig = !!config?.id;
   const heroSection = getSection(config, ["hero", "vendors_hero", "marketplace_hero"]);
   const benefitsSection = getSection(config, ["benefits", "vendor_benefits"]);
@@ -80,7 +74,7 @@ function resolveVendorsPageContent(config, tenantSlug) {
           price: card.price || card.subtitle || "",
           desc: card.desc || card.description || card.body,
         })).filter((slot) => slot.value && slot.label)
-      : FALLBACK_SLOT_TYPES,
+      : vendorPricing.slotTypes,
   };
 }
 
@@ -99,7 +93,14 @@ export default function Vendors() {
     enabled: !!tenant?.id,
     initialData: [],
   });
-  const pageContent = useMemo(() => resolveVendorsPageContent(pageConfigs[0], tenantSlug), [pageConfigs, tenantSlug]);
+  const { data: moduleConfigs = [] } = useQuery({
+    queryKey: ["public-vendors-module-config", tenant?.id],
+    queryFn: () => tenant ? base44.entities.ModuleConfig.filter({ tenant_id: tenant.id, module_key: "vendors" }) : Promise.resolve([]),
+    enabled: !!tenant?.id,
+    initialData: [],
+  });
+  const vendorPricing = useMemo(() => buildVendorPricing(moduleConfigs[0]?.config_json), [moduleConfigs]);
+  const pageContent = useMemo(() => resolveVendorsPageContent(pageConfigs[0], tenantSlug, vendorPricing), [pageConfigs, tenantSlug, vendorPricing]);
 
   const registerMutation = useMutation({
     mutationFn: async (data) => {
@@ -162,7 +163,7 @@ export default function Vendors() {
       {/* Slot Types */}
       <section className="max-w-5xl mx-auto px-4 pb-16">
         <h2 className="text-2xl font-display font-bold text-foreground text-center mb-2">{pageContent.tiersTitle}</h2>
-        <p className="mx-auto mb-8 max-w-2xl text-center text-xs text-muted-foreground">{VENDOR_COMMISSION_NOTE}</p>
+        <p className="mx-auto mb-8 max-w-2xl text-center text-xs text-muted-foreground">{vendorPricing.commissionNote}</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {pageContent.slotTypes.map((slot) => (
             <Card key={slot.value} className="bg-card/50 border-border/50">
