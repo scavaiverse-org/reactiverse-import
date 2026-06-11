@@ -84,14 +84,32 @@ async function generateImage(prompt: string, imageUrl: string, seed: number): Pr
   return url;
 }
 
+// Browsers refuse to load external image references inside an SVG rendered
+// via <img>/background-image, so the panorama must embed its three images as
+// data URIs to display anywhere on the public site.
+async function toDataUri(url: string): Promise<string> {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Could not fetch panorama panel image (${response.status})`);
+  const contentType = response.headers.get('content-type')?.split(';')[0] || 'image/jpeg';
+  if (!contentType.startsWith('image/')) throw new Error(`Panorama panel is not an image (${contentType})`);
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  let binary = '';
+  const chunk = 8192;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return `data:${contentType};base64,${btoa(binary)}`;
+}
+
 async function uploadPanorama(svg: string, tenantId: string, roomId: string): Promise<string> {
   const service = getServiceRoleClient();
   const fileName = `panoramas/${tenantId || 'tenant'}/${roomId || 'room'}-${Date.now()}.svg`;
+  // public-media: visitors must be able to load the panorama anonymously.
   const { data, error } = await service.storage
-    .from('tenant-media')
+    .from('public-media')
     .upload(fileName, new Blob([svg], { type: 'image/svg+xml' }), { upsert: true, contentType: 'image/svg+xml' });
   if (error) throw new Error(`Panorama upload failed: ${error.message}`);
-  const { data: { publicUrl } } = service.storage.from('tenant-media').getPublicUrl(data.path);
+  const { data: { publicUrl } } = service.storage.from('public-media').getPublicUrl(data.path);
   return publicUrl;
 }
 
@@ -105,9 +123,11 @@ async function composePanorama({ leftUrl, originalUrl, rightUrl, extensionStreng
   const sideWidth = Math.round(originalWidth * sidePanelShare);
   const seamBlendPixels = Math.max(48, Math.round(originalWidth * 0.06));
   const width = sideWidth + originalWidth + sideWidth;
-  const left = escapeXml(leftUrl);
-  const center = escapeXml(originalUrl);
-  const right = escapeXml(rightUrl);
+  const [left, center, right] = await Promise.all([
+    toDataUri(leftUrl),
+    toDataUri(originalUrl),
+    toDataUri(rightUrl),
+  ]);
   const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid slice">
   <defs>

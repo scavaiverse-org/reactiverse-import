@@ -5,8 +5,8 @@
 -- 1. Buckets
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values
-  ('public-media', 'public-media', true, 104857600, array['image/png','image/jpeg','image/webp','image/gif','video/mp4','video/webm','audio/mpeg','audio/wav','application/pdf']),
-  ('tenant-media', 'tenant-media', false, 104857600, array['image/png','image/jpeg','image/webp','image/gif','video/mp4','video/webm','audio/mpeg','audio/wav','application/pdf']),
+  ('public-media', 'public-media', true, 104857600, array['image/png','image/jpeg','image/webp','image/gif','image/svg+xml','video/mp4','video/webm','audio/mpeg','audio/wav','application/pdf']),
+  ('tenant-media', 'tenant-media', false, 104857600, array['image/png','image/jpeg','image/webp','image/gif','image/svg+xml','video/mp4','video/webm','audio/mpeg','audio/wav','application/pdf']),
   ('qa-evidence', 'qa-evidence', false, 52428800, array['image/png','image/jpeg','video/mp4','application/json','text/plain'])
 on conflict (id) do nothing;
 
