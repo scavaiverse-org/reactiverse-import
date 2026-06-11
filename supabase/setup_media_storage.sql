@@ -11,14 +11,40 @@ values
 on conflict (id) do nothing;
 
 -- 2. Storage access rules
+
+-- can_upload_media(): is_admin() plus the tenant-scoped staff roles that have
+-- canUpload: true in src/lib/rbac.js (FRANCHISE_OWNER/MANAGER/STAFF,
+-- CONTENT_EDITOR, MEDIA_MANAGER, and their lowercase legacy aliases). Without
+-- this, uploadFile() (src/lib/upload.js) — used by every museum admin editor
+-- and ZIP import — gets rejected by storage RLS for tenant staff.
+create or replace function public.can_upload_media()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select public.is_admin()
+    or lower(public.current_user_role()) in (
+      'franchise_owner', 'franchise_manager', 'franchise_staff',
+      'content_editor', 'media_manager',
+      'tenant_admin', 'tenant_manager', 'tenant_staff', 'owner'
+    )
+    or public.current_user_role() in (
+      'FRANCHISE_OWNER', 'FRANCHISE_MANAGER', 'FRANCHISE_STAFF',
+      'CONTENT_EDITOR', 'MEDIA_MANAGER'
+    );
+$$;
+
 drop policy if exists public_media_read on storage.objects;
 create policy public_media_read on storage.objects
   for select using (bucket_id = 'public-media');
 
 drop policy if exists public_media_admin_write on storage.objects;
-create policy public_media_admin_write on storage.objects
-  for all using (bucket_id = 'public-media' and public.is_admin())
-  with check (bucket_id = 'public-media' and public.is_admin());
+drop policy if exists public_media_staff_write on storage.objects;
+create policy public_media_staff_write on storage.objects
+  for all using (bucket_id = 'public-media' and public.can_upload_media())
+  with check (bucket_id = 'public-media' and public.can_upload_media());
 
 drop policy if exists tenant_media_read on storage.objects;
 create policy tenant_media_read on storage.objects for select using (

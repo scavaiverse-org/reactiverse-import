@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 
 // Global atmosphere layer: rice-paper grain, fabric weave, opera glow + vignette.
 // Sits ABOVE the existing video/gradients, below the slide content.

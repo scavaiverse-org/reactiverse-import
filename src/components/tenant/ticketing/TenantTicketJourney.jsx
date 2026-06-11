@@ -110,6 +110,15 @@ function normalizeAddon(item = {}, index = 0, currency = "SGD") {
   };
 }
 
+function isPromoActive(promo) {
+  if (!promo || promo.active !== true) return false;
+  if (promo.ends_at) {
+    const end = new Date(`${promo.ends_at}T23:59:59`);
+    if (Number.isFinite(end.getTime()) && end < new Date()) return false;
+  }
+  return true;
+}
+
 function useTickets() {
   const { tenant } = useActiveTenant();
   const { data: moduleConfigs = [], isLoading } = useQuery({
@@ -120,12 +129,14 @@ function useTickets() {
   });
   const config = moduleConfigs[0]?.config_json || {};
   const currency = config.currency || "SGD";
+  const launchPromo = isPromoActive(config.launch_promo) ? config.launch_promo : null;
   const configuredTicketTypes = Array.isArray(config.ticket_types) ? config.ticket_types.filter((item) => item.enabled !== false) : [];
   const mainTicketSource = configuredTicketTypes.length ? configuredTicketTypes.filter(isMainTicketCatalogItem) : fallbackTickets;
   const tickets = (mainTicketSource.length ? mainTicketSource : fallbackTickets).map((item) => {
     const fallback = fallbackTickets.find((base) => base.id === item.id || base.id === item.type) || fallbackTickets[0];
     const numericPrice = typeof item.price === "number" ? item.price : Number(String(item.price || "").replace(/[^0-9.]/g, "")) || null;
-    return { ...fallback, ...item, id: item.id || item.type || fallback.id, price: numericPrice, currency: currency || item.currency || fallback.currency || "SGD", features: item.features || fallback.features };
+    const regularPrice = typeof item.regular_price === "number" ? item.regular_price : Number(String(item.regular_price || "").replace(/[^0-9.]/g, "")) || null;
+    return { ...fallback, ...item, id: item.id || item.type || fallback.id, price: numericPrice, regularPrice, currency: currency || item.currency || fallback.currency || "SGD", features: item.features || fallback.features };
   });
   const configuredAddOns = [
     ...(Array.isArray(config.add_ons) ? config.add_ons : []),
@@ -138,7 +149,29 @@ function useTickets() {
     return list.findIndex((candidate, candidateIndex) => String(candidate.id || candidate.type || candidate.key || candidate.title || candidate.label || candidate.name || candidateIndex).toLowerCase() === key) === index;
   });
   const addOns = (configuredAddOns.length ? configuredAddOns : fallbackAddOns).map((item, index) => normalizeAddon(item, index, currency));
-  return { tenant, tickets, addOns, currency, isLoading };
+  return { tenant, tickets, addOns, currency, launchPromo, isLoading };
+}
+
+function PromoBanner({ promo }) {
+  if (!promo) return null;
+  return (
+    <div className="mb-4 flex items-center gap-2 rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
+      <Sparkles className="h-4 w-4 shrink-0" />
+      <span>{promo.note || `Launch promo pricing ends ${promo.ends_at}.`}</span>
+    </div>
+  );
+}
+
+function TicketPrice({ ticket }) {
+  if (!ticket.price) return <p className="mt-2 font-mono text-primary">Custom quote</p>;
+  return (
+    <p className="mt-2 flex items-baseline gap-2 font-mono text-primary">
+      {ticket.regularPrice && ticket.regularPrice > ticket.price && (
+        <span className="text-xs text-muted-foreground line-through">{ticket.currency} {ticket.regularPrice}</span>
+      )}
+      <span>{ticket.currency} {ticket.price}</span>
+    </p>
+  );
 }
 
 function StageShell({ activeStage, eyebrow, title, body, children }) {
@@ -173,7 +206,7 @@ function ActionLink({ to, children, variant = "default" }) {
 export function TicketGateway() {
   const navigate = useNavigate();
   const { tenantSlug } = useParams();
-  const { tenant, tickets, isLoading } = useTickets();
+  const { tenant, tickets, isLoading, launchPromo } = useTickets();
   const slug = tenantSlug || tenant?.slug || "asian-operatic-museum";
   const [selectedId, setSelectedId] = useState(tickets[0]?.id || "virtual_general");
   const [form, setForm] = useState({ visitor_name: "", visitor_email: "", quantity: 1, visit_date: "", accessibility_needs: "", group_type: "individual", notes: "" });
@@ -227,6 +260,7 @@ export function TicketGateway() {
   return (
     <StageShell activeStage="tickets" eyebrow="Purchase Tickets" title="Choose your museum access." body="Reserve a ticket first, then compare access types, plan your visit, add upgrades, and continue to confirmation.">
       {isLoading && <p className="mb-4 text-xs text-muted-foreground">Loading tenant ticket settings…</p>}
+      <PromoBanner promo={launchPromo} />
       <div className="mb-4 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm text-primary">
         Select one main ticket type. Choosing another ticket will replace your previous selection.
       </div>
@@ -235,7 +269,7 @@ export function TicketGateway() {
           {tickets.map((ticket, index) => {
             const Icon = ticket.icon || Ticket;
             const active = selectedId === ticket.id;
-            return <motion.button key={ticket.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.04 }} onClick={() => setSelectedId(ticket.id)} className={`rounded-3xl border p-5 text-left backdrop-blur-sm transition-all duration-300 ${active ? "border-primary bg-primary/10 ring-1 ring-primary/30" : "border-border/40 bg-card/50 hover:border-primary/40 hover:bg-card/80"}`} aria-pressed={active}><div className="mb-4 flex items-center justify-between gap-3"><Icon className="h-6 w-6 text-primary" /><span className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${active ? "border-primary/30 bg-primary text-primary-foreground" : "border-border/50 text-muted-foreground"}`}>{active ? "Selected" : "Select"}</span></div><h3 className="font-heading text-xl font-semibold">{ticket.label}</h3><p className="mt-2 font-mono text-primary">{ticket.price ? `${ticket.currency} ${ticket.price}` : "Custom quote"}</p><ul className="mt-4 space-y-2 text-xs text-muted-foreground">{(ticket.features || []).map((feature) => <li key={feature} className="flex gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-primary" />{feature}</li>)}</ul></motion.button>;
+            return <motion.button key={ticket.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.04 }} onClick={() => setSelectedId(ticket.id)} className={`rounded-3xl border p-5 text-left backdrop-blur-sm transition-all duration-300 ${active ? "border-primary bg-primary/10 ring-1 ring-primary/30" : "border-border/40 bg-card/50 hover:border-primary/40 hover:bg-card/80"}`} aria-pressed={active}><div className="mb-4 flex items-center justify-between gap-3"><Icon className="h-6 w-6 text-primary" /><span className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${active ? "border-primary/30 bg-primary text-primary-foreground" : "border-border/50 text-muted-foreground"}`}>{active ? "Selected" : "Select"}</span></div><h3 className="font-heading text-xl font-semibold">{ticket.label}</h3><TicketPrice ticket={ticket} /><ul className="mt-4 space-y-2 text-xs text-muted-foreground">{(ticket.features || []).map((feature) => <li key={feature} className="flex gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-primary" />{feature}</li>)}</ul></motion.button>;
           })}
         </div>
         <div className="rounded-3xl border border-border/40 bg-card/50 p-6 backdrop-blur-sm">
@@ -258,9 +292,9 @@ export function TicketGateway() {
 
 export function TicketComparison() {
   const { tenantSlug } = useParams();
-  const { tenant, tickets } = useTickets();
+  const { tenant, tickets, launchPromo } = useTickets();
   const slug = tenantSlug || tenant?.slug || "asian-operatic-museum";
-  return <StageShell activeStage="tickets-2" eyebrow="Ticket Comparison" title="Compare every access type." body="Review virtual, premium, physical, VIP, family, group, school, and corporate options before planning your visit."><div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{tickets.map((ticket) => <div key={ticket.id} className="rounded-3xl border border-border/40 bg-card/50 p-6"><Badge className="mb-4 bg-primary/10 text-primary">{ticket.access_mode || "museum"}</Badge><h3 className="font-heading text-2xl font-semibold">{ticket.label}</h3><p className="mt-2 font-mono text-primary">{ticket.price ? `${ticket.currency} ${ticket.price}` : "Custom quote"}</p><ul className="mt-5 space-y-2 text-sm text-muted-foreground">{(ticket.features || []).map((feature) => <li key={feature} className="flex gap-2"><ShieldCheck className="h-4 w-4 text-primary" />{feature}</li>)}</ul></div>)}</div><div className="mt-8 flex flex-wrap gap-3"><ActionLink to={museumPath(slug, "tickets-3")}>Continue to Visit Planning <ArrowRight className="h-4 w-4" /></ActionLink><ActionLink to={museumPath(slug, "tickets")} variant="outline"><ArrowLeft className="h-4 w-4" /> Back to Ticket Options</ActionLink></div></StageShell>;
+  return <StageShell activeStage="tickets-2" eyebrow="Ticket Comparison" title="Compare every access type." body="Review virtual, premium, physical, VIP, family, group, school, and corporate options before planning your visit."><PromoBanner promo={launchPromo} /><div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{tickets.map((ticket) => <div key={ticket.id} className="rounded-3xl border border-border/40 bg-card/50 p-6"><Badge className="mb-4 bg-primary/10 text-primary">{ticket.access_mode || "museum"}</Badge><h3 className="font-heading text-2xl font-semibold">{ticket.label}</h3><TicketPrice ticket={ticket} /><ul className="mt-5 space-y-2 text-sm text-muted-foreground">{(ticket.features || []).map((feature) => <li key={feature} className="flex gap-2"><ShieldCheck className="h-4 w-4 text-primary" />{feature}</li>)}</ul></div>)}</div><div className="mt-8 flex flex-wrap gap-3"><ActionLink to={museumPath(slug, "tickets-3")}>Continue to Visit Planning <ArrowRight className="h-4 w-4" /></ActionLink><ActionLink to={museumPath(slug, "tickets")} variant="outline"><ArrowLeft className="h-4 w-4" /> Back to Ticket Options</ActionLink></div></StageShell>;
 }
 
 export function VisitPlanning() {

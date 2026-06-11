@@ -69,7 +69,7 @@ export default function ModuleVendors() {
           moduleKey="vendors"
           title={`Vendor Config${selected ? ` — ${selected.name}` : ""}`}
           description="Saved to ModuleConfig and used by vendor registration and approvals."
-          defaultValue={{ categories: ["cultural_arts", "food_beverage", "merchandise", "experiences"], slot_types: ["standard", "premium", "featured", "anchor"], approval_workflow: "manual_review" }}
+          defaultValue={{ categories: ["cultural_arts", "food_beverage", "merchandise", "experiences"], slot_types: ["standard", "featured"], approval_workflow: "manual_review" }}
         >
           {({ draft, setDraft }) => (
             <div className="grid lg:grid-cols-3 gap-3">
