@@ -8,7 +8,13 @@ export default function OverviewHero({ content = {} }) {
   const hero = content.hero || {};
   const { data: liveMuseums = [] } = useQuery({
     queryKey: ["overview-live-museum-count"],
-    queryFn: () => base44.entities.MuseumTenant.filter({ status: "live" }, "name", 100),
+    // Count what the directory actually lists: live tenants WITH a published
+    // manifest — not every live tenant row (empty/unpublished tenants would
+    // inflate the count while /virtual-experience shows nothing).
+    queryFn: async () => {
+      const tenants = await base44.entities.MuseumTenant.filter({ status: "live" }, "name", 100);
+      return (tenants || []).filter((tenant) => !!tenant.published_manifest_id);
+    },
     initialData: [],
   });
   const heroStats = [
