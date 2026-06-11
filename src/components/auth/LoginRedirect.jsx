@@ -2,14 +2,45 @@ import { useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { LogIn, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { base44 } from "@/api/base44Client";
+import { ROLES, normalizeRole, isMasterUser, getUserTenantIds } from "@/lib/rbac";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+/**
+ * Where a signed-in user should land when they didn't arrive via an explicit
+ * `?redirect=` (e.g. from a protected route). Without this, every login just
+ * bounces back to the same public homepage with no visible change, which
+ * looks like "login isn't working".
+ */
+async function resolvePostLoginDestination(authUser) {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, tenant_ids")
+    .eq("id", authUser.id)
+    .single();
+
+  const user = { role: profile?.role, tenantIds: profile?.tenant_ids ?? [] };
+
+  if (isMasterUser(user)) return "/platform/admin";
+
+  if (normalizeRole(user.role) !== ROLES.PUBLIC_USER) {
+    const tenantIds = getUserTenantIds(user);
+    if (tenantIds.length > 0) {
+      const tenants = await base44.entities.MuseumTenant.list();
+      const tenant = tenants.find((item) => item.id === tenantIds[0]);
+      if (tenant?.slug) return `/museum/${tenant.slug}/admin`;
+    }
+  }
+
+  return "/";
+}
+
 export default function LoginRedirect() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const redirectTo = searchParams.get("redirect") || "/";
+  const redirectParam = searchParams.get("redirect");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,13 +52,23 @@ export default function LoginRedirect() {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
+    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
     if (authError) {
+      setLoading(false);
       setError(authError.message);
-    } else {
-      navigate(redirectTo, { replace: true });
+      return;
     }
+
+    let destination = redirectParam || "/";
+    if (!redirectParam && data?.user) {
+      try {
+        destination = await resolvePostLoginDestination(data.user);
+      } catch {
+        destination = "/";
+      }
+    }
+    setLoading(false);
+    navigate(destination, { replace: true });
   };
 
   return (

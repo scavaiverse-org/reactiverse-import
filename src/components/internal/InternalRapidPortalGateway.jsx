@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue } from "framer-motion";
 import { Building2, Crown, Home, Network, ShieldCheck, Sparkles, Wand2, X } from "lucide-react";
 import { DEFAULT_MUSEUM_SLUG } from "@/lib/domain-registry";
 
@@ -37,9 +37,41 @@ const DESTINATIONS = [
   },
 ];
 
+const HOLD_TO_DRAG_MS = 1500;
+
 export default function InternalRapidPortalGateway() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [dragEnabled, setDragEnabled] = useState(false);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const holdTimerRef = useRef(null);
+  const draggedRef = useRef(false);
+
+  const clearHoldTimer = () => {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+  };
+
+  const handlePointerDown = () => {
+    draggedRef.current = false;
+    clearHoldTimer();
+    holdTimerRef.current = setTimeout(() => setDragEnabled(true), HOLD_TO_DRAG_MS);
+  };
+
+  const handlePointerUpOrLeave = () => {
+    clearHoldTimer();
+  };
+
+  const handleClick = () => {
+    if (draggedRef.current || dragEnabled) {
+      draggedRef.current = false;
+      return;
+    }
+    setOpen(true);
+  };
 
   const resetAndClose = () => {
     setOpen(false);
@@ -52,18 +84,32 @@ export default function InternalRapidPortalGateway() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="fixed left-3 top-3 z-[70] inline-flex items-center gap-2 rounded-full border border-primary/35 bg-background/35 px-3.5 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-primary shadow-2xl shadow-black/30 backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-primary/70 hover:bg-primary/15 hover:text-primary sm:left-5 sm:top-5"
-        aria-label="Open internal rapid portal gateway"
+      <motion.div
+        className="fixed left-3 top-3 z-[70] sm:left-5 sm:top-5"
+        style={{ x, y, touchAction: dragEnabled ? "none" : "auto" }}
+        drag={dragEnabled}
+        dragMomentum={false}
+        dragElastic={0}
+        onDragStart={() => { draggedRef.current = true; }}
+        onDragEnd={() => setDragEnabled(false)}
       >
-        <span className="relative flex h-5 w-5 items-center justify-center rounded-full bg-primary/15">
-          <span className="absolute inset-0 rounded-full bg-primary/30 animate-ping" />
-          <ShieldCheck className="relative h-3.5 w-3.5" />
-        </span>
-        Portal
-      </button>
+        <button
+          type="button"
+          onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUpOrLeave}
+          onPointerLeave={handlePointerUpOrLeave}
+          onPointerCancel={handlePointerUpOrLeave}
+          onClick={handleClick}
+          className={`inline-flex items-center gap-2 rounded-full border border-primary/35 bg-background/35 px-3.5 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-primary shadow-2xl shadow-black/30 backdrop-blur-xl transition duration-300 ${dragEnabled ? "scale-105 cursor-grabbing border-primary/70 bg-primary/15" : "cursor-pointer hover:-translate-y-0.5 hover:border-primary/70 hover:bg-primary/15 hover:text-primary"}`}
+          aria-label="Open internal rapid portal gateway. Press and hold to move it."
+        >
+          <span className="relative flex h-5 w-5 items-center justify-center rounded-full bg-primary/15">
+            <span className="absolute inset-0 rounded-full bg-primary/30 animate-ping" />
+            <ShieldCheck className="relative h-3.5 w-3.5" />
+          </span>
+          Portal
+        </button>
+      </motion.div>
 
       <AnimatePresence>
         {open && (
