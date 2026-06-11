@@ -99,6 +99,7 @@ import { DEFAULT_MUSEUM_SLUG, museumPath } from '@/lib/domain-registry';
 import { startSentinelRuntimeCapture } from '@/lib/qa-sentinel/browser-events';
 import PublicImmersiveLayer from './components/public/PublicImmersiveLayer';
 import InternalRapidPortalGateway from './components/internal/InternalRapidPortalGateway';
+import MasterHamburgerNav from './components/navigation/MasterHamburgerNav';
 
 const AuthenticatedApp = () => {
   const { authError, navigateToLogin } = useAuth();
@@ -134,6 +135,7 @@ const AuthenticatedApp = () => {
     <AnimatedPageShell key={location.pathname}>
       <PublicImmersiveLayer>
         <InternalRapidPortalGateway />
+        <MasterHamburgerNav />
         <div className="min-h-screen pt-16 sm:pt-20">
       <Routes>
       <Route path="/" element={<PlatformHome />} />
