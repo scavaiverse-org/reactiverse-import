@@ -130,7 +130,7 @@ export async function extractZipInventory(file) {
     isDirectory: entry.dir,
   }));
 
-  const { ok, errors, accepted, rejected } = validateZipEntries(entries, { zipBytes: file.size || 0 });
+  const { ok, errors, accepted, rejected } = validateZipEntries(entries);
 
   if (!ok) {
     return { ok: false, batchId, errors, inventory: [], rejected: rejected.map((r) => ({ original_filename: r.entry.path, reason: r.reason })) };

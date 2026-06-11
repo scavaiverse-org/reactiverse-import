@@ -5,8 +5,6 @@
 export const ZIP_IMPORT_MODES = ["expert", "easy", "very_easy"];
 export const DEFAULT_ZIP_IMPORT_MODE = "very_easy";
 
-export const MAX_ZIP_BYTES = 250 * 1024 * 1024; // 250MB total ZIP size
-export const MAX_EXTRACTED_BYTES = 750 * 1024 * 1024; // 750MB total extracted
 export const MAX_FILE_COUNT = 500;
 export const MAX_FOLDER_DEPTH = 12;
 export const MAX_FILENAME_LENGTH = 180;
