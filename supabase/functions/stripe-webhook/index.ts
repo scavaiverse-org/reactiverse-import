@@ -40,8 +40,10 @@ Deno.serve(async (req) => {
       const ticketId = session.metadata?.ticket_id || session.client_reference_id;
       if (ticketId && session.payment_status === 'paid') {
         const service = getServiceRoleClient();
+        // tickets_status_check allows pending/confirmed/used/expired/refunded —
+        // 'confirmed' is the unlock status used by the tour gate + Confirmation page.
         const { error } = await service.from('tickets').update({
-          status: 'paid',
+          status: 'confirmed',
           confirmation_stage: 'payment_confirmed',
           updated_at: new Date().toISOString(),
         }).eq('id', ticketId);
