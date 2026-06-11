@@ -119,7 +119,7 @@ describe("buildHeuristicMuseumPlan", () => {
 
   it("does not fabricate facts: missing media is flagged, not invented", () => {
     const inventory = [imageAsset({ media_url: "" })];
-    const plan = buildHeuristicMuseumPlan({ inventory, mode: "very_easy", tenant, includedWalkthroughKeys: ["walkthrough1"] });
+    const plan = buildHeuristicMuseumPlan({ inventory, mode: "very_easy", tenant });
     const room = plan.walkthroughs[0].rooms[0];
     expect(room.media_url).toBe("");
     expect(room.visibility).toBe("draft");
@@ -128,7 +128,7 @@ describe("buildHeuristicMuseumPlan", () => {
 
   it("very_easy mode produces the minimum complete draft", () => {
     const inventory = [imageAsset(), textAsset()];
-    const plan = buildHeuristicMuseumPlan({ inventory, mode: "very_easy", tenant, includedWalkthroughKeys: ["walkthrough1"] });
+    const plan = buildHeuristicMuseumPlan({ inventory, mode: "very_easy", tenant });
     const room = plan.walkthroughs[0].rooms[0];
     expect(room.title).toBeTruthy();
     expect(room.media_url).toBeTruthy();
@@ -138,8 +138,8 @@ describe("buildHeuristicMuseumPlan", () => {
 
   it("easy mode adds more structure than very_easy", () => {
     const inventory = [imageAsset(), textAsset()];
-    const easy = buildHeuristicMuseumPlan({ inventory, mode: "easy", tenant, includedWalkthroughKeys: ["walkthrough1"] }).walkthroughs[0].rooms[0];
-    const veryEasy = buildHeuristicMuseumPlan({ inventory, mode: "very_easy", tenant, includedWalkthroughKeys: ["walkthrough1"] }).walkthroughs[0].rooms[0];
+    const easy = buildHeuristicMuseumPlan({ inventory, mode: "easy", tenant }).walkthroughs[0].rooms[0];
+    const veryEasy = buildHeuristicMuseumPlan({ inventory, mode: "very_easy", tenant }).walkthroughs[0].rooms[0];
 
     expect(easy).toHaveProperty("hotspots");
     expect(easy).toHaveProperty("ctas");
@@ -149,8 +149,8 @@ describe("buildHeuristicMuseumPlan", () => {
 
   it("expert mode produces richer room fields than easy mode", () => {
     const inventory = [imageAsset(), textAsset()];
-    const expert = buildHeuristicMuseumPlan({ inventory, mode: "expert", tenant, includedWalkthroughKeys: ["walkthrough1"] }).walkthroughs[0].rooms[0];
-    const easy = buildHeuristicMuseumPlan({ inventory, mode: "easy", tenant, includedWalkthroughKeys: ["walkthrough1"] }).walkthroughs[0].rooms[0];
+    const expert = buildHeuristicMuseumPlan({ inventory, mode: "expert", tenant }).walkthroughs[0].rooms[0];
+    const easy = buildHeuristicMuseumPlan({ inventory, mode: "easy", tenant }).walkthroughs[0].rooms[0];
 
     expect(expert).toHaveProperty("accessibility");
     expect(expert).toHaveProperty("suggested_learning_outcome");
@@ -161,7 +161,7 @@ describe("buildHeuristicMuseumPlan", () => {
 
   it("marks unknown facts as unknown instead of inventing them when no related text exists", () => {
     const inventory = [imageAsset()];
-    const plan = buildHeuristicMuseumPlan({ inventory, mode: "expert", tenant, includedWalkthroughKeys: ["walkthrough1"] });
+    const plan = buildHeuristicMuseumPlan({ inventory, mode: "expert", tenant });
     const room = plan.walkthroughs[0].rooms[0];
     expect(room.accessibility.long_description).toMatch(/unknown/i);
     expect(room.suggested_learning_outcome).toMatch(/unknown/i);
@@ -169,9 +169,43 @@ describe("buildHeuristicMuseumPlan", () => {
 
   it("marks museum title/description unknown when the tenant has none, never fabricating one", () => {
     const inventory = [imageAsset()];
-    const plan = buildHeuristicMuseumPlan({ inventory, mode: "very_easy", tenant: { id: "tenant-2" }, includedWalkthroughKeys: ["walkthrough1"] });
+    const plan = buildHeuristicMuseumPlan({ inventory, mode: "very_easy", tenant: { id: "tenant-2" } });
     expect(plan.museum_title).toMatch(/unknown/i);
     expect(plan.museum_description).toMatch(/unknown/i);
+  });
+
+  it("derives one walkthrough per top-level folder, mapping explicit walkthroughN folders to that slot", () => {
+    const inventory = [
+      imageAsset({ id: "a1", original_filename: "intro/room-a.jpg" }),
+      imageAsset({ id: "a2", original_filename: "walkthrough3/room-b.jpg", suggested_walkthrough_key: "walkthrough3" }),
+    ];
+    const plan = buildHeuristicMuseumPlan({ inventory, mode: "very_easy", tenant });
+    const keys = plan.walkthroughs.map((w) => w.walkthrough_key);
+    expect(keys).toContain("walkthrough3");
+    // "intro" is not an explicit walkthroughN folder, so it fills the next available slot (walkthrough1).
+    expect(keys).toContain("walkthrough1");
+    expect(plan.walkthroughs.find((w) => w.walkthrough_key === "walkthrough3").source_folder).toBe("walkthrough3");
+    expect(plan.walkthroughs.find((w) => w.walkthrough_key === "walkthrough1").source_folder).toBe("intro");
+  });
+
+  it("orders rooms within a walkthrough deterministically by natural filename order, regardless of input order", () => {
+    const inventory = [
+      imageAsset({ id: "a10", original_filename: "tour/room-10.jpg" }),
+      imageAsset({ id: "a2", original_filename: "tour/room-2.jpg" }),
+      imageAsset({ id: "a1", original_filename: "tour/room-1.jpg" }),
+    ];
+    const plan = buildHeuristicMuseumPlan({ inventory, mode: "very_easy", tenant });
+    const tour = plan.walkthroughs.find((w) => w.source_folder === "tour");
+    expect(tour.rooms.map((r) => r.source_asset_ids[0])).toEqual(["a1", "a2", "a10"]);
+  });
+
+  it("caps imports at 5 walkthroughs and warns about dropped folders", () => {
+    const inventory = Array.from({ length: 6 }, (_, i) =>
+      imageAsset({ id: `a${i}`, original_filename: `folder-${i}/room.jpg`, suggested_walkthrough_key: null })
+    );
+    const plan = buildHeuristicMuseumPlan({ inventory, mode: "very_easy", tenant });
+    expect(plan.walkthroughs).toHaveLength(5);
+    expect(plan.warnings.some((w) => w.includes("maximum of 5 walkthroughs"))).toBe(true);
   });
 });
 
@@ -191,7 +225,6 @@ describe("buildZipImportDraftPayload", () => {
     }],
     mode: "very_easy",
     tenant,
-    includedWalkthroughKeys: ["walkthrough1"],
   });
 
   it("produces a draft-only payload with required ZIP-import metadata", () => {

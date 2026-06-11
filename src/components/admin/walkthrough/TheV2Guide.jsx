@@ -95,7 +95,8 @@ const SECTIONS = [
     icon: FileArchive,
     title: "AI ZIP Import",
     body: [
-      "Import Museum ZIP is a planning assistant — it turns an uploaded folder of images, video, audio, and documents into a proposed draft. It creates drafts only and never publishes anything.",
+      "Import Museum ZIP is a planning assistant — it turns an uploaded folder of images, video, audio, and documents into proposed drafts. It creates drafts only and never publishes anything.",
+      "It is dynamic and multi-walkthrough aware: each top-level folder in the ZIP becomes one walkthrough (up to 5), and the rooms within each walkthrough follow the natural file-name order of that folder — deterministically, every time. A folder literally named walkthrough1..walkthrough5 (or wt1, w2, etc.) claims that exact slot; other folders fill the remaining slots in alphabetical/numeric order.",
       "It does not change the public museum. Publish Museum is still the only action that updates what visitors see.",
       "Expert Mode creates the richest museum plan (curatorial framing, accessibility text, suggested CTAs and learning outcomes). Easy Mode creates a simpler guided plan with narration and basic structure. Very Easy Mode fills in just the basics — title, description, media, and simple narration — for beginners.",
       "Always review AI-generated rooms before publishing: check media assignment, fix anything marked 'needs media', and verify any factual claims (dates, names, provenance) yourself — the AI marks unknowns instead of inventing facts, but it can still misread a filename or document.",

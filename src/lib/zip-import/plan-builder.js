@@ -28,6 +28,46 @@ function isTextAsset(asset) {
 }
 
 /**
+ * The first path segment of a ZIP entry, or "" for files at the ZIP root.
+ */
+function topLevelFolder(path = "") {
+  const segments = path.split("/");
+  return segments.length > 1 ? segments[0] : "";
+}
+
+/**
+ * Compare two strings the way a human would order filenames: numeric runs
+ * compare by value ("room-2" before "room-10"), everything else compares
+ * lexically. This is what makes folder/room ordering deterministic and
+ * stable regardless of ZIP iteration order.
+ */
+function naturalCompare(a = "", b = "") {
+  const ax = String(a).match(/\d+|\D+/g) || [];
+  const bx = String(b).match(/\d+|\D+/g) || [];
+  const len = Math.max(ax.length, bx.length);
+  for (let i = 0; i < len; i += 1) {
+    const av = ax[i] ?? "";
+    const bv = bx[i] ?? "";
+    if (av === bv) continue;
+    const an = /^\d+$/.test(av);
+    const bn = /^\d+$/.test(bv);
+    if (an && bn) return Number(av) - Number(bv);
+    return av < bv ? -1 : 1;
+  }
+  return 0;
+}
+
+/**
+ * If a folder name is explicitly an existing walkthrough slot
+ * ("walkthrough2", "wt2", "w2"), return that slot key. Otherwise null.
+ */
+function explicitWalkthroughKey(folder = "") {
+  const normalized = folder.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const match = normalized.match(/^(?:walkthrough|wt|w)([1-5])$/);
+  return match ? `walkthrough${match[1]}` : null;
+}
+
+/**
  * Find a text asset that appears to describe the same subject as a visual
  * asset — same base filename or same folder. Returns null if nothing matches;
  * the caller must not invent narration when this is null.
@@ -113,28 +153,69 @@ function buildRoomFromAsset(asset, { mode, relatedText, relatedAudio, order }) {
  * inventory. Never invents titles, dates, names, or facts that aren't present
  * in the uploaded files — missing information is marked unknown/needs-media.
  *
- * @param {{ inventory: object[], mode: "expert"|"easy"|"very_easy", tenant?: object, includedWalkthroughKeys?: string[] }} input
+ * The plan can span multiple walkthroughs: every top-level folder in the ZIP
+ * that contains image/video assets becomes one walkthrough's set of rooms,
+ * ordered (the "chapters") by the natural order of the file paths within that
+ * folder. Folder → walkthrough slot assignment is deterministic:
+ *  1. Folders explicitly named "walkthroughN" / "wtN" / "wN" claim that slot.
+ *  2. Remaining folders fill the remaining slots in natural sort order.
+ *  3. At most WALKTHROUGHS.length folders are imported; extras are dropped
+ *     with a warning rather than silently merged into another walkthrough.
+ *
+ * @param {{ inventory: object[], mode: "expert"|"easy"|"very_easy", tenant?: object }} input
  */
-export function buildHeuristicMuseumPlan({ inventory = [], mode = "very_easy", tenant = null, includedWalkthroughKeys = [] }) {
+export function buildHeuristicMuseumPlan({ inventory = [], mode = "very_easy", tenant = null }) {
   const safeMode = ZIP_IMPORT_MODES.includes(mode) ? mode : "very_easy";
   const visualAssets = inventory.filter(isVisualAsset);
   const textAssets = inventory.filter(isTextAsset);
   const audioAssets = inventory.filter(isAudioAsset);
 
-  const defaultKey = includedWalkthroughKeys[0] || "walkthrough1";
-  const groups = new Map();
+  const planWarnings = [];
+  const usedAssetIds = new Set();
+
+  // Group visual assets by their top-level folder ("" = files at the ZIP root).
+  const folderGroups = new Map();
   visualAssets.forEach((asset) => {
-    const key = WALKTHROUGHS.includes(asset.suggested_walkthrough_key) ? asset.suggested_walkthrough_key : defaultKey;
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(asset);
+    const folder = topLevelFolder(asset.original_filename);
+    if (!folderGroups.has(folder)) folderGroups.set(folder, []);
+    folderGroups.get(folder).push(asset);
   });
 
-  const usedAssetIds = new Set();
-  const planWarnings = [];
+  // Assign each folder to a walkthrough slot, deterministically.
+  const folderToKey = new Map();
+  const claimedKeys = new Set();
+  const folders = [...folderGroups.keys()];
 
-  const orderedKeys = WALKTHROUGHS.filter((key) => groups.has(key));
-  const walkthroughs = orderedKeys.map((key) => {
-    const assets = [...groups.get(key)].sort((a, b) => a.suggested_room_order - b.suggested_room_order);
+  folders.forEach((folder) => {
+    const explicitKey = explicitWalkthroughKey(folder);
+    if (explicitKey && !claimedKeys.has(explicitKey)) {
+      folderToKey.set(folder, explicitKey);
+      claimedKeys.add(explicitKey);
+    }
+  });
+
+  const remainingFolders = folders.filter((folder) => !folderToKey.has(folder)).sort(naturalCompare);
+  const availableKeys = WALKTHROUGHS.filter((key) => !claimedKeys.has(key));
+  const droppedFolders = [];
+
+  remainingFolders.forEach((folder, index) => {
+    if (index < availableKeys.length) {
+      folderToKey.set(folder, availableKeys[index]);
+      claimedKeys.add(availableKeys[index]);
+    } else {
+      droppedFolders.push(folder);
+    }
+  });
+
+  if (droppedFolders.length > 0) {
+    planWarnings.push(`A museum supports a maximum of ${WALKTHROUGHS.length} walkthroughs — content from folder(s) ${droppedFolders.map((f) => f || "(ZIP root)").join(", ")} was not imported.`);
+  }
+
+  const walkthroughs = WALKTHROUGHS.map((key) => {
+    const folder = [...folderToKey.entries()].find(([, mappedKey]) => mappedKey === key)?.[0];
+    if (folder === undefined) return null;
+
+    const assets = [...folderGroups.get(folder)].sort((a, b) => naturalCompare(a.original_filename, b.original_filename));
     const rooms = assets.map((asset, index) => {
       const relatedText = findRelatedTextAsset(asset, textAssets);
       const relatedAudio = findRelatedAudioAsset(asset, audioAssets);
@@ -145,14 +226,16 @@ export function buildHeuristicMuseumPlan({ inventory = [], mode = "very_easy", t
     });
 
     if (rooms.length === 0) planWarnings.push(`${walkthroughLabel(key)}: no media assets were found for this walkthrough.`);
+    planWarnings.push(`${walkthroughLabel(key)}: built from ZIP folder "${folder || "(ZIP root)"}", ${rooms.length} room(s) ordered by file name.`);
 
     return {
       walkthrough_key: key,
       title: `${walkthroughLabel(key)} — Imported Draft`,
       description: rooms.length ? UNKNOWN : "No content was found in the ZIP for this walkthrough.",
+      source_folder: folder,
       rooms,
     };
-  });
+  }).filter(Boolean);
 
   if (walkthroughs.length === 0) {
     planWarnings.push("No images or videos were found in the ZIP — at least one visual asset is required to draft a room.");
@@ -178,12 +261,11 @@ export function buildHeuristicMuseumPlan({ inventory = [], mode = "very_easy", t
  * buildHeuristicMuseumPlan in that case. The AI is instructed (server-side)
  * to never fabricate facts and to mark unknowns explicitly.
  */
-export async function requestAiMuseumPlan({ inventory, mode, tenant, includedWalkthroughKeys }) {
+export async function requestAiMuseumPlan({ inventory, mode, tenant }) {
   try {
     const result = await base44.functions.invoke("generate-museum-plan", {
       mode,
       tenant: { name: tenant?.name || "", description: tenant?.description || "", region: tenant?.region || "" },
-      included_walkthrough_keys: includedWalkthroughKeys,
       asset_inventory: inventory.map((asset) => ({
         id: asset.id,
         original_filename: asset.original_filename,

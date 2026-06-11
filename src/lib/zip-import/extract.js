@@ -111,6 +111,7 @@ async function buildAcceptedAsset(zip, entry, index) {
  * content; only reads bytes for validated, allow-listed file types.
  *
  * @param {File} file
+ * @param {{ onProgress?: (progress: { completed: number, total: number, file: string }) => void }} [options]
  * @returns {Promise<{
  *   ok: boolean,
  *   batchId: string,
@@ -119,7 +120,7 @@ async function buildAcceptedAsset(zip, entry, index) {
  *   rejected: { original_filename: string, reason: string }[],
  * }>}
  */
-export async function extractZipInventory(file) {
+export async function extractZipInventory(file, { onProgress } = {}) {
   const batchId = crypto.randomUUID();
   const buffer = typeof file.arrayBuffer === "function" ? await file.arrayBuffer() : file;
   const zip = await JSZip.loadAsync(buffer);
@@ -137,11 +138,13 @@ export async function extractZipInventory(file) {
   }
 
   const inventory = [];
+  const total = accepted.length;
   for (let index = 0; index < accepted.length; index += 1) {
     // Sequential to keep upload concurrency bounded and ordering deterministic.
     const asset = await buildAcceptedAsset(zip, accepted[index], index);
     asset.zip_import_batch_id = batchId;
     inventory.push(asset);
+    onProgress?.({ completed: index + 1, total, file: asset.original_filename });
   }
 
   return {
