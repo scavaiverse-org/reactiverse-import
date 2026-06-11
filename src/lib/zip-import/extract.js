@@ -2,7 +2,7 @@ import JSZip from "jszip";
 import { uploadFile } from "@/lib/upload";
 import { WALKTHROUGHS } from "@/lib/walkthrough-admin";
 import { validateZipEntries } from "@/lib/zip-import/validate";
-import { TEXT_EXTRACTABLE_EXTENSIONS, detectAssetKind, fileExtension } from "@/lib/zip-import/constants";
+import { TEXT_EXTRACTABLE_EXTENSIONS, detectAssetKind, fileExtension, mimeTypeForExtension } from "@/lib/zip-import/constants";
 
 const MAX_EXTRACTED_TEXT_CHARS = 4000;
 
@@ -66,7 +66,8 @@ async function buildAcceptedAsset(zip, entry, index) {
   if (kind === "image" || kind === "video" || kind === "audio") {
     try {
       const blob = await zipObject.async("blob");
-      const file = new File([blob], path.split("/").pop(), { type: blob.type || "" });
+      const mimeType = blob.type || mimeTypeForExtension(ext) || "application/octet-stream";
+      const file = new File([blob], path.split("/").pop(), { type: mimeType });
       const { file_url } = await uploadFile(file);
       asset.media_url = file_url;
       asset.storage_path = file_url;

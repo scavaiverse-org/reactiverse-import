@@ -24,6 +24,16 @@ export default function ModuleCommerce() {
   const selected = tenants.find(t => t.id === activeTenant) || tenants[0];
   const { data: vendors = [] } = useQuery({ queryKey: ["mc-vendors", selected?.id], queryFn: () => selected ? base44.entities.Vendor.filter({ tenant_id: selected.id }) : base44.entities.Vendor.list(), enabled: !!selected });
   const { data: tickets = [] } = useQuery({ queryKey: ["mc-tickets", selected?.id], queryFn: () => selected ? base44.entities.Ticket.filter({ tenant_id: selected.id }) : base44.entities.Ticket.list(), enabled: !!selected });
+  const { data: ticketTypes = [] } = useQuery({
+    queryKey: ["mc-ticket-types"],
+    queryFn: () => base44.entities.TicketType.list(),
+  });
+  const tenantNameById = new Map(tenants.map(t => [t.id, t.name]));
+  const sortedTicketTypes = [...ticketTypes].sort((a, b) => {
+    const tenantCmp = (a.tenant_id || "").localeCompare(b.tenant_id || "");
+    if (tenantCmp !== 0) return tenantCmp;
+    return (a.ticket_name || "").localeCompare(b.ticket_name || "");
+  });
 
   const totalRevenue = PRODUCT_CATEGORIES.reduce((s, c) => s + c.revenue, 0);
   const totalProducts = PRODUCT_CATEGORIES.reduce((s, c) => s + c.count, 0);
@@ -105,6 +115,44 @@ export default function ModuleCommerce() {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Ticket Types — Manual Review */}
+      <div className="bg-white/[0.03] border border-amber-400/15 rounded-xl p-5 mb-6">
+        <p className="text-xs font-semibold text-foreground mb-1 flex items-center gap-2">
+          <Tag className="w-3.5 h-3.5 text-amber-400" />Ticket Types — Manual Review
+        </p>
+        <p className="text-[10px] text-muted-foreground mb-4">
+          All ticket types across every tenant. Confirm each remaining type is a real, sellable offering before connecting Stripe.
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground border-b border-white/8">
+                <th className="py-2 pr-4">Tenant</th>
+                <th className="py-2 pr-4">Ticket Name</th>
+                <th className="py-2 pr-4">Type</th>
+                <th className="py-2 pr-4">Price</th>
+                <th className="py-2 pr-4">Status</th>
+                <th className="py-2 pr-4">Seed Key</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedTicketTypes.length === 0 ? (
+                <tr><td colSpan={6} className="py-4 text-center text-muted-foreground">No ticket types found</td></tr>
+              ) : sortedTicketTypes.map((tt) => (
+                <tr key={tt.id} className="border-b border-white/5">
+                  <td className="py-2 pr-4 text-foreground">{tenantNameById.get(tt.tenant_id) || tt.tenant_id || "—"}</td>
+                  <td className="py-2 pr-4 text-foreground">{tt.ticket_name}</td>
+                  <td className="py-2 pr-4 text-muted-foreground capitalize">{(tt.ticket_type || "—").replace(/_/g, " ")}</td>
+                  <td className="py-2 pr-4 font-mono text-emerald-400">{tt.currency || "SGD"} {tt.price ?? "—"}</td>
+                  <td className="py-2 pr-4"><StatusBadge status={tt.status || "unknown"} /></td>
+                  <td className="py-2 pr-4 font-mono text-muted-foreground">{tt.seed_key || "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 

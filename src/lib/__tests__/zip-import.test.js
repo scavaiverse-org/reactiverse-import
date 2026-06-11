@@ -81,6 +81,10 @@ describe("extractZipInventory", () => {
     expect(image.media_url).toBe("https://media.test/room-a.jpg");
     expect(image.suggested_walkthrough_key).toBe("walkthrough1");
     expect(image.zip_import_batch_id).toBe(result.batchId);
+    // JSZip blobs come back with an empty type — extract.js must fall back to
+    // a MIME type derived from the file extension so uploads aren't sent as
+    // application/octet-stream (which the storage bucket rejects).
+    expect(image.mime_type).toBe("image/jpeg");
 
     const doc = result.inventory.find((a) => a.detected_type === "document");
     expect(doc.extracted_text).toContain("The Grand Hall");

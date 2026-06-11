@@ -55,3 +55,29 @@ export function detectAssetKind(extension = "") {
 }
 
 export const TEXT_EXTRACTABLE_EXTENSIONS = ["txt", "md", "json", "csv"];
+
+// JSZip does not infer MIME types from file extensions — extracted blobs come
+// back with an empty `type`. Without this map, that empty type falls through
+// to the `application/octet-stream` upload fallback, which the Supabase
+// `public-media` storage bucket rejects (allowed_mime_types does not include
+// octet-stream), so every image/video/audio asset from a ZIP fails to upload.
+export const MIME_TYPES_BY_EXTENSION = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  gif: "image/gif",
+  svg: "image/svg+xml",
+  mp4: "video/mp4",
+  mov: "video/quicktime",
+  webm: "video/webm",
+  mp3: "audio/mpeg",
+  wav: "audio/wav",
+  m4a: "audio/mp4",
+  ogg: "audio/ogg",
+  pdf: "application/pdf",
+};
+
+export function mimeTypeForExtension(extension = "") {
+  return MIME_TYPES_BY_EXTENSION[String(extension || "").toLowerCase()] || "";
+}
