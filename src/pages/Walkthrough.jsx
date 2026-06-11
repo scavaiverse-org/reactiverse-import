@@ -13,6 +13,7 @@ import { ensureMediaTypes, getPublicMediaSlots } from "@/lib/walkthrough-media-b
 import { resolveNextRoomIndex } from "@/lib/walkthrough-routing";
 import { trackWalkthroughEvent } from "@/lib/walkthrough-analytics";
 import { fetchPublishedManifest, getWalkthroughByIndex } from "@/lib/manifest-public";
+import { useTourAccess } from "@/lib/ticket-access";
 import SceneAudio from "@/components/walkthrough/SceneAudio";
 import WalkthroughMediaLayer from "@/components/walkthrough/WalkthroughMediaLayer";
 import ResolvedMedia from "@/components/walkthrough/ResolvedMedia";
@@ -87,6 +88,8 @@ export default function Walkthrough() {
     initialData: null,
   });
 
+  const { hasAccess, checking: checkingAccess } = useTourAccess(tenant);
+
   const walkthrough = getWalkthroughByIndex(manifest, walkthroughIndex);
   const rooms = useMemo(() => (walkthrough?.rooms || []).map((room) => ensureMediaTypes(room)), [walkthrough]);
   const room = rooms[Math.min(currentRoomIndex, rooms.length - 1)] || rooms[0];
@@ -126,6 +129,28 @@ export default function Walkthrough() {
   const handleHotspotOpen = (hotspot) => { setActiveHotspot(hotspot); track("walkthrough_hotspot_opened", { hotspot_id: hotspot.id, label: hotspot.label || hotspot.title }); };
   const handleArtifactOpen = (artifact) => { setActiveArtifact(artifact); track("walkthrough_artifact_opened", { artifact_id: artifact.id, title: artifact.title }); };
   const complete = () => { track("walkthrough_completed"); navigate(museumPath(tenantSlug, "completion")); };
+
+  if (checkingAccess) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-4 text-center text-muted-foreground">
+        <p className="text-lg font-medium text-foreground">Checking your ticket…</p>
+      </div>
+    );
+  }
+
+  if (!hasAccess) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-4 text-center text-muted-foreground">
+        <p className="text-lg font-medium text-foreground">A ticket is required to enter this tour.</p>
+        <p className="max-w-md text-sm leading-6">Tour access unlocks once your ticket is paid or confirmed. Reserve a ticket to get started, or check your reservation status on the confirmation page.</p>
+        <div className="flex flex-wrap justify-center gap-3">
+          <Button onClick={() => navigate(museumPath(tenantSlug, "tickets"))}>Get Tickets</Button>
+          <Button variant="outline" onClick={() => navigate(museumPath(tenantSlug, "tickets-5"))}>Check Reservation</Button>
+          <Button variant="outline" onClick={() => navigate(museumPath(tenantSlug, "home"))}>Back to Museum Home</Button>
+        </div>
+      </div>
+    );
+  }
 
   if (!manifest || !walkthrough || !room) {
     return (
