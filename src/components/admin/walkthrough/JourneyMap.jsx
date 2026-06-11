@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { PAGE_TYPES } from "@/lib/walkthrough-room-types";
 import { findBrokenRoutes, getWalkthroughWarnings } from "@/lib/walkthrough-validation";
 import { getRoomConnections } from "@/lib/walkthrough-routing";
+import HelpHint from "./HelpHint";
 
 export default function JourneyMap({ rooms, activeIndex, onSelect, onAdd, onDuplicate, onDelete, onMove, errorRoomKeys, hasGlobalIssue }) {
   const connections = getRoomConnections(rooms);
@@ -21,7 +22,7 @@ export default function JourneyMap({ rooms, activeIndex, onSelect, onAdd, onDupl
     <section className="rounded-3xl border border-white/10 bg-white/[0.035] p-4 shadow-2xl shadow-black/10">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h2 className="flex items-center gap-2 font-display text-xl font-bold"><GitBranch className="h-5 w-5 text-primary" /> Journey Map</h2>
+          <h2 className="flex items-center gap-2 font-display text-xl font-bold"><GitBranch className="h-5 w-5 text-primary" /> Journey Map <HelpHint title="Journey Map">The full sequence of rooms in this walkthrough. Click a room to edit it, use the arrows to reorder, copy to duplicate, and the trash icon to delete. "Required" rooms must be completed for the experience to be publish-ready; "Optional" rooms can be skipped or branched around.</HelpHint></h2>
           <p className="text-xs text-muted-foreground">Room states, branches, route health, and sequence.</p>
         </div>
         <Button type="button" size="sm" onClick={guard(onAdd)} className={hasGlobalIssue ? "animate-error-glow ring-1 ring-destructive" : ""}><Plus className="h-4 w-4" /> Add</Button>

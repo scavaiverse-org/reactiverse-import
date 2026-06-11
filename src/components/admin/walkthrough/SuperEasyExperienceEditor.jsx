@@ -6,6 +6,7 @@ import { deterministicAnalyzeMedia, mediaAnalysisToCanonicalRoom } from "@/lib/e
 import { evaluateExperienceReadiness, evaluateRoomReadiness } from "@/lib/walkthrough-readiness";
 import { analyzeRoomMedia } from "@/lib/walkthrough-media-validation";
 import ScrollableImageControls from "./ScrollableImageControls";
+import HelpHint from "./HelpHint";
 
 
 const acceptTypes = "image/*,video/*,audio/*,.glb,.gltf,.usdz,.png,.jpg,.jpeg,.mp4,.webm";
@@ -84,7 +85,7 @@ export default function SuperEasyExperienceEditor({ rooms = [], activeRoom = 0, 
       <div className="rounded-[2rem] border border-primary/20 bg-gradient-to-br from-primary/15 via-white/[0.045] to-cyan-400/10 p-5 md:p-8">
         <div className="grid gap-6 lg:grid-cols-[1fr_320px] lg:items-center">
           <div>
-            <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs text-primary"><Wand2 className="h-4 w-4" /> Very Easy Museum Builder</p>
+            <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs text-primary"><Wand2 className="h-4 w-4" /> Very Easy Museum Builder <HelpHint title="Very Easy Museum Builder">Upload media for each room, or click "Auto Fill Whole Museum" to generate a complete starter museum with rooms, story, and accessibility text. When the rooms below show "Ready", you can publish straight away.</HelpHint></p>
             <h2 className="font-display text-4xl font-bold md:text-5xl">Auto-fill the whole museum. Review only if you want. Then publish.</h2>
             <p className="mt-3 max-w-2xl text-sm text-muted-foreground">One button fills the full museum with rooms, media, story, alt text, onboarding, and ending. You can publish immediately.</p>
           </div>

@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MUSEUM_PRESETS } from "@/lib/museumPresets";
 import { populateMuseumPreset } from "@/lib/museum-preset-autofill";
+import HelpHint from "./HelpHint";
 
 export default function MuseumPresetAutofill({ tenant, museumId, walkthroughKey, rooms, onPopulate }) {
   const queryClient = useQueryClient();
@@ -108,7 +109,7 @@ export default function MuseumPresetAutofill({ tenant, museumId, walkthroughKey,
     <section className="rounded-3xl border border-primary/20 bg-primary/[0.055] p-4 shadow-2xl shadow-black/10">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="flex items-center gap-2 font-display text-xl font-bold"><Wand2 className="h-5 w-5 text-primary" /> Museum Preset Autofill</h2>
+          <h2 className="flex items-center gap-2 font-display text-xl font-bold"><Wand2 className="h-5 w-5 text-primary" /> Museum Preset Autofill <HelpHint title="Museum Preset Autofill">Pick a ready-made museum preset and populate the entire walkthrough — rooms, media, and narrative — in one go. You can save your customized version as a reusable preset, or load/duplicate/publish presets you've saved before.</HelpHint></h2>
           <p className="text-xs text-muted-foreground">Deterministically populate a complete draft walkthrough from one museum preset.</p>
         </div>
         <div className="flex flex-wrap gap-2">

@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Save } from "lucide-react";
+import { AlertTriangle, ChevronDown, Save } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import HelpHint from "@/components/admin/walkthrough/HelpHint";
 import { useActiveTenant } from "@/hooks/useActiveTenant";
 import WalkthroughFilters from "@/components/admin/walkthrough/WalkthroughFilters";
 import WalkthroughRoomEditor from "@/components/admin/walkthrough/WalkthroughRoomEditor";
@@ -176,12 +179,26 @@ export default function TenantWalkthrough() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-primary">Tenant Admin</p>
-          <h1 className="mt-2 font-display text-3xl font-bold">AOM Immersive Experience Builder</h1>
+          <h1 className="mt-2 flex items-center gap-2 font-display text-3xl font-bold">
+            AOM Immersive Experience Builder
+            <HelpHint title="Experience Builder">
+              This page builds the immersive walkthrough visitors see for {walkthroughLabel(walkthroughKey)}.
+              Pick a mode below: <strong>Very Easy</strong> auto-fills and publishes a whole museum in one click,
+              <strong> Easy</strong> gives guided preset tools alongside the room editor, and
+              <strong> Expert</strong> exposes every field for full control. "Save Draft" stores your work
+              without publishing; "Publish" makes it live to visitors once validation passes.
+            </HelpHint>
+          </h1>
           <p className="mt-2 max-w-3xl text-sm text-muted-foreground">One canonical operating system for journey maps, room states, cinematic preview, pacing intelligence, validation, migration, and tenant-safe publishing.</p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline">{status}</Badge>
           <Badge className="bg-primary/10 text-primary">Publish safety {qualityScores.publish_safety || 0}</Badge>
+          <HelpHint title="Status and publish safety">
+            <strong>Status</strong> reflects whether this walkthrough is a draft or published.
+            <strong> Publish safety</strong> is a 0-100 score combining validation errors, warnings, and content
+            completeness across all rooms — aim for a high score before publishing.
+          </HelpHint>
           <AdminPanelTabGuidesDownload />
           <Button variant="outline" onClick={() => saveMutation.mutate("draft")} disabled={saveMutation.isPending}><Save className="h-4 w-4" /> Save Draft</Button>
           <ImportMuseumZipPanel
@@ -192,6 +209,11 @@ export default function TenantWalkthrough() {
             onDraftWritten={() => queryClient.invalidateQueries({ queryKey: ["tenant-walkthrough-config"] })}
           />
           <PublishMuseumDialog tenant={selectedTenant} museumId={museumFilter || selectedTenant.id} />
+          <HelpHint title="Import ZIP and Publish">
+            <strong>Import Museum ZIP</strong> reads an uploaded ZIP of media/content and turns it into a draft
+            walkthrough automatically. <strong>Publish</strong> makes the current draft live at the museum's
+            public URL — it's blocked if there are unresolved validation errors.
+          </HelpHint>
         </div>
       </div>
 
@@ -229,6 +251,15 @@ export default function TenantWalkthrough() {
       </p>
 
       <div className="rounded-3xl border border-white/10 bg-white/[0.035] p-2">
+        <div className="mb-1 flex items-center gap-1.5 px-2 pt-1">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">Editor mode</span>
+          <HelpHint title="Editor mode">
+            <strong>Very Easy</strong>: upload media or auto-fill, then publish — best for getting a museum live fast.
+            <strong> Easy</strong>: journey map and room editor plus preset/autofill tools, with pacing and quality
+            panels alongside. <strong>Expert</strong>: the same room editor and journey map, plus full pacing,
+            quality, migration, and rollout tooling. Switching modes does not lose any data.
+          </HelpHint>
+        </div>
         <div className="grid gap-2 md:grid-cols-3">
           {[
             ["very_easy", "Very Easy", "Auto Fill → Publish"],
@@ -243,9 +274,28 @@ export default function TenantWalkthrough() {
         </div>
       </div>
 
-      {editorMode !== "very_easy" && editorMode !== "super_easy" && <GlobalExperienceAutofill onAction={handleGlobalAutofill} disabled={saveMutation.isPending} />}
-
-      {editorMode !== "very_easy" && editorMode !== "super_easy" && <MuseumPresetAutofill tenant={selectedTenant} museumId={museumFilter || selectedTenant.id} walkthroughKey={walkthroughKey} rooms={rooms} onPopulate={handlePresetPopulate} />}
+      {editorMode !== "very_easy" && editorMode !== "super_easy" && (
+        <Collapsible defaultOpen={false}>
+          <CollapsibleTrigger asChild>
+            <button type="button" className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left text-sm font-semibold transition hover:bg-white/[0.06] [&[data-state=open]>svg]:rotate-180">
+              <span className="flex items-center gap-1.5">
+                Bulk Tools (Autofill &amp; Presets)
+                <HelpHint title="Bulk Tools">
+                  Optional power tools for filling in lots of content at once: Global Experience Autofill (room,
+                  media, layout, and narrative generators) and Museum Preset Autofill (populate the whole
+                  walkthrough from a ready-made museum preset, or save/load your own presets). Expand only when
+                  you need them.
+                </HelpHint>
+              </span>
+              <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-3 space-y-6">
+            <GlobalExperienceAutofill onAction={handleGlobalAutofill} disabled={saveMutation.isPending} />
+            <MuseumPresetAutofill tenant={selectedTenant} museumId={museumFilter || selectedTenant.id} walkthroughKey={walkthroughKey} rooms={rooms} onPopulate={handlePresetPopulate} />
+          </CollapsibleContent>
+        </Collapsible>
+      )}
 
       {(editorMode === "very_easy" || editorMode === "super_easy") && (
         <SuperEasyExperienceEditor
@@ -278,11 +328,27 @@ export default function TenantWalkthrough() {
           <WalkthroughRoomEditor room={currentRoom} onChange={(room) => updateRoom(activeRoom, room)} hasError={errorRoomKeys.has(currentRoom?.room_key)} />
           <WalkthroughPreview room={currentRoom} />
         </div>
-        <div className="space-y-6">
-          <ExperienceTimeline rooms={rooms} />
-          <ExperienceQualityPanel rooms={rooms} />
-          <MigrationReadinessPanel record={record} rooms={rooms} onSaveDraft={() => saveMutation.mutate("draft")} />
-          <RolloutControlPanel tenant={selectedTenant} record={record} rooms={rooms} walkthroughKey={walkthroughKey} onComplete={() => queryClient.invalidateQueries({ queryKey: ["tenant-walkthrough-config"] })} />
+        <div>
+          <Tabs defaultValue="pacing">
+            <div className="mb-2 flex items-center gap-1.5">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="pacing">Pacing</TabsTrigger>
+                <TabsTrigger value="quality">Quality</TabsTrigger>
+                <TabsTrigger value="migration">Migration</TabsTrigger>
+                <TabsTrigger value="rollout">Rollout</TabsTrigger>
+              </TabsList>
+              <HelpHint title="Side panels">
+                <strong>Pacing</strong> shows the experience timeline and per-room intensity/duration.
+                <strong> Quality</strong> shows content-completeness scores across all rooms.
+                <strong> Migration</strong> checks readiness to migrate from any legacy data format.
+                <strong> Rollout</strong> controls staged/full publishing to visitors.
+              </HelpHint>
+            </div>
+            <TabsContent value="pacing"><ExperienceTimeline rooms={rooms} /></TabsContent>
+            <TabsContent value="quality"><ExperienceQualityPanel rooms={rooms} /></TabsContent>
+            <TabsContent value="migration"><MigrationReadinessPanel record={record} rooms={rooms} onSaveDraft={() => saveMutation.mutate("draft")} /></TabsContent>
+            <TabsContent value="rollout"><RolloutControlPanel tenant={selectedTenant} record={record} rooms={rooms} walkthroughKey={walkthroughKey} onComplete={() => queryClient.invalidateQueries({ queryKey: ["tenant-walkthrough-config"] })} /></TabsContent>
+          </Tabs>
         </div>
       </div>}
 
@@ -293,9 +359,21 @@ export default function TenantWalkthrough() {
             <WalkthroughRoomEditor room={currentRoom} onChange={(room) => updateRoom(activeRoom, room)} />
             <WalkthroughPreview room={currentRoom} />
           </div>
-          <div className="space-y-6">
-            <ExperienceTimeline rooms={rooms} />
-            <ExperienceQualityPanel rooms={rooms} />
+          <div>
+            <Tabs defaultValue="pacing">
+              <div className="mb-2 flex items-center gap-1.5">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="pacing">Pacing</TabsTrigger>
+                  <TabsTrigger value="quality">Quality</TabsTrigger>
+                </TabsList>
+                <HelpHint title="Side panels">
+                  <strong>Pacing</strong> shows the experience timeline and per-room intensity/duration.
+                  <strong> Quality</strong> shows content-completeness scores across all rooms.
+                </HelpHint>
+              </div>
+              <TabsContent value="pacing"><ExperienceTimeline rooms={rooms} /></TabsContent>
+              <TabsContent value="quality"><ExperienceQualityPanel rooms={rooms} /></TabsContent>
+            </Tabs>
           </div>
         </div>
       )}
