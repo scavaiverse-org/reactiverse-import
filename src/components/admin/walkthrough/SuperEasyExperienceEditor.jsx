@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { AlertTriangle, ArrowRight, CheckCircle2, ImagePlus, Loader2, Upload, Wand2 } from "lucide-react";
-import { base44 } from "@/api/base44Client";
 import { uploadFile } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
 import { deterministicAnalyzeMedia, mediaAnalysisToCanonicalRoom } from "@/lib/experience-append-protection";
@@ -13,9 +12,12 @@ const acceptTypes = "image/*,video/*,audio/*,.glb,.gltf,.usdz,.png,.jpg,.jpeg,.m
 
 export default function SuperEasyExperienceEditor({ rooms = [], activeRoom = 0, walkthroughKey, onRoomsChange, onActiveRoomChange, onSaveDraft, onAutoFillWholeMuseum, onSwitchToEasy, onPublish, saving }) {
   const [uploadingIndex, setUploadingIndex] = useState(null);
+  const [uploadError, setUploadError] = useState(null);
+  const [brokenMediaUrls, setBrokenMediaUrls] = useState(() => new Set());
   const uploadRoomMedia = async (index, file) => {
     if (!file) return;
     setUploadingIndex(index);
+    setUploadError(null);
     try {
       const result = await uploadFile(file);
       const analysis = deterministicAnalyzeMedia({ fileName: file.name, fileUrl: result.file_url, index });
@@ -36,12 +38,24 @@ export default function SuperEasyExperienceEditor({ rooms = [], activeRoom = 0, 
           }
         : { ...built, media_file_name: file.name, media_validation: mediaValidation };
       const nextRooms = index < rooms.length ? rooms.map((room, roomIndex) => roomIndex === index ? nextRoom : room) : [...rooms, nextRoom];
+      setBrokenMediaUrls((prev) => {
+        if (!prev.has(result.file_url)) return prev;
+        const next = new Set(prev);
+        next.delete(result.file_url);
+        return next;
+      });
       onRoomsChange?.(nextRooms);
       onActiveRoomChange?.(index);
       onSaveDraft?.(nextRooms);
+    } catch (error) {
+      setUploadError(error?.message || "Upload failed. Please try again.");
     } finally {
       setUploadingIndex(null);
     }
+  };
+  const markMediaBroken = (url) => {
+    if (!url) return;
+    setBrokenMediaUrls((prev) => (prev.has(url) ? prev : new Set(prev).add(url)));
   };
 
   const updateRoom = (patch) => {
@@ -102,11 +116,25 @@ export default function SuperEasyExperienceEditor({ rooms = [], activeRoom = 0, 
           </div>
 
           <label className="flex min-h-[340px] cursor-pointer flex-col items-center justify-center rounded-[1.5rem] border-2 border-dashed border-primary/30 bg-black/20 p-6 text-center transition hover:border-primary hover:bg-primary/5">
-            {uploadingIndex === activeRoom ? <Loader2 className="mb-4 h-12 w-12 animate-spin text-primary" /> : currentRoom?.media_url ? <img src={currentRoom.media_url} alt={currentRoom.title || "Uploaded room media"} loading="lazy" className="mb-5 max-h-56 rounded-2xl object-cover" /> : <ImagePlus className="mb-5 h-16 w-16 text-primary" />}
+            {uploadingIndex === activeRoom ? <Loader2 className="mb-4 h-12 w-12 animate-spin text-primary" /> : currentRoom?.media_url && !brokenMediaUrls.has(currentRoom.media_url) ? <img src={currentRoom.media_url} alt={currentRoom.title || "Uploaded room media"} loading="lazy" className="mb-5 max-h-56 rounded-2xl object-cover" onError={() => markMediaBroken(currentRoom.media_url)} /> : <ImagePlus className="mb-5 h-16 w-16 text-primary" />}
             <span className="text-2xl font-bold">Room Media Upload</span>
             <span className="mt-2 max-w-md text-sm text-muted-foreground">Drop in an image, video, audio, or 3D file. We build the room automatically.</span>
             <input type="file" className="hidden" accept={acceptTypes} onChange={(event) => uploadRoomMedia(activeRoom, event.target.files?.[0])} />
           </label>
+
+          {uploadError && (
+            <div className="mt-4 flex items-start gap-2 rounded-2xl border border-rose-400/30 bg-rose-400/10 p-3 text-xs text-rose-100">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>Upload failed: {uploadError}</span>
+            </div>
+          )}
+
+          {currentRoom?.media_url && brokenMediaUrls.has(currentRoom.media_url) && (
+            <div className="mt-4 flex items-start gap-2 rounded-2xl border border-rose-400/30 bg-rose-400/10 p-3 text-xs text-rose-100">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>This room's media couldn't be loaded from storage. Try uploading it again.</span>
+            </div>
+          )}
 
           {activeValidation?.status === "rejected" && (
             <div className="mt-4 flex items-start gap-2 rounded-2xl border border-rose-400/30 bg-rose-400/10 p-3 text-xs text-rose-100">
@@ -159,7 +187,7 @@ export default function SuperEasyExperienceEditor({ rooms = [], activeRoom = 0, 
             <button key={room.id || room.room_key || index} onClick={() => onActiveRoomChange?.(index)} className={`w-full rounded-2xl border p-3 text-left transition ${index === activeRoom ? "border-primary bg-primary/10" : "border-white/10 bg-white/[0.03]"}`}>
               <div className="flex items-center gap-3">
                 <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl bg-black/30">
-                  {room.media_url ? <img src={room.media_url} alt={room.title || "Room"} loading="lazy" className="h-full w-full object-cover" /> : <ImagePlus className="h-6 w-6 text-muted-foreground" />}
+                  {room.media_url && !brokenMediaUrls.has(room.media_url) ? <img src={room.media_url} alt={room.title || "Room"} loading="lazy" className="h-full w-full object-cover" onError={() => markMediaBroken(room.media_url)} /> : <ImagePlus className="h-6 w-6 text-muted-foreground" />}
                 </div>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold">{room.title || `Room ${index + 1}`}</p>
