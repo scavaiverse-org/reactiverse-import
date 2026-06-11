@@ -21,7 +21,6 @@ import AdminPanelTabGuidesDownload from "@/components/admin/AdminPanelTabGuidesD
 import PublishMuseumDialog from "@/components/admin/walkthrough/PublishMuseumDialog";
 import ImportMuseumZipPanel from "@/components/admin/walkthrough/ImportMuseumZipPanel";
 import TheV2Guide from "@/components/admin/walkthrough/TheV2Guide";
-import SuperEasyExperienceEditor from "@/components/admin/walkthrough/SuperEasyExperienceEditor";
 import GlobalExperienceAutofill from "@/components/admin/walkthrough/GlobalExperienceAutofill";
 import { WALKTHROUGH_EDITOR_TYPE, WALKTHROUGHS, createRoomByType, duplicateRoom, extractRoomsFromConfig, moveRoom, normalizeRooms, walkthroughLabel } from "@/lib/walkthrough-admin";
 import { museumWalkthroughPath } from "@/lib/domain-registry";
@@ -29,9 +28,7 @@ import { deepClone } from "@/lib/walkthrough-media-bindings";
 import { getErrorRoomKeys, getWalkthroughWarnings, hasGlobalIssue, validateWalkthroughRooms } from "@/lib/walkthrough-validation";
 import { scoreWalkthroughQuality } from "@/lib/walkthrough-quality-scoring";
 import { createLegacyBackup } from "@/lib/walkthrough-migration";
-import { autofillEntireExperience, autofillMedia, autofillRoom, buildCanonicalExperienceConfig, generateCinematicLayout, generateMuseumNarrative, prepareVeryEasyPublishRooms, validateExperienceIntegrity } from "@/lib/experience-append-protection";
-import { buildVeryEasyPublishPlan } from "@/lib/very-easy-publish-orchestrator";
-import { validateVeryEasyPublishReadiness } from "@/lib/very-easy-validation";
+import { autofillEntireExperience, autofillMedia, autofillRoom, buildCanonicalExperienceConfig, generateCinematicLayout, generateMuseumNarrative, validateExperienceIntegrity } from "@/lib/experience-append-protection";
 
 export default function TenantWalkthrough() {
   const queryClient = useQueryClient();
@@ -45,7 +42,7 @@ export default function TenantWalkthrough() {
   const [activeRoom, setActiveRoom] = useState(0);
   const [validationErrors, setValidationErrors] = useState([]);
   const [warnings, setWarnings] = useState([]);
-  const [editorMode, setEditorMode] = useState("very_easy");
+  const [editorMode, setEditorMode] = useState("easy");
 
   const selectedTenant = useMemo(() => routeTenant || tenants.find((tenant) => tenant.id === selectedTenantId) || tenants[0], [tenants, selectedTenantId, routeTenant]);
 
@@ -81,13 +78,11 @@ export default function TenantWalkthrough() {
   const saveMutation = useMutation({
     mutationFn: async (input = {}) => {
       const sourceRooms = typeof input === "object" && input.rooms ? input.rooms : rooms;
-      const normalizedMode = editorMode === "super_easy" ? "very_easy" : editorMode;
-      const isVeryEasy = normalizedMode === "very_easy";
       const normalizedRooms = normalizeRooms(deepClone(sourceRooms), walkthroughKey);
-      const canonical = buildCanonicalExperienceConfig({ mode: normalizedMode, rooms: normalizedRooms, walkthroughKey });
+      const canonical = buildCanonicalExperienceConfig({ mode: editorMode, rooms: normalizedRooms, walkthroughKey });
       const publicRooms = canonical.rooms;
-      const baseErrors = isVeryEasy ? validateVeryEasyPublishReadiness(publicRooms) : validateWalkthroughRooms(publicRooms);
-      const integrity = isVeryEasy ? { errors: [] } : validateExperienceIntegrity(publicRooms);
+      const baseErrors = validateWalkthroughRooms(publicRooms);
+      const integrity = validateExperienceIntegrity(publicRooms);
       const errors = [...baseErrors, ...integrity.errors.filter((error) => !baseErrors.includes(error))];
       const nextWarnings = getWalkthroughWarnings(publicRooms);
       const nextQuality = scoreWalkthroughQuality(publicRooms);
@@ -119,10 +114,10 @@ export default function TenantWalkthrough() {
           quality_scores: nextQuality,
           warnings: nextWarnings,
           append_only_editor: {
-            active_mode: normalizedMode,
+            active_mode: editorMode,
             canonical_version: canonical.version,
             integrity: canonical.integrity,
-            feature_layer: "very_easy_global_autofill_append_only"
+            feature_layer: "global_autofill_append_only"
           },
           draft_state: "saved_with_warnings_allowed",
           updated_at: now,
@@ -133,8 +128,14 @@ export default function TenantWalkthrough() {
       };
       return record?.id ? base44.entities.ExperienceConfig.update(record.id, payload) : base44.entities.ExperienceConfig.create(payload);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tenant-walkthrough-config"] });
+    onSuccess: (saved) => {
+      // Seed the cache with the just-saved record instead of invalidating + refetching:
+      // a refetch can race the write and return stale data, which the effect below
+      // would then use to clobber the local rooms (e.g. wiping a just-uploaded image).
+      queryClient.setQueryData(["tenant-walkthrough-config", selectedTenant?.id, museumFilter, walkthroughKey], (old = []) => {
+        const others = (old || []).filter((item) => item.id !== saved.id);
+        return [saved, ...others];
+      });
       queryClient.invalidateQueries({ queryKey: ["public-walkthrough-config"] });
     },
   });
@@ -183,8 +184,7 @@ export default function TenantWalkthrough() {
             AOM Immersive Experience Builder
             <HelpHint title="Experience Builder">
               This page builds the immersive walkthrough visitors see for {walkthroughLabel(walkthroughKey)}.
-              Pick a mode below: <strong>Very Easy</strong> auto-fills and publishes a whole museum in one click,
-              <strong> Easy</strong> gives guided preset tools alongside the room editor, and
+              Pick a mode below: <strong>Easy</strong> gives guided preset tools alongside the room editor, and
               <strong> Expert</strong> exposes every field for full control. "Save Draft" stores your work
               without publishing; "Publish" makes it live to visitors once validation passes.
             </HelpHint>
@@ -219,25 +219,9 @@ export default function TenantWalkthrough() {
 
       {(validationErrors.length > 0 || warnings.length > 0) && (
         <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm text-amber-100">
-          <div className="mb-2 flex items-center gap-2 font-semibold"><AlertTriangle className="h-4 w-4" /> {editorMode === "very_easy" || editorMode === "super_easy" ? "Museum status" : "Validation and quality notes"}</div>
-          {editorMode === "very_easy" || editorMode === "super_easy" ? (
-            <div className="space-y-3">
-              <p>Your museum can be fixed automatically before publishing.</p>
-              <Button size="sm" onClick={() => {
-                const plan = buildVeryEasyPublishPlan({ rooms, walkthroughKey, tenant: selectedTenant });
-                setRooms(plan.rooms);
-                setValidationErrors([]);
-                setWarnings([]);
-                setActiveRoom(0);
-                saveMutation.mutate({ status: "draft", rooms: plan.rooms });
-              }}>Fix Everything Automatically</Button>
-            </div>
-          ) : (
-            <>
-              <ul className="list-disc space-y-1 pl-5">{[...validationErrors, ...warnings].map((item) => <li key={item}>{item}</li>)}</ul>
-              <p className="mt-3 text-xs text-amber-200/80">Save Draft is allowed with warnings; Publish is blocked by validation errors.</p>
-            </>
-          )}
+          <div className="mb-2 flex items-center gap-2 font-semibold"><AlertTriangle className="h-4 w-4" /> Validation and quality notes</div>
+          <ul className="list-disc space-y-1 pl-5">{[...validationErrors, ...warnings].map((item) => <li key={item}>{item}</li>)}</ul>
+          <p className="mt-3 text-xs text-amber-200/80">Save Draft is allowed with warnings; Publish is blocked by validation errors.</p>
         </div>
       )}
 
@@ -254,15 +238,13 @@ export default function TenantWalkthrough() {
         <div className="mb-1 flex items-center gap-1.5 px-2 pt-1">
           <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">Editor mode</span>
           <HelpHint title="Editor mode">
-            <strong>Very Easy</strong>: upload media or auto-fill, then publish — best for getting a museum live fast.
-            <strong> Easy</strong>: journey map and room editor plus preset/autofill tools, with pacing and quality
+            <strong>Easy</strong>: journey map and room editor plus preset/autofill tools, with pacing and quality
             panels alongside. <strong>Expert</strong>: the same room editor and journey map, plus full pacing,
             quality, migration, and rollout tooling. Switching modes does not lose any data.
           </HelpHint>
         </div>
-        <div className="grid gap-2 md:grid-cols-3">
+        <div className="grid gap-2 md:grid-cols-2">
           {[
-            ["very_easy", "Very Easy", "Auto Fill → Publish"],
             ["easy", "Easy", "Guided preset tools"],
             ["expert", "Expert", "Full control"]
           ].map(([mode, label, helper]) => (
@@ -274,53 +256,26 @@ export default function TenantWalkthrough() {
         </div>
       </div>
 
-      {editorMode !== "very_easy" && editorMode !== "super_easy" && (
-        <Collapsible defaultOpen={false}>
-          <CollapsibleTrigger asChild>
-            <button type="button" className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left text-sm font-semibold transition hover:bg-white/[0.06] [&[data-state=open]>svg]:rotate-180">
-              <span className="flex items-center gap-1.5">
-                Bulk Tools (Autofill &amp; Presets)
-                <HelpHint title="Bulk Tools">
-                  Optional power tools for filling in lots of content at once: Global Experience Autofill (room,
-                  media, layout, and narrative generators) and Museum Preset Autofill (populate the whole
-                  walkthrough from a ready-made museum preset, or save/load your own presets). Expand only when
-                  you need them.
-                </HelpHint>
-              </span>
-              <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
-            </button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="mt-3 space-y-6">
-            <GlobalExperienceAutofill onAction={handleGlobalAutofill} disabled={saveMutation.isPending} />
-            <MuseumPresetAutofill tenant={selectedTenant} museumId={museumFilter || selectedTenant.id} walkthroughKey={walkthroughKey} rooms={rooms} onPopulate={handlePresetPopulate} />
-          </CollapsibleContent>
-        </Collapsible>
-      )}
-
-      {(editorMode === "very_easy" || editorMode === "super_easy") && (
-        <SuperEasyExperienceEditor
-          rooms={rooms}
-          activeRoom={activeRoom}
-          walkthroughKey={walkthroughKey}
-          onRoomsChange={applyRoomsDraft}
-          onActiveRoomChange={setActiveRoom}
-          onSaveDraft={(nextRooms) => saveMutation.mutate({ status: "draft", rooms: nextRooms || rooms })}
-          onAutoFillWholeMuseum={() => {
-            const plan = buildVeryEasyPublishPlan({ rooms, walkthroughKey, tenant: selectedTenant });
-            setRooms(plan.rooms);
-            setActiveRoom(0);
-            saveMutation.mutate({ status: "draft", rooms: plan.rooms });
-          }}
-          onSwitchToEasy={() => setEditorMode("easy")}
-          onPublish={() => {
-            const publishRooms = prepareVeryEasyPublishRooms({ rooms, walkthroughKey, tenant: selectedTenant });
-            setRooms(publishRooms);
-            setActiveRoom(0);
-            saveMutation.mutate({ status: "draft", rooms: publishRooms });
-          }}
-          saving={saveMutation.isPending}
-        />
-      )}
+      <Collapsible defaultOpen={false}>
+        <CollapsibleTrigger asChild>
+          <button type="button" className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left text-sm font-semibold transition hover:bg-white/[0.06] [&[data-state=open]>svg]:rotate-180">
+            <span className="flex items-center gap-1.5">
+              Bulk Tools (Autofill &amp; Presets)
+              <HelpHint title="Bulk Tools">
+                Optional power tools for filling in lots of content at once: Global Experience Autofill (room,
+                media, layout, and narrative generators) and Museum Preset Autofill (populate the whole
+                walkthrough from a ready-made museum preset, or save/load your own presets). Expand only when
+                you need them.
+              </HelpHint>
+            </span>
+            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="mt-3 space-y-6">
+          <GlobalExperienceAutofill onAction={handleGlobalAutofill} disabled={saveMutation.isPending} />
+          <MuseumPresetAutofill tenant={selectedTenant} museumId={museumFilter || selectedTenant.id} walkthroughKey={walkthroughKey} rooms={rooms} onPopulate={handlePresetPopulate} />
+        </CollapsibleContent>
+      </Collapsible>
 
       {editorMode === "expert" && <div className="grid gap-6 xl:grid-cols-[340px_1fr_320px]">
         <JourneyMap rooms={rooms} activeIndex={activeRoom} onSelect={setActiveRoom} onAdd={() => { const next = normalizeRooms([...rooms, createRoomByType(rooms.length, walkthroughKey, "walkthrough_exhibition")], walkthroughKey); setRooms(next); setActiveRoom(next.length - 1); }} onDuplicate={(index) => { const next = duplicateRoom(rooms, index, walkthroughKey); setRooms(next); setActiveRoom(index + 1); }} onMove={(index, direction) => { setRooms(moveRoom(rooms, index, direction, walkthroughKey)); setActiveRoom(Math.max(0, Math.min(rooms.length - 1, index + direction))); }} onDelete={(index) => { const next = normalizeRooms(rooms.filter((_, i) => i !== index), walkthroughKey); setRooms(next); setActiveRoom(Math.max(0, index - 1)); }} errorRoomKeys={errorRoomKeys} hasGlobalIssue={hasUnresolvedGlobalIssue} />

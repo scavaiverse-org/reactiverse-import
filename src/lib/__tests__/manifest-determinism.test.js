@@ -133,7 +133,7 @@ describe("draft isolation / snapshot proof", () => {
     const experienceConfigs = [makeConfig("walkthrough1", [validRoom({
       warnings: ["some warning"],
       draft_state: "saved_with_warnings_allowed",
-      append_only_editor: { active_mode: "very_easy" },
+      append_only_editor: { active_mode: "easy" },
       quality_scores: { publish_safety: 50 },
       legacy_backup_before_dynamic_walkthrough_migration: { rooms: [] },
     })])];

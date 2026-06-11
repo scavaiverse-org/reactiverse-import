@@ -164,7 +164,7 @@ export const SCOVERS_ONBOARDING_SLIDES = [
     primaryCtaRoute: "__NEXT__",
     secondaryCtaLabel,
     secondaryCtaRoute,
-    featureSources: ["MuseumModeEditor", "WalkthroughRoomEditor", "SuperEasyExperienceEditor", "ExperienceTimeline", "JourneyMap", "ExperienceQualityPanel"],
+    featureSources: ["MuseumModeEditor", "WalkthroughRoomEditor", "ExperienceTimeline", "JourneyMap", "ExperienceQualityPanel"],
     motionNotes: "Fixed three-panel builder composition with a bottom quality rail.",
   },
   {

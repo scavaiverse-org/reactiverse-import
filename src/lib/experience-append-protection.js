@@ -3,7 +3,6 @@ import { ensureMediaTypes } from "@/lib/walkthrough-media-bindings";
 import { ensureTypeConfigs } from "@/lib/walkthrough-room-types";
 import { validateWalkthroughRooms } from "@/lib/walkthrough-validation";
 import { getSeedAsset } from "@/lib/cinematic-media-seed-database";
-import { autofillWholeMuseumForPublish } from "@/lib/very-easy-publish-orchestrator";
 
 export const CANONICAL_EXPERIENCE_CONFIG_VERSION = 1;
 
@@ -113,10 +112,6 @@ export function mediaAnalysisToCanonicalRoom({ analysis, fileUrl, index = 0, wal
   return room;
 }
 
-export function superEasyToCanonical({ rooms = [], walkthroughKey = "walkthrough1" }) {
-  return normalizeRooms(rooms.map((room) => ensureMediaTypes(ensureTypeConfigs({ ...room }))), walkthroughKey);
-}
-
 export function easyToCanonical({ rooms = [], walkthroughKey = "walkthrough1" }) {
   return normalizeRooms(rooms.map((room) => ensureMediaTypes(ensureTypeConfigs({ ...room }))), walkthroughKey);
 }
@@ -136,10 +131,9 @@ export function validateExperienceIntegrity(rooms = []) {
 }
 
 export function buildCanonicalExperienceConfig({ mode = "expert", rooms = [], walkthroughKey = "walkthrough1" }) {
-  const isVeryEasy = mode === "super_easy" || mode === "very_easy";
-  const transformer = isVeryEasy ? superEasyToCanonical : mode === "easy" ? easyToCanonical : expertToCanonical;
+  const transformer = mode === "easy" ? easyToCanonical : expertToCanonical;
   const canonicalRooms = transformer({ rooms, walkthroughKey });
-  return { version: CANONICAL_EXPERIENCE_CONFIG_VERSION, mode: isVeryEasy ? "very_easy" : mode, walkthroughKey, rooms: canonicalRooms, integrity: validateExperienceIntegrity(canonicalRooms) };
+  return { version: CANONICAL_EXPERIENCE_CONFIG_VERSION, mode, walkthroughKey, rooms: canonicalRooms, integrity: validateExperienceIntegrity(canonicalRooms) };
 }
 
 export function autofillRoom(room, index = 0, walkthroughKey = "walkthrough1") {
@@ -184,10 +178,3 @@ export function generateMuseumNarrative(rooms = [], walkthroughKey = "walkthroug
   return normalizeRooms(rooms.map((room, index) => ensureTypeConfigs({ ...room, narration: room.narration || `Room ${index + 1} invites visitors to notice the story, texture, and meaning of ${room.title || "this museum moment"}.`, description: room.description || `${room.title || "This room"} is arranged as a clear cinematic museum stop with guided attention and calm pacing.` })), walkthroughKey);
 }
 
-export function prepareSuperEasyPublishRooms(rooms = [], walkthroughKey = "walkthrough1", tenant = {}) {
-  return autofillWholeMuseumForPublish({ rooms, walkthroughKey, tenant });
-}
-
-export function prepareVeryEasyPublishRooms({ rooms = [], walkthroughKey = "walkthrough1", tenant = {}, uploadedMedia = [] } = {}) {
-  return autofillWholeMuseumForPublish({ rooms, walkthroughKey, tenant, uploadedMedia });
-}
