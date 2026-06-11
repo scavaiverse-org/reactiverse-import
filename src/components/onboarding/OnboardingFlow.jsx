@@ -159,7 +159,7 @@ function genericStage(index, total) {
  * slide flow via PremiumOnboardingStage. Used by both the standalone
  * /onboarding page and the homepage first-visit overlay.
  */
-export default function OnboardingFlow({ onNavigate, resetKey, showProgressDots = true, className = "", onContextChange }) {
+export default function OnboardingFlow({ onNavigate, resetKey, showProgressDots = true, className = "", onContextChange, reduceMotion = false }) {
   const [audience, setAudience] = useState(null);
   const [currentStage, setCurrentStage] = useState(0);
   const [selections, setSelections] = useState({});
@@ -326,6 +326,7 @@ export default function OnboardingFlow({ onNavigate, resetKey, showProgressDots 
           onNext={handleNext}
           canProceed={canProceed}
           isLastStage={isLastStage}
+          reduceMotion={reduceMotion}
         />
       </AnimatePresence>
     </div>

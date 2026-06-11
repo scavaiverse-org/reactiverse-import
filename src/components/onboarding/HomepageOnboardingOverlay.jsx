@@ -67,9 +67,14 @@ export default function HomepageOnboardingOverlay({ open, onClose, onMarkSeen })
   }, [open, onClose, stopMusic]);
 
   const replayVideo = () => {
-    if (!videoRef.current) return;
-    videoRef.current.currentTime = 0;
-    videoRef.current.play().catch(() => {});
+    const video = videoRef.current;
+    if (!video) return;
+    // Seeking a video that hasn't buffered enough flashes a black frame on
+    // mobile decoders — only rewind once at least current-frame data exists.
+    try {
+      if (video.readyState >= 2) video.currentTime = 0;
+    } catch { /* ignore seek errors */ }
+    video.play().catch(() => {});
   };
 
   const handleMusicToggle = () => {
@@ -119,12 +124,19 @@ export default function HomepageOnboardingOverlay({ open, onClose, onMarkSeen })
             <CinematicTextureLayer reduceMotion={reduceMotion} />
             <GoldDustField reduceMotion={reduceMotion} />
           </div>
-          <motion.div
-            className="pointer-events-none fixed inset-0 z-[105] opacity-50"
-            animate={reduceMotion ? {} : { backgroundPosition: ["0% 0%", "100% 100%"] }}
-            transition={{ duration: 16, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-            style={{ backgroundImage: "linear-gradient(115deg, transparent 0%, rgba(226,232,240,0.07) 38%, transparent 64%)", backgroundSize: "240% 240%" }}
-          />
+          {/* Sheen sweep uses transform (GPU-composited) — animating
+              background-position repaints the full screen each frame and
+              was a flicker source on mobile. */}
+          {!reduceMotion && (
+            <div className="pointer-events-none fixed inset-0 z-[105] overflow-hidden opacity-50">
+              <motion.div
+                className="absolute inset-y-0 w-2/3"
+                animate={{ x: ["-100%", "250%"] }}
+                transition={{ duration: 16, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+                style={{ backgroundImage: "linear-gradient(115deg, transparent 0%, rgba(226,232,240,0.07) 50%, transparent 100%)" }}
+              />
+            </div>
+          )}
 
           {autoplayBlocked && (
             <button type="button" onClick={enableAudio} className="absolute bottom-8 right-8 z-[120] rounded-full border border-white/20 bg-black/60 px-5 py-3 text-xs font-semibold uppercase tracking-[0.22em] text-white backdrop-blur-xl hover:bg-black/80">
@@ -169,7 +181,7 @@ export default function HomepageOnboardingOverlay({ open, onClose, onMarkSeen })
             </div>
 
             <div className="relative z-10">
-              <OnboardingFlow onNavigate={handleNavigate} resetKey={resetKey} />
+              <OnboardingFlow onNavigate={handleNavigate} resetKey={resetKey} reduceMotion={reduceMotion} />
             </div>
           </motion.div>
         </motion.div>
