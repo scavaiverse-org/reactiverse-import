@@ -127,7 +127,7 @@ export default function InternalRapidPortalGateway() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 12 }}
               transition={{ duration: 0.32 }}
-              className="relative w-full max-w-4xl overflow-hidden rounded-3xl border border-primary/25 bg-background/72 p-5 shadow-2xl shadow-primary/10 backdrop-blur-2xl sm:p-7"
+              className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-primary/25 bg-background/72 p-4 shadow-2xl shadow-primary/10 backdrop-blur-2xl sm:p-5"
             >
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(245,158,11,0.22),transparent_36%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.15),transparent_34%)]" />
               <button
@@ -140,16 +140,16 @@ export default function InternalRapidPortalGateway() {
               </button>
 
               <div className="relative z-10">
-                <div className="py-3">
-                  <div className="mb-6 pr-10">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.28em] text-primary">
-                      <Sparkles className="h-3.5 w-3.5" /> Portal Open
+                <div className="py-2">
+                  <div className="mb-4 pr-8">
+                    <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.28em] text-primary">
+                      <Sparkles className="h-3 w-3" /> Portal Open
                     </div>
-                    <h2 className="mt-4 font-display text-3xl font-bold text-foreground sm:text-4xl">Portal Dashboard</h2>
-                    <p className="mt-2 max-w-2xl text-sm leading-6 text-foreground/68">Rapid navigation for internal operators and architecture-level workflows.</p>
+                    <h2 className="mt-3 font-display text-xl font-bold text-foreground sm:text-2xl">Portal Dashboard</h2>
+                    <p className="mt-1.5 max-w-2xl text-xs leading-5 text-foreground/68">Rapid navigation for internal operators and architecture-level workflows.</p>
                   </div>
 
-                  <div className="grid gap-4 md:grid-cols-2">
+                  <div className="grid gap-3 md:grid-cols-2">
                     {DESTINATIONS.map((item) => {
                       const Icon = item.icon;
                       return (
@@ -157,16 +157,16 @@ export default function InternalRapidPortalGateway() {
                           key={item.title}
                           type="button"
                           onClick={() => goTo(item.route)}
-                          className="group relative overflow-hidden rounded-2xl border border-white/12 bg-white/[0.055] p-5 text-left shadow-xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-primary/45 hover:bg-primary/[0.08] hover:shadow-primary/10"
+                          className="group relative overflow-hidden rounded-2xl border border-white/12 bg-white/[0.055] p-3.5 text-left shadow-xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-primary/45 hover:bg-primary/[0.08] hover:shadow-primary/10"
                         >
                           <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-primary/70 to-transparent opacity-0 transition group-hover:opacity-100" />
-                          <div className="flex items-start gap-4">
-                            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-primary/25 bg-primary/10 text-primary transition group-hover:scale-105 group-hover:bg-primary/20">
-                              <Icon className="h-5 w-5" />
+                          <div className="flex items-start gap-3">
+                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl border border-primary/25 bg-primary/10 text-primary transition group-hover:scale-105 group-hover:bg-primary/20">
+                              <Icon className="h-4 w-4" />
                             </span>
                             <span>
-                              <span className="block font-display text-xl font-semibold text-foreground">{item.title}</span>
-                              <span className="mt-2 block text-sm leading-6 text-foreground/66">{item.description}</span>
+                              <span className="block font-display text-sm font-semibold text-foreground">{item.title}</span>
+                              <span className="mt-1 block text-xs leading-5 text-foreground/66">{item.description}</span>
                             </span>
                           </div>
                         </button>
