@@ -1,5 +1,6 @@
 import { corsHeaders } from '../_shared/cors.ts';
 import { getAuthUser, getServiceRoleClient } from '../_shared/supabase-client.ts';
+import { TENANT_ADMIN_ROLES } from '../_shared/rbac.ts';
 
 // QA Agent dispatcher — replaces Base44 agents:
 //   operational_tester, visitor_tester, accessibility_tester, tenant_isolation_tester
@@ -65,7 +66,7 @@ Deno.serve(async (req) => {
 
   try {
     const user = await getAuthUser(req);
-    if (!user || !['admin', 'tenant_admin', 'super_admin'].includes(user.role)) {
+    if (!user || !TENANT_ADMIN_ROLES.includes(user.role)) {
       return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403, headers: corsHeaders });
     }
 

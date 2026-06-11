@@ -1,9 +1,31 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { normalizeRole } from './rbac.ts';
+
+// Resolves an API key from the first env var that yields a usable value.
+// Platform-managed vars (SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY) are
+// kept in sync with the project's current keys (post key-migration they hold
+// the new publishable/secret keys), so they take priority over the manually
+// managed *_KEYS secrets, which may hold JSON arrays or stale values.
+function resolveKey(...names: string[]): string {
+  for (const name of names) {
+    const raw = (Deno.env.get(name) || '').trim();
+    if (!raw) continue;
+    if (raw.startsWith('[')) {
+      try {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr) && arr[0]) return String(arr[0]).trim();
+      } catch { /* not JSON — fall through */ }
+      continue;
+    }
+    return raw.split(',')[0].trim();
+  }
+  return '';
+}
 
 export function getServiceRoleClient() {
   return createClient(
     Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SECRET_KEYS')!,
+    resolveKey('SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SECRET_KEYS'),
     { auth: { autoRefreshToken: false, persistSession: false } },
   );
 }
@@ -11,12 +33,14 @@ export function getServiceRoleClient() {
 export function getUserClient(authHeader: string) {
   return createClient(
     Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_PUBLISHABLE_KEYS')!,
+    resolveKey('SUPABASE_ANON_KEY', 'SUPABASE_PUBLISHABLE_KEYS'),
     { global: { headers: { Authorization: authHeader } } },
   );
 }
 
 // Resolves the authenticated user plus their role from the profiles table.
+// The returned role is always canonical (see _shared/rbac.ts) — stored values
+// like 'MASTER_ADMIN', 'admin', or 'tenant_admin' all normalize consistently.
 export async function getAuthUser(req: Request) {
   const authHeader = req.headers.get('Authorization');
   if (!authHeader) return null;
@@ -25,5 +49,5 @@ export async function getAuthUser(req: Request) {
   if (error || !user) return null;
   const service = getServiceRoleClient();
   const { data: profile } = await service.from('profiles').select('role').eq('id', user.id).maybeSingle();
-  return { ...user, role: (profile?.role as string) || 'visitor' };
+  return { ...user, role: normalizeRole(profile?.role) };
 }

@@ -1,5 +1,6 @@
 import { corsHeaders } from '../_shared/cors.ts';
 import { getAuthUser, getServiceRoleClient } from '../_shared/supabase-client.ts';
+import { TENANT_ADMIN_ROLES } from '../_shared/rbac.ts';
 
 const EXTENSION_SHARE: Record<string, number> = { subtle: 0.35, medium: 0.6, wide: 0.9, immersive: 1.25 };
 const DENSITY_WORD: Record<string, string> = { minimal: 'a few sparse', medium: 'a moderate number of', rich: 'a rich arrangement of' };
@@ -8,7 +9,7 @@ const DEFAULT_POOL = ['shelves', 'wall decorations', 'small display items', 'flo
 const MUSEUM_POOL = ['display cases', 'archival posters', 'costume displays', 'stage curtains', 'wooden panels', 'lanterns', 'ceramic pieces', 'musical instruments', 'masks', 'framed cultural photographs', 'soft gallery lighting'];
 const AVOID = 'extra people, distorted faces, duplicated animals, warped text, melted furniture, broken shelves, impossible floor perspective, inconsistent lighting, heavy blur, surreal objects, random fantasy elements, low quality, duplicate main subject, changed center image, broken wall seams, misaligned floorboards';
 
-const ALLOWED_ROLES = ['admin', 'tenant_admin', 'super_admin', 'owner'];
+const ALLOWED_ROLES: string[] = TENANT_ADMIN_ROLES;
 
 function seededPick(pool: string[], count: number, seedNum: number): string[] {
   const out: string[] = [];

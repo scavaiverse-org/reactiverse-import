@@ -1,5 +1,6 @@
 import { corsHeaders } from '../_shared/cors.ts';
 import { getAuthUser, getServiceRoleClient } from '../_shared/supabase-client.ts';
+import { MASTER_ROLES } from '../_shared/rbac.ts';
 
 const WALKTHROUGH_EDITOR_TYPE = 'aom_world_class_experience_builder';
 const WALKTHROUGHS = ['walkthrough1', 'walkthrough2', 'walkthrough3', 'walkthrough4', 'walkthrough5'];
@@ -216,7 +217,7 @@ Deno.serve(async (req) => {
 
   try {
     const user = await getAuthUser(req);
-    if (!user || user.role !== 'admin') {
+    if (!user || !MASTER_ROLES.includes(user.role)) {
       return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403, headers: corsHeaders });
     }
 
