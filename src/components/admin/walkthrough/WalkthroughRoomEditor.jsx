@@ -65,7 +65,7 @@ function SectionHeading({ title, help, className = "" }) {
   );
 }
 
-export default function WalkthroughRoomEditor({ room, onChange, hasError = false }) {
+export default function WalkthroughRoomEditor({ room, onChange, hasError = false, previewSlot = null }) {
   const [tab, setTab] = useState("basic");
   const [uploadStates, setUploadStates] = useState({});
   if (!room) return null;
@@ -136,6 +136,8 @@ export default function WalkthroughRoomEditor({ room, onChange, hasError = false
           </HelpHint>
         </div>
       </div>
+
+      {previewSlot && <div className="px-5 pt-5">{previewSlot}</div>}
 
       <Tabs value={tab} onValueChange={setTab} className="px-5 pt-4">
         <TabsList>

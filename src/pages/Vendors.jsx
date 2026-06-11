@@ -22,11 +22,11 @@ const FALLBACK_BENEFITS = [
 ];
 
 const FALLBACK_SLOT_TYPES = [
-  { value: "standard", label: "Standard Slot", price: "SGD 500/mo", desc: "Marketplace listing + basic digital storefront" },
-  { value: "premium", label: "Premium Slot", price: "SGD 1,200/mo", desc: "Featured placement + AI recommendations + analytics dashboard" },
-  { value: "featured", label: "Featured Partner", price: "SGD 2,500/mo", desc: "Anchor placement + dedicated station + branded experience" },
-  { value: "anchor", label: "Anchor Sponsor", price: "Custom", desc: "Full ecosystem integration + custom branded journey + corporate package" },
+  { value: "standard", label: "Standard Listing", price: "SGD 300 one-time", desc: "Storefront listing setup, product photography guidelines, and 12% commission per sale." },
+  { value: "featured", label: "Featured Placement", price: "SGD 300 one-time + SGD 150/mo", desc: "Everything in Standard, plus homepage and room-exit placement (max 4 slots at a time). 12% commission per sale." },
 ];
+
+const VENDOR_COMMISSION_NOTE = "All vendors: SGD 300 one-time onboarding fee covers storefront setup. SCAVerse takes a 12% commission on marketplace sales — you keep your own fulfilment.";
 
 const ICONS = { ShieldCheck, TrendingUp, Users, Zap, Store };
 
@@ -161,7 +161,8 @@ export default function Vendors() {
 
       {/* Slot Types */}
       <section className="max-w-5xl mx-auto px-4 pb-16">
-        <h2 className="text-2xl font-display font-bold text-foreground text-center mb-8">{pageContent.tiersTitle}</h2>
+        <h2 className="text-2xl font-display font-bold text-foreground text-center mb-2">{pageContent.tiersTitle}</h2>
+        <p className="mx-auto mb-8 max-w-2xl text-center text-xs text-muted-foreground">{VENDOR_COMMISSION_NOTE}</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {pageContent.slotTypes.map((slot) => (
             <Card key={slot.value} className="bg-card/50 border-border/50">

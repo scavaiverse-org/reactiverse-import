@@ -13,11 +13,11 @@ import { museumPath } from '@/lib/domain-registry';
 import { toast } from 'sonner';
 
 const slotTypes = [
-  { id: 'standard', name: 'Standard', price: 'SGD 500/mo', description: 'Basic marketplace presence' },
-  { id: 'premium', name: 'Premium', price: 'SGD 1,200/mo', description: 'Featured placement + priority listing' },
-  { id: 'featured', name: 'Featured', price: 'SGD 2,500/mo', description: 'Featured placement + campaign visibility' },
-  { id: 'anchor', name: 'Anchor', price: 'SGD 3,000/mo', description: 'Primary position + custom branding' },
+  { id: 'standard', name: 'Standard Listing', price: 'SGD 300 one-time', description: 'Storefront listing setup, product photography guidelines, and 12% commission per sale.' },
+  { id: 'featured', name: 'Featured Placement', price: 'SGD 300 one-time + SGD 150/mo', description: 'Everything in Standard, plus homepage and room-exit placement (max 4 slots at a time). 12% commission per sale.' },
 ];
+
+const COMMISSION_NOTE = 'All vendors: SGD 300 one-time onboarding fee covers storefront setup. SCAVerse takes a 12% commission on marketplace sales — you keep your own fulfilment.';
 
 export default function VendorRegister() {
   const navigate = useNavigate();
@@ -172,7 +172,8 @@ export default function VendorRegister() {
 
             {/* Slot Selection */}
             <div className="rounded-2xl border border-border bg-card p-6">
-              <h3 className="font-display text-lg font-semibold text-foreground mb-4">Select Your Slot</h3>
+              <h3 className="font-display text-lg font-semibold text-foreground mb-1">Select Your Listing</h3>
+              <p className="text-muted-foreground text-xs font-body mb-4">{COMMISSION_NOTE}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {slotTypes.map(slot => (
                   <button
