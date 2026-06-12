@@ -65,6 +65,8 @@ const PlatformServices = lazy(() => import('./pages/admin/PlatformServices'));
 const ContentData = lazy(() => import('./pages/admin/ContentData'));
 const Infrastructure = lazy(() => import('./pages/admin/Infrastructure'));
 const Tenants = lazy(() => import('./pages/admin/Tenants'));
+const Inventory = lazy(() => import('./pages/admin/Inventory'));
+const Contacts = lazy(() => import('./pages/admin/Contacts'));
 const AdminWhiteLabel = lazy(() => import('./pages/admin/WhiteLabel'));
 const TenantWalkthrough = lazy(() => import('./pages/admin/TenantWalkthrough'));
 const ArchitectureBlueprint = lazy(() => import('./pages/admin/ArchitectureBlueprint'));
@@ -309,6 +311,7 @@ const AuthenticatedApp = () => {
       <Route path="/platform/admin" element={<MasterAdminLayout />}>
         <Route index element={<MasterDashboard />} />
         <Route path="users-access" element={<UsersAccess />} />
+        <Route path="contacts" element={<Contacts />} />
         <Route path="experience-layer" element={<ExperienceLayer />} />
         <Route path="modules" element={<ModulesOverview />} />
         <Route path="modules/onboarding" element={<ModuleOnboarding />} />
@@ -319,6 +322,7 @@ const AuthenticatedApp = () => {
         <Route path="modules/commerce" element={<ModuleCommerce />} />
         <Route path="modules/analytics" element={<ModuleAnalytics />} />
         <Route path="modules/gamification" element={<ModuleGamification />} />
+        <Route path="inventory" element={<Inventory />} />
         <Route path="platform-services" element={<PlatformServices />} />
         <Route path="services/experience-config" element={<Navigate to={`/museum/${DEFAULT_MUSEUM_SLUG}/admin/walkthrough`} replace />} />
         <Route path="services/:serviceKey" element={<ServicePage />} />

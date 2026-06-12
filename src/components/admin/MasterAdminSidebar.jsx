@@ -5,7 +5,7 @@ import {
   ChevronRight, Globe, Brain, Ticket, Store, ShoppingBag,
   Gamepad2, Map, FileText, Image, User, Milestone,
   Tag, GitBranch, CreditCard, Bell, Search, Puzzle, Zap,
-  ClipboardCheck, Music, LayoutGrid
+  ClipboardCheck, Music, LayoutGrid, Archive, Mail
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DEFAULT_MUSEUM_SLUG } from "@/lib/domain-registry";
@@ -23,6 +23,7 @@ const NAV = [
     group: "Users & Access",
     items: [
       { label: "Users & Access", path: "/platform/admin/users-access", icon: Users },
+      { label: "Contacts", path: "/platform/admin/contacts", icon: Mail },
     ]
   },
   {
@@ -38,6 +39,7 @@ const NAV = [
       { label: "Walkthrough Policy", path: "/platform/admin/modules/walkthrough", icon: Map },
       { label: "Onboarding", path: "/platform/admin/modules/onboarding", icon: Rocket },
       { label: "Ticketing", path: "/platform/admin/modules/ticketing", icon: Ticket },
+      { label: "Inventory", path: "/platform/admin/inventory", icon: Archive },
       { label: "AI Guide", path: "/platform/admin/modules/ai-guide", icon: Brain },
       { label: "Vendors", path: "/platform/admin/modules/vendors", icon: Store },
       { label: "Commerce", path: "/platform/admin/modules/commerce", icon: ShoppingBag },

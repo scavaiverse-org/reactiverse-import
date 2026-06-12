@@ -9,13 +9,13 @@ import TenantSwitcher from "@/components/admin/TenantSwitcher";
 import ConfigEditor from "@/components/admin/ConfigEditor";
 
 const TICKET_TYPES = [
-  { type: "virtual_general", label: "Virtual General", price: "SGD 12", enabled: true },
-  { type: "virtual_premium", label: "Virtual Premium", price: "SGD 28", enabled: true },
-  { type: "physical_general", label: "Physical General", price: "SGD 18", enabled: true },
-  { type: "physical_vip", label: "Physical VIP", price: "SGD 65", enabled: true },
-  { type: "combo", label: "Combo Pass", price: "SGD 38", enabled: true },
-  { type: "group", label: "Group / School", price: "SGD 8/pax", enabled: true },
-  { type: "corporate", label: "Corporate", price: "Custom", enabled: false },
+  { type: "standard_pass", label: "Standard Pass", price: "SGD 12", enabled: true },
+  { type: "premium_pass", label: "Premium Pass", price: "SGD 18", enabled: true },
+  { type: "family_pass", label: "Family Pass (up to 5)", price: "SGD 39", enabled: true },
+  { type: "school_block_40", label: "School Block — 40 pax", price: "SGD 280", enabled: true },
+  { type: "school_block_100", label: "School Block — 100 pax", price: "SGD 600", enabled: true },
+  { type: "corporate_block_50", label: "Corporate Block — 50 pax", price: "SGD 650", enabled: true },
+  { type: "event_vip_tour", label: "Event / VIP Private Tour", price: "SGD 1500", enabled: true },
 ];
 
 export default function ModuleTicketing() {

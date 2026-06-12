@@ -11,14 +11,16 @@ const ALLOWED_ORIGINS = [
   'http://localhost:4173',
 ];
 
-// Mirrors the fallback catalog in TenantTicketJourney.jsx.
+// Mirrors the fallback catalog in TenantTicketJourney.jsx and the AOM
+// Day-One pricing seeded in 0009_aom_ticket_pricing.sql.
 const DEFAULT_PRICES: Record<string, number> = {
-  virtual_general: 18,
-  virtual_premium: 38,
-  physical_general: 25,
-  physical_vip: 68,
-  family: 88,
-  group: 15,
+  standard_pass: 12,
+  premium_pass: 18,
+  family_pass: 39,
+  school_block_40: 280,
+  school_block_100: 600,
+  corporate_block_50: 650,
+  event_vip_tour: 1500,
 };
 
 const MAX_QUANTITY = 50;

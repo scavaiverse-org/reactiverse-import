@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { AlertTriangle, ArrowLeft, ArrowRight, Bot, Building2, CalendarDays, CheckCircle2, Crown, MapPin, Monitor, Package, School, ShieldCheck, ShoppingBag, Sparkles, Store, Ticket, Users } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, Bot, Building2, CalendarDays, CheckCircle2, Crown, MapPin, Package, School, ShieldCheck, ShoppingBag, Sparkles, Store, Ticket, Users } from "lucide-react";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -11,19 +11,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useActiveTenant } from "@/hooks/useActiveTenant";
+import { useAuth } from "@/lib/AuthContext";
 import { museumPath } from "@/lib/domain-registry";
 import { assertTenantId, legacyTenantFilter } from "@/lib/tenant-query";
 import { checkSubmitAllowed, honeypotInputProps, isHoneypotTripped, recordSubmit } from "@/lib/form-protection";
 import MuseumOpenGate from "@/components/tenant/MuseumOpenGate";
 
+// Mirrors the AOM Day-One pricing tiers (AOM_SCAVerse_Monetization_and_Promo.pdf)
+// and the seeded ticket_types in 0009_aom_ticket_pricing.sql — used when a
+// tenant has no module config yet, and to fill in icons/features/labels for
+// configured ticket types matched by id.
 const fallbackTickets = [
-  { id: "virtual_general", label: "Virtual General", price: 18, currency: "SGD", access_mode: "virtual", icon: Monitor, features: ["Virtual walkthrough", "AI support", "Digital access"] },
-  { id: "virtual_premium", label: "Virtual Premium", price: 38, currency: "SGD", access_mode: "virtual", icon: Sparkles, features: ["Premium content", "Priority AI docent", "Resource library"] },
-  { id: "physical_general", label: "Physical Visit", price: 25, currency: "SGD", access_mode: "physical", icon: MapPin, features: ["Museum entry", "Audio guide", "Digital companion"] },
-  { id: "physical_vip", label: "Physical VIP", price: 68, currency: "SGD", access_mode: "physical", icon: Crown, features: ["VIP entry", "Guided tour", "Premium bundle"] },
-  { id: "family", label: "Family Pack", price: 88, currency: "SGD", access_mode: "hybrid", icon: Users, features: ["Family access", "Shared activities", "Flexible pacing"] },
-  { id: "group", label: "Group / School", price: 15, currency: "SGD", access_mode: "hybrid", icon: School, features: ["10+ visitors", "Coordinator support", "Learning materials"] },
-  { id: "corporate", label: "Corporate", price: null, currency: "SGD", access_mode: "hybrid", icon: Building2, features: ["Custom package", "Private briefing", "Invoice-ready enquiry"] },
+  { id: "standard_pass", label: "Standard Pass", price: 12, currency: "SGD", access_mode: "virtual", icon: Ticket, features: ["Full walkthrough — all published rooms", "48-hour access window"] },
+  { id: "premium_pass", label: "Premium Pass", price: 18, currency: "SGD", access_mode: "virtual", icon: Sparkles, features: ["Everything in Standard Pass", "AI Cultural Guide included", "Hidden exhibits unlocked", "Downloadable story cards"] },
+  { id: "family_pass", label: "Family Pass (up to 5)", price: 39, currency: "SGD", access_mode: "hybrid", icon: Users, features: ["Up to 5 visitors", "All Premium Pass features", "Kid-friendly AI guide mode"] },
+  { id: "school_block_40", label: "School Block — 40 pax", price: 280, currency: "SGD", access_mode: "hybrid", icon: School, features: ["40 student passes (SGD 7/pax)", "Teacher dashboard link", "Learning-mode AI guide"] },
+  { id: "school_block_100", label: "School Block — 100 pax", price: 600, currency: "SGD", access_mode: "hybrid", icon: School, features: ["100 student passes (SGD 6/pax)", "MOE-friendly invoice", "Redemption codes"] },
+  { id: "corporate_block_50", label: "Corporate Block — 50 pax", price: 650, currency: "SGD", access_mode: "hybrid", icon: Building2, features: ["50 Premium passes (SGD 13/pax)", "Co-branded landing screen", "Invoice-ready enquiry"] },
+  { id: "event_vip_tour", label: "Event / VIP Private Tour", price: 1500, currency: "SGD", access_mode: "hybrid", icon: Crown, features: ["Timed group session", "Custom welcome from host", "Host commentary throughout"] },
 ];
 
 const stages = [
@@ -214,17 +219,31 @@ export function TicketGateway() {
   const navigate = useNavigate();
   const { tenantSlug } = useParams();
   const { tenant, tickets, isLoading, launchPromo } = useTickets();
+  const { user } = useAuth();
   const slug = tenantSlug || tenant?.slug || "asian-operatic-museum";
-  const [selectedId, setSelectedId] = useState(tickets[0]?.id || "virtual_general");
+  const [selectedId, setSelectedId] = useState(tickets[0]?.id || "standard_pass");
   const [form, setForm] = useState({ visitor_name: "", visitor_email: "", quantity: 1, visit_date: "", accessibility_needs: "", group_type: "individual", notes: "" });
   const [honeypot, setHoneypot] = useState("");
   useEffect(() => {
     if (tickets.length && !tickets.some((ticket) => ticket.id === selectedId)) setSelectedId(tickets[0].id);
   }, [tickets, selectedId]);
+  useEffect(() => {
+    if (!user) return;
+    setForm((prev) => ({
+      ...prev,
+      visitor_name: prev.visitor_name || user.fullName || "",
+      visitor_email: prev.visitor_email || user.email || "",
+    }));
+  }, [user]);
   const selected = tickets.find((ticket) => ticket.id === selectedId) || tickets[0];
   const total = selected?.price ? selected.price * Number(form.quantity || 1) : null;
+  const loginRedirect = encodeURIComponent(museumPath(slug, "tickets"));
 
   const submitReservation = async () => {
+    if (!user) {
+      toast.error("Please sign in to reserve a ticket.");
+      return;
+    }
     if (!form.visitor_name || !form.visitor_email) {
       toast.error("Please add your name and email to reserve a ticket.");
       return;
@@ -249,6 +268,7 @@ export function TicketGateway() {
     const payload = {
       tenant_id: tenantId,
       tenant_name: tenant?.name,
+      created_by_id: user.id,
       ticket_type: selected.id,
       visitor_name: form.visitor_name,
       visitor_email: form.visitor_email,
@@ -294,19 +314,33 @@ export function TicketGateway() {
             return <motion.button key={ticket.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.04 }} onClick={() => setSelectedId(ticket.id)} className={`rounded-3xl border p-5 text-left backdrop-blur-sm transition-all duration-300 ${active ? "border-primary bg-primary/10 ring-1 ring-primary/30" : "border-border/40 bg-card/50 hover:border-primary/40 hover:bg-card/80"}`} aria-pressed={active}><div className="mb-4 flex items-center justify-between gap-3"><Icon className="h-6 w-6 text-primary" /><span className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${active ? "border-primary/30 bg-primary text-primary-foreground" : "border-border/50 text-muted-foreground"}`}>{active ? "Selected" : "Select"}</span></div><h3 className="font-heading text-xl font-semibold">{ticket.label}</h3><TicketPrice ticket={ticket} /><ul className="mt-4 space-y-2 text-xs text-muted-foreground">{(ticket.features || []).map((feature) => <li key={feature} className="flex gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-primary" />{feature}</li>)}</ul></motion.button>;
           })}
         </div>
-        <div className="rounded-3xl border border-border/40 bg-card/50 p-6 backdrop-blur-sm">
-          <h2 className="font-heading text-2xl font-semibold">Reservation details</h2>
-          <div className="mt-5 space-y-4">
-            <input {...honeypotInputProps()} value={honeypot} onChange={(e) => setHoneypot(e.target.value)} />
-            <label className="space-y-2"><Label>Visitor name</Label><Input value={form.visitor_name} onChange={(e) => setForm({ ...form, visitor_name: e.target.value })} /></label>
-            <label className="space-y-2"><Label>Email</Label><Input type="email" value={form.visitor_email} onChange={(e) => setForm({ ...form, visitor_email: e.target.value })} /></label>
-            <div className="grid grid-cols-2 gap-3"><label className="space-y-2"><Label>Quantity</Label><Input type="number" min="1" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) || 1 })} /></label><label className="space-y-2"><Label>Visit date</Label><Input type="date" min={todayDateInput()} value={form.visit_date} onChange={(e) => setForm({ ...form, visit_date: e.target.value })} /></label></div>
-            <label className="space-y-2"><Label>Group type</Label><select value={form.group_type} onChange={(e) => setForm({ ...form, group_type: e.target.value })} className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"><option value="individual">Individual</option><option value="family">Family</option><option value="school">School</option><option value="corporate">Corporate</option></select><p className="text-xs leading-relaxed text-muted-foreground">Some group types may require staff confirmation or custom quote before payment.</p></label>
-            <label className="space-y-2"><Label>Accessibility needs</Label><Textarea value={form.accessibility_needs} onChange={(e) => setForm({ ...form, accessibility_needs: e.target.value })} /></label>
-            {total && <div className="flex items-center justify-between border-t border-white/10 pt-4"><span className="text-sm text-muted-foreground">Estimated total</span><span className="font-heading text-2xl font-semibold text-primary">{selected.currency} {total.toFixed(2)}</span></div>}
-            <Button className="w-full" onClick={submitReservation}>Reserve Ticket <ArrowRight className="h-4 w-4" /></Button>
+        {!user ? (
+          <div className="rounded-3xl border border-border/40 bg-card/50 p-6 text-center backdrop-blur-sm">
+            <ShieldCheck className="mx-auto mb-4 h-10 w-10 text-primary" />
+            <h2 className="font-heading text-2xl font-semibold">Sign in to reserve</h2>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              Create a free account or sign in to reserve and purchase tickets. Paid e-tickets are credited straight to your account inventory.
+            </p>
+            <div className="mt-6 flex flex-col gap-3">
+              <Button asChild className="w-full"><Link to={`/login?redirect=${loginRedirect}`}>Sign In</Link></Button>
+              <Button asChild variant="outline" className="w-full"><Link to={`/signup?redirect=${loginRedirect}`}>Create Account</Link></Button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="rounded-3xl border border-border/40 bg-card/50 p-6 backdrop-blur-sm">
+            <h2 className="font-heading text-2xl font-semibold">Reservation details</h2>
+            <div className="mt-5 space-y-4">
+              <input {...honeypotInputProps()} value={honeypot} onChange={(e) => setHoneypot(e.target.value)} />
+              <label className="space-y-2"><Label>Visitor name</Label><Input value={form.visitor_name} onChange={(e) => setForm({ ...form, visitor_name: e.target.value })} /></label>
+              <label className="space-y-2"><Label>Email</Label><Input type="email" value={form.visitor_email} onChange={(e) => setForm({ ...form, visitor_email: e.target.value })} /></label>
+              <div className="grid grid-cols-2 gap-3"><label className="space-y-2"><Label>Quantity</Label><Input type="number" min="1" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) || 1 })} /></label><label className="space-y-2"><Label>Visit date</Label><Input type="date" min={todayDateInput()} value={form.visit_date} onChange={(e) => setForm({ ...form, visit_date: e.target.value })} /></label></div>
+              <label className="space-y-2"><Label>Group type</Label><select value={form.group_type} onChange={(e) => setForm({ ...form, group_type: e.target.value })} className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"><option value="individual">Individual</option><option value="family">Family</option><option value="school">School</option><option value="corporate">Corporate</option></select><p className="text-xs leading-relaxed text-muted-foreground">Some group types may require staff confirmation or custom quote before payment.</p></label>
+              <label className="space-y-2"><Label>Accessibility needs</Label><Textarea value={form.accessibility_needs} onChange={(e) => setForm({ ...form, accessibility_needs: e.target.value })} /></label>
+              {total && <div className="flex items-center justify-between border-t border-white/10 pt-4"><span className="text-sm text-muted-foreground">Estimated total</span><span className="font-heading text-2xl font-semibold text-primary">{selected.currency} {total.toFixed(2)}</span></div>}
+              <Button className="w-full" onClick={submitReservation}>Reserve Ticket <ArrowRight className="h-4 w-4" /></Button>
+            </div>
+          </div>
+        )}
       </div>
       <div className="mt-8 flex flex-wrap gap-3"><ActionLink to={museumPath(slug, "tickets-2")} variant="outline">Compare Ticket Types</ActionLink><ActionLink to={museumPath(slug, "tickets-3")} variant="outline">Plan Visit</ActionLink><ActionLink to={museumPath(slug, "guide")} variant="outline">Ask About Tickets</ActionLink></div>
     </StageShell>
@@ -317,7 +351,7 @@ export function TicketComparison() {
   const { tenantSlug } = useParams();
   const { tenant, tickets, launchPromo } = useTickets();
   const slug = tenantSlug || tenant?.slug || "asian-operatic-museum";
-  return <StageShell activeStage="tickets-2" eyebrow="Ticket Comparison" title="Compare every access type." body="Review virtual, premium, physical, VIP, family, group, school, and corporate options before planning your visit."><PromoBanner promo={launchPromo} /><div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{tickets.map((ticket) => <div key={ticket.id} className="rounded-3xl border border-border/40 bg-card/50 p-6"><Badge className="mb-4 bg-primary/10 text-primary">{ticket.access_mode || "museum"}</Badge><h3 className="font-heading text-2xl font-semibold">{ticket.label}</h3><TicketPrice ticket={ticket} /><ul className="mt-5 space-y-2 text-sm text-muted-foreground">{(ticket.features || []).map((feature) => <li key={feature} className="flex gap-2"><ShieldCheck className="h-4 w-4 text-primary" />{feature}</li>)}</ul></div>)}</div><div className="mt-8 flex flex-wrap gap-3"><ActionLink to={museumPath(slug, "tickets-3")}>Continue to Visit Planning <ArrowRight className="h-4 w-4" /></ActionLink><ActionLink to={museumPath(slug, "tickets")} variant="outline"><ArrowLeft className="h-4 w-4" /> Back to Ticket Options</ActionLink></div></StageShell>;
+  return <StageShell activeStage="tickets-2" eyebrow="Ticket Comparison" title="Compare every access type." body="Review Standard, Premium, Family, School, Corporate, and Event/VIP packages before planning your visit."><PromoBanner promo={launchPromo} /><div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{tickets.map((ticket) => <div key={ticket.id} className="rounded-3xl border border-border/40 bg-card/50 p-6"><Badge className="mb-4 bg-primary/10 text-primary">{ticket.access_mode || "museum"}</Badge><h3 className="font-heading text-2xl font-semibold">{ticket.label}</h3><TicketPrice ticket={ticket} /><ul className="mt-5 space-y-2 text-sm text-muted-foreground">{(ticket.features || []).map((feature) => <li key={feature} className="flex gap-2"><ShieldCheck className="h-4 w-4 text-primary" />{feature}</li>)}</ul></div>)}</div><div className="mt-8 flex flex-wrap gap-3"><ActionLink to={museumPath(slug, "tickets-3")}>Continue to Visit Planning <ArrowRight className="h-4 w-4" /></ActionLink><ActionLink to={museumPath(slug, "tickets")} variant="outline"><ArrowLeft className="h-4 w-4" /> Back to Ticket Options</ActionLink></div></StageShell>;
 }
 
 export function VisitPlanning() {
