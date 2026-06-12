@@ -370,7 +370,18 @@ const ARROW_ANGLES = {
 };
 
 function makeResult(group) {
-  return { group, interactive: false, kind: "", animated: [], labels: [], mediaRequests: [] };
+  return { group, interactive: false, kind: "", animated: [], labels: [], mediaRequests: [], billboard: [] };
+}
+
+// A sprite-mode plane starts as a unit square scaled to spriteBaseHeight; once its
+// texture loads, the renderer rescales width to match the image's true aspect ratio.
+function addSpritePlane(group, baseHeight, positionY) {
+  const plane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, alphaTest: 0.05, side: THREE.DoubleSide }));
+  plane.scale.set(baseHeight, baseHeight, 1);
+  plane.position.set(0, positionY, 0);
+  plane.userData.spriteBaseHeight = baseHeight;
+  group.add(plane);
+  return plane;
 }
 
 function addLabel(result, text, position, options = {}) {
@@ -397,6 +408,20 @@ export function objectLabelText(object = {}) {
 const OBJECT_BUILDERS = {
   image_frame: (object) => {
     const result = makeResult(new THREE.Group());
+    if (object.spriteMode) {
+      const baseHeight = 1.7;
+      const plane = addSpritePlane(result.group, baseHeight, baseHeight / 2);
+      if (object.billboard) result.billboard.push(plane);
+      if (object.imageUrl) {
+        result.mediaRequests.push({ kind: "image", mesh: plane, url: object.imageUrl });
+      } else {
+        addLabel(result, `${OBJECT_ICONS.image_frame} Sprite`, [0, baseHeight / 2, 0.01], { width: 1.2, height: 0.4, fontSize: 56, background: null });
+      }
+      addLabel(result, objectLabelText(object) || "Image Sprite", [0, baseHeight + 0.3, 0]);
+      result.interactive = true;
+      result.kind = "media";
+      return result;
+    }
     addBox(result.group, [0, 0.6, 0], [1.6, 1.2, 0.08], { color: 0x2b2b2b, roughness: 0.6 });
     const screen = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.0), new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.5 }));
     screen.position.set(0, 0.6, 0.045);
@@ -456,9 +481,30 @@ const OBJECT_BUILDERS = {
 
   artifact_display: (object) => {
     const result = makeResult(new THREE.Group());
+    if (object.spriteMode) {
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.55, 0.06, 24), makeStandardMaterial({ color: 0xd9cdb8, roughness: 0.7 }));
+      base.position.set(0, 0.03, 0);
+      base.receiveShadow = true;
+      result.group.add(base);
+      const baseHeight = 1.5;
+      const plane = addSpritePlane(result.group, baseHeight, 0.06 + baseHeight / 2);
+      if (object.billboard) result.billboard.push(plane);
+      if (object.imageUrl) {
+        result.mediaRequests.push({ kind: "image", mesh: plane, url: object.imageUrl });
+      } else {
+        const artifact = new THREE.Mesh(new THREE.IcosahedronGeometry(0.3, 0), new THREE.MeshStandardMaterial({ color: 0xc9a56d, roughness: 0.4, metalness: 0.2 }));
+        artifact.position.set(0, 0.06 + baseHeight / 2, 0);
+        result.group.add(artifact);
+        result.animated.push({ mesh: artifact, type: "rotate" });
+      }
+      addLabel(result, objectLabelText(object) || "Artifact Sprite", [0, 0.06 + baseHeight + 0.3, 0]);
+      result.interactive = true;
+      result.kind = "media";
+      return result;
+    }
     addBox(result.group, [0, 0.45, 0], [0.8, 0.9, 0.8], { color: 0xd9cdb8, roughness: 0.7 });
     if (object.imageUrl) {
-      const plane = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.6), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 }));
+      const plane = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.6), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, transparent: true, alphaTest: 0.05 }));
       plane.position.set(0, 1.2, 0.41);
       result.group.add(plane);
       result.mediaRequests.push({ kind: "image", mesh: plane, url: object.imageUrl });

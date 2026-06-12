@@ -163,6 +163,7 @@ export default function ThreeDWorldRoom({ room, context = {} }) {
     const objectGroups = new Map();
     const interactiveGroups = [];
     const animatedEntries = [];
+    const billboardEntries = [];
     const pulseQueue = [];
     const textureResources = [];
     const videoResources = [];
@@ -203,6 +204,7 @@ export default function ThreeDWorldRoom({ room, context = {} }) {
       objectGroups.set(object.id, group);
       if (result.interactive && INTERACTIVE_TYPES.has(object.type)) interactiveGroups.push(group);
       result.animated.forEach((entry) => animatedEntries.push({ ...entry, group, baseY: entry.mesh.position.y }));
+      result.billboard.forEach((mesh) => billboardEntries.push({ mesh, group }));
 
       result.mediaRequests.forEach((request) => {
         if (request.kind === "image") {
@@ -213,6 +215,11 @@ export default function ThreeDWorldRoom({ room, context = {} }) {
             request.mesh.material.map = texture;
             request.mesh.material.color.set(0xffffff);
             request.mesh.material.needsUpdate = true;
+            const baseHeight = request.mesh.userData.spriteBaseHeight;
+            if (baseHeight && texture.image?.width && texture.image?.height) {
+              const aspect = texture.image.width / texture.image.height;
+              request.mesh.scale.set(baseHeight * aspect, baseHeight, 1);
+            }
             textureResources.push(texture);
           });
         }
@@ -608,6 +615,13 @@ export default function ThreeDWorldRoom({ room, context = {} }) {
       }
 
       if (atmosphere) atmosphere.update(elapsed, delta);
+
+      billboardEntries.forEach(({ mesh, group }) => {
+        const worldPos = group.position;
+        const dx = camera.position.x - worldPos.x;
+        const dz = camera.position.z - worldPos.z;
+        mesh.rotation.y = Math.atan2(dx, dz) - group.rotation.y;
+      });
 
       for (let i = pulseQueue.length - 1; i >= 0; i -= 1) {
         const entry = pulseQueue[i];

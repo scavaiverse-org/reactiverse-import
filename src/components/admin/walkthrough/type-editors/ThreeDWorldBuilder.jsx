@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { ArrowDown, ArrowUp, Box, CheckCircle2, ChevronDown, Copy, DoorOpen, Eye, Plus, Sparkles, Trash2, Wand2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Box, CheckCircle2, ChevronDown, Copy, DoorOpen, Eye, Plus, Sparkles, Trash2, Upload, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import HelpHint from "../HelpHint";
+import SpritePhotoshopPanel from "../SpritePhotoshopPanel";
+import { uploadFile } from "@/lib/upload";
 import { THREE_D_WORLD_EDITOR_SEED, getMoodPreset, getObjectType, getWorldTemplate } from "@/lib/three-d-world-seed";
 import {
   buildPublishManifest,
@@ -25,6 +27,12 @@ const selectClass = "w-full rounded-lg border border-input bg-secondary px-3 py-
 const METADATA_TYPES = new Set(["artifact_display", "image_frame", "memory_capsule", "text_panel"]);
 const ALT_TEXT_TYPES = new Set(["image_frame", "artifact_display", "memory_capsule", "product_booth"]);
 const TRANSCRIPT_TYPES = new Set(["audio_point", "video_wall"]);
+// Object types that can show a transparent-PNG cutout ("sprite") instead of a frame/pedestal.
+const SPRITE_TYPES = new Set(["artifact_display", "image_frame"]);
+
+function blobToSpriteFile(blob, name = "sprite.png") {
+  return new File([blob], name, { type: blob.type || "image/png" });
+}
 
 const snapValue = (value, step) => Math.round((Number(value) || 0) / step) * step;
 const snapVector = (vector = {}) => ({ x: snapValue(vector.x, 0.5), y: snapValue(vector.y, 0.5), z: snapValue(vector.z, 0.5) });
@@ -124,6 +132,7 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
   const setConfig = (patch) => onChange({ ...room, threeDWorldConfig: { ...(config || createThreeDWorldConfig()), ...patch } });
   const [newObjectType, setNewObjectType] = useState("image_frame");
   const [transformClipboard, setTransformClipboard] = useState(null);
+  const [spriteUploads, setSpriteUploads] = useState({});
 
   // First visit for this room: offer a clean start or the seeded sample.
   if (!config) {
@@ -166,6 +175,27 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
     const next = [...objects];
     [next[index], next[target]] = [next[target], next[index]];
     setConfig({ objects: next });
+  };
+
+  // Sprite import: turn an uploaded photo into a transparent-PNG cutout and use it
+  // as this object's image, switching the object into sprite display mode.
+  const setSpriteFile = (id, file) => setSpriteUploads((current) => ({ ...current, [id]: { file, status: "" } }));
+  const clearSpriteUpload = (id) => setSpriteUploads((current) => { const next = { ...current }; delete next[id]; return next; });
+  const setSpriteStatus = (id, status) => setSpriteUploads((current) => ({ ...current, [id]: { ...(current[id] || {}), status } }));
+  const applySpriteImage = async (id, file) => {
+    setSpriteStatus(id, "Uploading sprite…");
+    try {
+      const { file_url } = await uploadFile(file);
+      updateObject(id, { imageUrl: file_url, spriteMode: true });
+      clearSpriteUpload(id);
+    } catch {
+      setSpriteStatus(id, "Upload failed. Please try again.");
+    }
+  };
+  const acceptSpriteCutout = (id, { blob }) => applySpriteImage(id, blobToSpriteFile(blob));
+  const acceptOriginalSpriteImage = (id) => {
+    const file = spriteUploads[id]?.file;
+    if (file) applySpriteImage(id, file);
   };
 
   const applyTemplate = (templateId) => {
@@ -403,6 +433,33 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
                       </Field>
                     )}
                   </div>
+                  {SPRITE_TYPES.has(object.type) && (
+                    <div className="space-y-2 rounded-lg border border-white/10 bg-background/30 p-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <Toggle label="Sprite cutout (transparent PNG)" checked={!!object.spriteMode} onChange={(value) => updateObject(object.id, { spriteMode: value })} hint="Shows the image as a flat, transparent-background cutout instead of inside a frame or pedestal box — great for artifact photos with the background removed." />
+                          {object.spriteMode && (
+                            <Toggle label="Always face viewer (billboard)" checked={!!object.billboard} onChange={(value) => updateObject(object.id, { billboard: value })} hint="The cutout rotates to always face the visitor, like a classic 2D sprite." />
+                          )}
+                        </div>
+                        <Button size="sm" variant="outline" asChild>
+                          <label className="cursor-pointer">
+                            <Upload className="h-3.5 w-3.5" /> Import sprite from photo
+                            <input type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setSpriteFile(object.id, file); }} />
+                          </label>
+                        </Button>
+                      </div>
+                      {spriteUploads[object.id]?.file && (
+                        <SpritePhotoshopPanel
+                          file={spriteUploads[object.id].file}
+                          onAccept={(payload) => acceptSpriteCutout(object.id, payload)}
+                          onUseOriginal={() => acceptOriginalSpriteImage(object.id)}
+                          onCancel={() => clearSpriteUpload(object.id)}
+                        />
+                      )}
+                      {spriteUploads[object.id]?.status && <p className="text-xs text-muted-foreground">{spriteUploads[object.id].status}</p>}
+                    </div>
+                  )}
                   <div className="grid gap-3 md:grid-cols-3">
                     <VectorInput label="Position" value={object.position} onChange={(value) => updateObject(object.id, { position: value })} />
                     <VectorInput label="Rotation" value={object.rotation} onChange={(value) => updateObject(object.id, { rotation: value })} />
