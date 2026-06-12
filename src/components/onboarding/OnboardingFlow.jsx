@@ -7,6 +7,7 @@ import { base44 } from "@/api/base44Client";
 import { Map, Compass, Building2, Globe, KeyRound } from "lucide-react";
 import { museumPath } from "@/lib/domain-registry";
 import { publicExperienceFilter } from "@/lib/tenant-query";
+import { ACCOUNT_TYPE_INTENT_KEY } from "@/components/auth/AccountTypeGate";
 
 const AUDIENCE_SELECTOR = {
   id: "choose_audience",
@@ -280,6 +281,15 @@ export default function OnboardingFlow({ onNavigate, resetKey, showProgressDots 
       setCurrentStage(0);
       setSelections({});
       setMultiSelections([]);
+      // Remember the pathway so AccountTypeGate can auto-apply it at signup
+      // instead of asking the same consumer/franchisee question twice.
+      if (optionId === "consumer" || optionId === "franchisee") {
+        try {
+          window.localStorage.setItem(ACCOUNT_TYPE_INTENT_KEY, optionId);
+        } catch {
+          /* ignore */
+        }
+      }
       base44.entities.AnalyticsEvent.create({ tenant_id: activeTenant?.id, tenant_name: activeTenant?.name, event_type: "onboarding_audience_selected", event_data: { audience: optionId }, source_page: "onboarding" }).catch(() => {});
       return;
     }

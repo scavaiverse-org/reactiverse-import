@@ -11,6 +11,10 @@ const EXCLUDED_PREFIXES = ["/login", "/signup", "/auth/callback", "/tenant-login
 // gate re-check the profile and reappear.
 export const ACCOUNT_TYPE_RESET_EVENT = "scaverse:account-type-reset";
 
+// Set by the anonymous intro tour when the visitor picks a pathway; the gate
+// auto-applies it on first sign-in so the question is only ever asked once.
+export const ACCOUNT_TYPE_INTENT_KEY = "scaverse_account_type_intent";
+
 const CHOICES = [
   {
     type: "consumer",
@@ -53,8 +57,40 @@ export default function AccountTypeGate() {
       .single();
     const needsChoice =
       !!profile && !profile.account_type && normalizeRole(profile.role) === ROLES.PUBLIC_USER;
-    setPendingUserId(needsChoice ? user.id : null);
-  }, []);
+    if (!needsChoice) {
+      setPendingUserId(null);
+      return;
+    }
+
+    // Auto-connect: if the visitor already answered in the intro tour, apply
+    // that choice silently instead of asking the same question again.
+    let intent = null;
+    try {
+      intent = window.localStorage.getItem(ACCOUNT_TYPE_INTENT_KEY);
+    } catch {
+      intent = null;
+    }
+    if (intent === "consumer" || intent === "franchisee") {
+      const { error: applyError } = await supabase
+        .from("profiles")
+        .update({ account_type: intent })
+        .eq("id", user.id);
+      if (!applyError) {
+        try {
+          window.localStorage.removeItem(ACCOUNT_TYPE_INTENT_KEY);
+        } catch {
+          /* ignore */
+        }
+        setPendingUserId(null);
+        if (!EXCLUDED_PREFIXES.some((prefix) => window.location.pathname.startsWith(prefix))) {
+          navigate(intent === "franchisee" ? "/become-a-tenant" : "/platform/overview", { replace: true });
+        }
+        return;
+      }
+    }
+
+    setPendingUserId(user.id);
+  }, [navigate]);
 
   useEffect(() => {
     evaluate();
@@ -80,6 +116,11 @@ export default function AccountTypeGate() {
     if (updateError) {
       setError(updateError.message);
       return;
+    }
+    try {
+      window.localStorage.removeItem(ACCOUNT_TYPE_INTENT_KEY);
+    } catch {
+      /* ignore */
     }
     setPendingUserId(null);
     navigate(type === "franchisee" ? "/become-a-tenant" : "/platform/overview");
