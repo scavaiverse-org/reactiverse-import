@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { UserPlus, Eye, EyeOff, MailCheck } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import FranchiseIntentModal from "@/components/auth/FranchiseIntentModal";
+import TurnstileWidget from "@/components/auth/TurnstileWidget";
 
 export default function SignUp() {
   const navigate = useNavigate();
@@ -22,6 +23,8 @@ export default function SignUp() {
   const [error, setError] = useState("");
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const [showFranchisePrompt, setShowFranchisePrompt] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const turnstileRef = useRef(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,14 +35,23 @@ export default function SignUp() {
       return;
     }
 
+    if (!captchaToken) {
+      setError("Please complete the verification challenge.");
+      return;
+    }
+
     setLoading(true);
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { full_name: fullName, franchise_intent: franchiseIntent },
+        captchaToken,
       },
     });
+
+    turnstileRef.current?.reset();
+    setCaptchaToken("");
 
     if (signUpError) {
       setLoading(false);
@@ -174,13 +186,20 @@ export default function SignUp() {
             <span>I&apos;m interested in opening a franchise / tenant space on SCAVers.</span>
           </label>
 
+          <TurnstileWidget
+            ref={turnstileRef}
+            onVerify={setCaptchaToken}
+            onExpire={() => setCaptchaToken("")}
+            className="flex justify-center"
+          />
+
           {error && (
             <p className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">
               {error}
             </p>
           )}
 
-          <Button type="submit" disabled={loading} className="w-full bg-primary text-primary-foreground">
+          <Button type="submit" disabled={loading || !captchaToken} className="w-full bg-primary text-primary-foreground">
             {loading ? (
               <span className="flex items-center gap-2">
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
