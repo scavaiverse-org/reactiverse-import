@@ -96,6 +96,7 @@ import LoginRedirect from './components/auth/LoginRedirect';
 import SignUp from './components/auth/SignUp';
 import AuthCallback from './components/auth/AuthCallback';
 import AccountTypeGate from './components/auth/AccountTypeGate';
+import MuseumOpenGate from './components/tenant/MuseumOpenGate';
 import { TenantAdminRedirect, TenantPublicRedirect } from './components/routing/CanonicalRedirects';
 import { DEFAULT_MUSEUM_SLUG, museumPath } from '@/lib/domain-registry';
 import { startSentinelRuntimeCapture } from '@/lib/qa-sentinel/browser-events';
@@ -251,12 +252,12 @@ const AuthenticatedApp = () => {
       <Route element={<AppLayout />}>
         <Route path="/museum/:tenantSlug/museum" element={<TenantPublicRedirect page="home" />} />
         <Route path="/museum/:tenantSlug/onboarding" element={<TenantPublicRedirect page="home" />} />
-        <Route path="/museum/:tenantSlug/vendors" element={<Vendors />} />
-        <Route path="/museum/:tenantSlug/vendors/register" element={<VendorRegister />} />
-        <Route path="/museum/:tenantSlug/commerce" element={<Commerce />} />
-        <Route path="/museum/:tenantSlug/walkthrough" element={<Walkthrough />} />
-        <Route path="/museum/:tenantSlug/walkthrough/:walkthroughKey" element={<Walkthrough />} />
-        <Route path="/museum/:tenantSlug/guide" element={<AIGuide />} />
+        <Route path="/museum/:tenantSlug/vendors" element={<MuseumOpenGate><Vendors /></MuseumOpenGate>} />
+        <Route path="/museum/:tenantSlug/vendors/register" element={<MuseumOpenGate><VendorRegister /></MuseumOpenGate>} />
+        <Route path="/museum/:tenantSlug/commerce" element={<MuseumOpenGate><Commerce /></MuseumOpenGate>} />
+        <Route path="/museum/:tenantSlug/walkthrough" element={<MuseumOpenGate><Walkthrough /></MuseumOpenGate>} />
+        <Route path="/museum/:tenantSlug/walkthrough/:walkthroughKey" element={<MuseumOpenGate><Walkthrough /></MuseumOpenGate>} />
+        <Route path="/museum/:tenantSlug/guide" element={<MuseumOpenGate><AIGuide /></MuseumOpenGate>} />
       </Route>
       <Route path="/museum/:tenantSlug/room-preview" element={<TenantPublicRedirect page="begin-tour" />} />
 
