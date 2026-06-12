@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import TenantNavbar from "@/components/tenant/TenantNavbar";
 import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { museumPath } from "@/lib/domain-registry";
 
@@ -178,10 +177,12 @@ function StageShell({ activeStage, eyebrow, title, body, children }) {
   const { tenantSlug } = useParams();
   const { tenant } = useActiveTenant();
   const slug = tenantSlug || tenant?.slug || "asian-operatic-museum";
+  // Ticket pages render inside AppLayout (unified platform top bar) — the
+  // museum's own fixed TenantNavbar would overlap it at top-0. The
+  // "Museum Home" button below keeps the way back into the museum.
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <TenantNavbar />
-      <section className="mx-auto max-w-7xl px-4 pb-20 pt-32 sm:px-6">
+      <section className="mx-auto max-w-7xl px-4 pb-20 pt-10 sm:px-6">
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="font-display text-[10px] font-medium uppercase tracking-[0.5em] text-primary/70">{tenant?.name || "Museum"} · {eyebrow}</p>

@@ -229,11 +229,13 @@ const AuthenticatedApp = () => {
       <Route path="/museum/:tenantSlug/home-3" element={<TenantHome3 />} />
       <Route path="/museum/:tenantSlug/home-4" element={<TenantHome4 />} />
       <Route path="/museum/:tenantSlug/home-5" element={<TenantHome5 />} />
-      <Route path="/museum/:tenantSlug/tickets" element={<Tickets1 />} />
-      <Route path="/museum/:tenantSlug/tickets-2" element={<Tickets2 />} />
-      <Route path="/museum/:tenantSlug/tickets-3" element={<Tickets3 />} />
-      <Route path="/museum/:tenantSlug/tickets-4" element={<Tickets4 />} />
-      <Route path="/museum/:tenantSlug/tickets-5" element={<Tickets5 />} />
+      <Route element={<AppLayout />}>
+        <Route path="/museum/:tenantSlug/tickets" element={<Tickets1 />} />
+        <Route path="/museum/:tenantSlug/tickets-2" element={<Tickets2 />} />
+        <Route path="/museum/:tenantSlug/tickets-3" element={<Tickets3 />} />
+        <Route path="/museum/:tenantSlug/tickets-4" element={<Tickets4 />} />
+        <Route path="/museum/:tenantSlug/tickets-5" element={<Tickets5 />} />
+      </Route>
       <Route path="/museum/:tenantSlug/about" element={<About1 />} />
       <Route path="/museum/:tenantSlug/about-2" element={<About2 />} />
       <Route path="/museum/:tenantSlug/about-3" element={<About3 />} />
