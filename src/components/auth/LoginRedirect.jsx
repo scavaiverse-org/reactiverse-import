@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import FranchiseIntentModal from "@/components/auth/FranchiseIntentModal";
+import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
 
 export default function LoginRedirect() {
   const navigate = useNavigate();
@@ -62,6 +63,14 @@ export default function LoginRedirect() {
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-primary">SCAVerse</p>
           <h1 className="mt-3 font-display text-2xl font-bold text-foreground">Sign in to your account</h1>
           <p className="mt-2 text-sm text-muted-foreground">Enter your credentials to continue.</p>
+        </div>
+
+        <GoogleAuthButton redirect={redirectParam} />
+
+        <div className="my-5 flex items-center gap-3">
+          <span className="h-px flex-1 bg-border/60" />
+          <span className="text-xs uppercase tracking-wider text-muted-foreground">or sign in with email</span>
+          <span className="h-px flex-1 bg-border/60" />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

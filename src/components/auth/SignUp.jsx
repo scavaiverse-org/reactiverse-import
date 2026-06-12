@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import FranchiseIntentModal from "@/components/auth/FranchiseIntentModal";
+import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
 
 export default function SignUp() {
   const navigate = useNavigate();
@@ -97,6 +98,14 @@ export default function SignUp() {
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-primary">SCAVerse</p>
           <h1 className="mt-3 font-display text-2xl font-bold text-foreground">Create your account</h1>
           <p className="mt-2 text-sm text-muted-foreground">Sign up to start exploring SCAVers.</p>
+        </div>
+
+        <GoogleAuthButton />
+
+        <div className="my-5 flex items-center gap-3">
+          <span className="h-px flex-1 bg-border/60" />
+          <span className="text-xs uppercase tracking-wider text-muted-foreground">or sign up with email</span>
+          <span className="h-px flex-1 bg-border/60" />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

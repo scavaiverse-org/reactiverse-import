@@ -94,6 +94,7 @@ import VirtualExperience from './pages/VirtualExperience';
 import TenantLogin from './pages/TenantLogin';
 import LoginRedirect from './components/auth/LoginRedirect';
 import SignUp from './components/auth/SignUp';
+import AuthCallback from './components/auth/AuthCallback';
 import { TenantAdminRedirect, TenantPublicRedirect } from './components/routing/CanonicalRedirects';
 import { DEFAULT_MUSEUM_SLUG, museumPath } from '@/lib/domain-registry';
 import { startSentinelRuntimeCapture } from '@/lib/qa-sentinel/browser-events';
@@ -144,6 +145,7 @@ const AuthenticatedApp = () => {
       <Route path="/tenant-login" element={<TenantLogin />} />
       <Route path="/login" element={<LoginRedirect />} />
       <Route path="/signup" element={<SignUp />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/about" element={<Navigate to="/platform/overview" replace />} />
       <Route path="/pricing" element={<Navigate to="/become-a-tenant" replace />} />
       <Route path="/services" element={<Navigate to="/platform/services" replace />} />
