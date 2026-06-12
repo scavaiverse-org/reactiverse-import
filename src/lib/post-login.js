@@ -9,7 +9,7 @@ import { ROLES, normalizeRole, isMasterUser, getUserTenantIds } from "@/lib/rbac
 export async function fetchAuthProfile(authUserId) {
   const { data } = await supabase
     .from("profiles")
-    .select("role, tenant_ids, franchise_intent")
+    .select("role, tenant_ids, account_type")
     .eq("id", authUserId)
     .single();
   return data;
@@ -35,10 +35,9 @@ export async function resolvePostLoginDestination(profile) {
     }
   }
 
-  return "/";
-}
+  // Public users who already chose their account type go straight to the
+  // consumer platform; undecided ones land on "/" where AccountTypeGate asks.
+  if (profile?.account_type) return "/platform/overview";
 
-/** True when a public visitor flagged franchise/tenant interest at signup. */
-export function shouldPromptFranchiseIntent(profile) {
-  return !!profile?.franchise_intent && normalizeRole(profile?.role) === ROLES.PUBLIC_USER;
+  return "/";
 }

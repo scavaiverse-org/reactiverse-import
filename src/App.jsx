@@ -95,6 +95,7 @@ import TenantLogin from './pages/TenantLogin';
 import LoginRedirect from './components/auth/LoginRedirect';
 import SignUp from './components/auth/SignUp';
 import AuthCallback from './components/auth/AuthCallback';
+import AccountTypeGate from './components/auth/AccountTypeGate';
 import { TenantAdminRedirect, TenantPublicRedirect } from './components/routing/CanonicalRedirects';
 import { DEFAULT_MUSEUM_SLUG, museumPath } from '@/lib/domain-registry';
 import { startSentinelRuntimeCapture } from '@/lib/qa-sentinel/browser-events';
@@ -135,6 +136,7 @@ const AuthenticatedApp = () => {
   return (
     <AnimatedPageShell key={location.pathname}>
       <PublicImmersiveLayer>
+        <AccountTypeGate />
         <InternalRapidPortalGateway />
         <MasterHamburgerNav />
         <div className="min-h-screen pt-16 sm:pt-20">

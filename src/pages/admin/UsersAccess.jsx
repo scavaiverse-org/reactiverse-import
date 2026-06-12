@@ -46,7 +46,10 @@ export default function UsersAccess() {
     return Object.entries(counts).sort(([a], [b]) => a.localeCompare(b));
   }, [tenantAccess]);
 
-  const franchiseLeads = useMemo(() => users.filter((user) => user.franchise_intent), [users]);
+  const franchiseLeads = useMemo(
+    () => users.filter((user) => user.franchise_intent || user.account_type === "franchisee"),
+    [users]
+  );
 
   const [currentUserId, setCurrentUserId] = useState(null);
   useEffect(() => {

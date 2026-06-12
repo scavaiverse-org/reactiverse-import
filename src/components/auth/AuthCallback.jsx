@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import { fetchAuthProfile, resolvePostLoginDestination, shouldPromptFranchiseIntent } from "@/lib/post-login";
+import { fetchAuthProfile, resolvePostLoginDestination } from "@/lib/post-login";
 import { Button } from "@/components/ui/button";
-import FranchiseIntentModal from "@/components/auth/FranchiseIntentModal";
 
 /**
  * OAuth landing route. Supabase parses the session from the URL after the
@@ -16,7 +15,6 @@ export default function AuthCallback() {
   const redirectParam = searchParams.get("redirect");
 
   const [error, setError] = useState("");
-  const [showFranchisePrompt, setShowFranchisePrompt] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -38,11 +36,6 @@ export default function AuthCallback() {
         profile = null;
       }
       if (cancelled) return;
-
-      if (shouldPromptFranchiseIntent(profile)) {
-        setShowFranchisePrompt(true);
-        return;
-      }
 
       const destination = await resolvePostLoginDestination(profile).catch(() => "/");
       if (!cancelled) navigate(destination, { replace: true });
@@ -98,12 +91,6 @@ export default function AuthCallback() {
           </>
         )}
       </div>
-
-      <FranchiseIntentModal
-        open={showFranchisePrompt}
-        onApply={() => navigate("/become-a-tenant", { replace: true })}
-        onSkip={() => navigate("/", { replace: true })}
-      />
     </main>
   );
 }
