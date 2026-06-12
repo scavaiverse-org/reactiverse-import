@@ -724,4 +724,84 @@ export function isDoorUnlocked(object, collectedIds = new Set(), collectibles = 
   });
 }
 
+// ---------------------------------------------------------------------------
+// Atmosphere particles — deterministic layout via a seeded PRNG so the same
+// room always renders the same particle field (motion is decorative only).
+// ---------------------------------------------------------------------------
+
+export function seedFromString(text = "") {
+  let hash = 0x811c9dc5;
+  const value = String(text);
+  for (let i = 0; i < value.length; i += 1) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return hash >>> 0;
+}
+
+export function createSeededRandom(seed = 1) {
+  let state = seed >>> 0;
+  return function next() {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const ATMOSPHERE_STYLES = {
+  dust_motes: { color: 0xfff7e0, size: 0.05, opacity: 0.4 },
+  floating_lights: { color: null, size: 0.09, opacity: 0.75 },
+  gentle_snow: { color: 0xffffff, size: 0.07, opacity: 0.7 },
+  warm_embers: { color: 0xffa743, size: 0.06, opacity: 0.75 },
+};
+
+export function buildAtmosphere(effect, dims, accentColor, { count = 100, seed = 1 } = {}) {
+  const style = ATMOSPHERE_STYLES[effect];
+  if (!style) return null;
+  const random = createSeededRandom(seed);
+  const positions = new Float32Array(count * 3);
+  const speeds = new Float32Array(count);
+  const phases = new Float32Array(count);
+  const halfW = dims.width / 2 - 0.4;
+  const halfD = dims.depth / 2 - 0.4;
+  for (let i = 0; i < count; i += 1) {
+    positions[i * 3] = (random() * 2 - 1) * halfW;
+    positions[i * 3 + 1] = 0.2 + random() * (dims.height - 0.4);
+    positions[i * 3 + 2] = (random() * 2 - 1) * halfD;
+    speeds[i] = 0.15 + random() * 0.35;
+    phases[i] = random() * Math.PI * 2;
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  const material = new THREE.PointsMaterial({
+    color: style.color ?? accentColor,
+    size: style.size,
+    transparent: true,
+    opacity: style.opacity,
+    depthWrite: false,
+    sizeAttenuation: true,
+  });
+  const points = new THREE.Points(geometry, material);
+  const attribute = geometry.getAttribute("position");
+  const update = (elapsed, delta) => {
+    for (let i = 0; i < count; i += 1) {
+      let y = attribute.getY(i);
+      if (effect === "gentle_snow") {
+        y -= speeds[i] * delta;
+        if (y < 0.1) y = dims.height - 0.15;
+      } else if (effect === "warm_embers") {
+        y += speeds[i] * delta;
+        if (y > dims.height - 0.15) y = 0.1;
+      } else {
+        y += Math.sin(elapsed * 0.4 + phases[i]) * 0.0012;
+      }
+      attribute.setY(i, y);
+    }
+    attribute.needsUpdate = true;
+  };
+  return { points, update };
+}
+
 export { EYE_HEIGHT, titleCase };

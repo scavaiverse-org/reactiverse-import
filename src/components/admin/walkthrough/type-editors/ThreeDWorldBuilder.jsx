@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import HelpHint from "../HelpHint";
 import { THREE_D_WORLD_EDITOR_SEED, getMoodPreset, getObjectType, getWorldTemplate } from "@/lib/three-d-world-seed";
 import {
+  buildPublishManifest,
   buildSampleWorldConfig,
   computeThreeDWorldWarnings,
   createThreeDWorldConfig,
@@ -19,6 +20,15 @@ import {
 
 const SEED = THREE_D_WORLD_EDITOR_SEED;
 const selectClass = "w-full rounded-lg border border-input bg-secondary px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary";
+
+// Object types that carry museum-grade metadata (provenance, sources, flags).
+const METADATA_TYPES = new Set(["artifact_display", "image_frame", "memory_capsule", "text_panel"]);
+const ALT_TEXT_TYPES = new Set(["image_frame", "artifact_display", "memory_capsule", "product_booth"]);
+const TRANSCRIPT_TYPES = new Set(["audio_point", "video_wall"]);
+
+const snapValue = (value, step) => Math.round((Number(value) || 0) / step) * step;
+const snapVector = (vector = {}) => ({ x: snapValue(vector.x, 0.5), y: snapValue(vector.y, 0.5), z: snapValue(vector.z, 0.5) });
+const snapAngles = (vector = {}) => ({ x: snapValue(vector.x, 15), y: snapValue(vector.y, 15), z: snapValue(vector.z, 15) });
 
 function prettify(value = "") {
   return String(value).replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -113,6 +123,7 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
   const config = getThreeDWorldConfig(room);
   const setConfig = (patch) => onChange({ ...room, threeDWorldConfig: { ...(config || createThreeDWorldConfig()), ...patch } });
   const [newObjectType, setNewObjectType] = useState("image_frame");
+  const [transformClipboard, setTransformClipboard] = useState(null);
 
   // First visit for this room: offer a clean start or the seeded sample.
   if (!config) {
@@ -135,7 +146,6 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
   const navObjects = getNavigationObjects(config);
   const warnings = computeThreeDWorldWarnings(config, rooms);
   const requiredWarnings = warnings.filter((warning) => warning.severity === "required");
-  const recommendedWarnings = warnings.filter((warning) => warning.severity !== "required");
   const weight = estimateMobileWeight(config);
   const checklist = evaluatePublishChecklist(config, rooms);
   const optimisations = suggestOptimisations(warnings);
@@ -172,7 +182,42 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
 
   const gamification = config.gamification || {};
   const npcGuide = config.npcGuide || {};
+  const accessibility = config.accessibility || {};
+  const setAccessibility = (patch) => setConfig({ accessibility: { ...accessibility, ...patch } });
   const previewMode = SEED.previewModes.find((mode) => mode.id === config.previewMode) || SEED.previewModes[0];
+
+  // Publishing snapshots the world into version history with a deterministic
+  // fingerprint, so the live version is locked and can always be restored.
+  const publishWorld = () => {
+    if (config.publishStatus === "published") {
+      setConfig({ publishStatus: "draft" });
+      return;
+    }
+    const manifest = buildPublishManifest(config);
+    const snapshot = JSON.parse(JSON.stringify(config));
+    delete snapshot.versionHistory;
+    delete snapshot.publishManifest;
+    const history = [
+      ...(config.versionHistory || []),
+      { versionId: manifest.versionId, publishedAt: new Date().toISOString(), contentHash: manifest.contentHash, snapshot },
+    ].slice(-5);
+    setConfig({ publishStatus: "published", publishManifest: manifest, versionHistory: history, versionCounter: (Number(config.versionCounter) || 0) + 1 });
+  };
+
+  const restoreVersion = (entry) => {
+    if (!entry?.snapshot) return;
+    onChange({
+      ...room,
+      threeDWorldConfig: {
+        ...JSON.parse(JSON.stringify(entry.snapshot)),
+        enabled: true,
+        versionHistory: config.versionHistory || [],
+        versionCounter: Number(config.versionCounter) || 0,
+        publishManifest: null,
+        publishStatus: "draft",
+      },
+    });
+  };
 
   return (
     <section className="space-y-3 rounded-2xl border border-primary/15 bg-primary/5 p-4">
@@ -230,6 +275,14 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
             <select className={selectClass} value={config.glowOverride || mood?.glow || "none"} onChange={(e) => setConfig({ glowOverride: e.target.value })}>
               {["none", "subtle", "soft", "medium", "strong", "spotlight"].map((level) => <option key={level} value={level}>{prettify(level)}</option>)}
             </select>
+          </Field>
+          <Field label="Atmosphere effect" hint="Decorative particles like dust or snow. Automatically reduced on phones and disabled in reduced-motion mode.">
+            <select className={selectClass} value={config.atmosphereEffect || "none"} onChange={(e) => setConfig({ atmosphereEffect: e.target.value })}>
+              {SEED.atmosphereEffects.map((effect) => <option key={effect.id} value={effect.id}>{effect.name}</option>)}
+            </select>
+          </Field>
+          <Field label="Background music URL" hint="Optional looping music. Visitors get a mute toggle and it never plays before their first tap.">
+            <Input value={config.backgroundMusicUrl || ""} placeholder="https://…" onChange={(e) => setConfig({ backgroundMusicUrl: e.target.value })} />
           </Field>
         </div>
       </Section>
@@ -341,12 +394,49 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
                     </Field>
                     <Field label="Trigger radius" hint="How close (in metres) the visitor must be before this object activates."><Input type="number" step="0.5" min="0" value={object.triggerRadius ?? 2} onChange={(e) => updateObject(object.id, { triggerRadius: Number(e.target.value) })} /></Field>
                     <Field label="Lock condition" hint="Leave empty for always available. Example: visitor_collects_first_memory"><Input value={object.lockCondition || object.unlockCondition || ""} onChange={(e) => updateObject(object.id, { lockCondition: e.target.value })} /></Field>
+                    {ALT_TEXT_TYPES.has(object.type) && (
+                      <Field label="Alt text" hint="Screen-reader description of this object's image."><Input value={object.altText || ""} onChange={(e) => updateObject(object.id, { altText: e.target.value })} /></Field>
+                    )}
+                    {TRANSCRIPT_TYPES.has(object.type) && (
+                      <Field label="Transcript" hint="Text version of the audio or video, for deaf and hard-of-hearing visitors.">
+                        <Textarea rows={2} value={object.transcript || ""} onChange={(e) => updateObject(object.id, { transcript: e.target.value })} />
+                      </Field>
+                    )}
                   </div>
                   <div className="grid gap-3 md:grid-cols-3">
                     <VectorInput label="Position" value={object.position} onChange={(value) => updateObject(object.id, { position: value })} />
                     <VectorInput label="Rotation" value={object.rotation} onChange={(value) => updateObject(object.id, { rotation: value })} />
                     <VectorInput label="Scale" value={object.scale} onChange={(value) => updateObject(object.id, { scale: value })} />
                   </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" variant="outline" onClick={() => setTransformClipboard(JSON.parse(JSON.stringify({ position: object.position || { x: 0, y: 0, z: 0 }, rotation: object.rotation || { x: 0, y: 0, z: 0 }, scale: object.scale || { x: 1, y: 1, z: 1 } })))}>Copy transform</Button>
+                    <Button size="sm" variant="outline" disabled={!transformClipboard} onClick={() => transformClipboard && updateObject(object.id, JSON.parse(JSON.stringify(transformClipboard)))}>Paste transform</Button>
+                    <Button size="sm" variant="outline" onClick={() => updateObject(object.id, { position: snapVector(object.position), rotation: snapAngles(object.rotation) })}>Snap to grid</Button>
+                    <Button size="sm" variant="outline" onClick={() => updateObject(object.id, { position: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } })}>Reset transform</Button>
+                  </div>
+                  {METADATA_TYPES.has(object.type) && (
+                    <details className="rounded-lg border border-white/10 bg-background/30 p-3">
+                      <summary className="cursor-pointer text-xs font-semibold uppercase tracking-widest text-muted-foreground">Museum metadata & cultural safety (optional)</summary>
+                      <div className="mt-3 grid gap-3 md:grid-cols-2">
+                        <Field label="Creator / maker"><Input value={object.creator || ""} onChange={(e) => updateObject(object.id, { creator: e.target.value })} /></Field>
+                        <Field label="Period / date"><Input value={object.period || ""} onChange={(e) => updateObject(object.id, { period: e.target.value })} /></Field>
+                        <Field label="Culture / origin"><Input value={object.culture || ""} onChange={(e) => updateObject(object.id, { culture: e.target.value })} /></Field>
+                        <Field label="Material / technique"><Input value={object.material || ""} onChange={(e) => updateObject(object.id, { material: e.target.value })} /></Field>
+                        <Field label="Provenance"><Input value={object.provenance || ""} onChange={(e) => updateObject(object.id, { provenance: e.target.value })} /></Field>
+                        <Field label="Source citation" hint="Required when the claim status is Curator Verified."><Input value={object.sourceCitation || ""} onChange={(e) => updateObject(object.id, { sourceCitation: e.target.value })} /></Field>
+                        <Field label="Claim status" hint="Visitors see this honestly — verified, interpretation, or disputed.">
+                          <select className={selectClass} value={object.curatorialStatus || ""} onChange={(e) => updateObject(object.id, { curatorialStatus: e.target.value })}>
+                            {SEED.curatorialSeed.statuses.map((status) => <option key={status.id} value={status.id}>{status.name}</option>)}
+                          </select>
+                        </Field>
+                        <Field label="Cultural sensitivity" hint="Flagged objects get a respectful notice and should not be gamified.">
+                          <select className={selectClass} value={object.sensitivity || "none"} onChange={(e) => updateObject(object.id, { sensitivity: e.target.value })}>
+                            {SEED.curatorialSeed.sensitivityFlags.map((flag) => <option key={flag.id} value={flag.id}>{flag.name}</option>)}
+                          </select>
+                        </Field>
+                      </div>
+                    </details>
+                  )}
                   <Toggle label="Visible to visitors" checked={object.visible !== false} onChange={(value) => updateObject(object.id, { visible: value })} />
                 </div>
               </details>
@@ -480,7 +570,31 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
         )}
       </Section>
 
-      <Section index={11} title="Performance & Mobile Optimisation" hint="SCAVerse worlds are mobile-first. This panel estimates how heavy the world is for phones and suggests fixes.">
+      <Section index={11} title="Accessibility & Comfort" hint="Accessibility is a publish check, not an afterthought. Alt text and transcripts live on each object above; these settings shape the whole room.">
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Sensory warning" hint="Shown when visitors enter, e.g. 'This room contains wartime audio.' Leave empty for none.">
+            <Input value={accessibility.sensoryWarning || ""} onChange={(e) => setAccessibility({ sensoryWarning: e.target.value })} />
+          </Field>
+          <Field label="Visitor text size">
+            <select className={selectClass} value={accessibility.textScale || "normal"} onChange={(e) => setAccessibility({ textScale: e.target.value })}>
+              {SEED.accessibilitySeed.textScales.map((scale) => <option key={scale.id} value={scale.id}>{scale.name}</option>)}
+            </select>
+          </Field>
+        </div>
+        <div className="flex flex-wrap gap-6">
+          <Toggle label="High contrast HUD" checked={!!accessibility.highContrast} onChange={(value) => setAccessibility({ highContrast: value })} hint="Stronger panel backgrounds for low-vision visitors." />
+          <Toggle label="2D accessible view" checked={accessibility.twoDFallbackEnabled !== false} onChange={(value) => setAccessibility({ twoDFallbackEnabled: value })} hint="Lets visitors browse this room as a readable list — vital for screen readers and low-end devices." />
+          <Toggle label="Mini-map" checked={accessibility.miniMapEnabled !== false} onChange={(value) => setAccessibility({ miniMapEnabled: value })} hint="Top-down map so visitors never feel lost." />
+        </div>
+        <div className="rounded-xl border border-white/10 bg-background/40 p-3 text-xs text-muted-foreground">
+          <p className="mb-1 font-semibold text-foreground">Accessibility guidelines</p>
+          <ul className="list-inside list-disc space-y-0.5">
+            {SEED.accessibilitySeed.rules.map((rule) => <li key={rule}>{rule}</li>)}
+          </ul>
+        </div>
+      </Section>
+
+      <Section index={12} title="Performance & Mobile Optimisation" hint="SCAVerse worlds are mobile-first. This panel estimates how heavy the world is for phones and suggests fixes.">
         <div className="grid gap-3 md:grid-cols-3">
           <div className="rounded-xl border border-white/10 bg-background/40 p-3 text-center">
             <p className="text-2xl font-bold">{weight.objectCount}</p>
@@ -512,7 +626,7 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
         )}
       </Section>
 
-      <Section index={12} title="Preview & Publish Checks" hint="Check the world from every angle before it goes live. Required checks block publishing; recommended ones can be confirmed and accepted.">
+      <Section index={13} title="Preview & Publish Checks" hint="Check the world from every angle before it goes live. Required checks block publishing; recommended ones can be confirmed and accepted.">
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="Preview mode">
             <select className={selectClass} value={config.previewMode || "admin_preview"} onChange={(e) => setConfig({ previewMode: e.target.value })}>
@@ -542,7 +656,7 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
           <Button
             disabled={config.publishStatus !== "published" && !checklist.canPublish}
             variant={config.publishStatus === "published" ? "outline" : "default"}
-            onClick={() => setConfig({ publishStatus: config.publishStatus === "published" ? "draft" : "published" })}
+            onClick={publishWorld}
           >
             {config.publishStatus === "published" ? "Set world back to draft" : "Mark world ready to publish"}
           </Button>
@@ -551,6 +665,21 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
           )}
           <p className="text-xs text-muted-foreground">The room goes live with the museum's main Publish — this state is included in those checks.</p>
         </div>
+        {config.publishStatus === "published" && config.publishManifest && (
+          <p className="text-xs text-muted-foreground">Published as <strong className="text-foreground">{config.publishManifest.versionId}</strong> · content fingerprint <code className="rounded bg-background/60 px-1">{config.publishManifest.contentHash}</code> · {config.publishManifest.objectIds?.length ?? 0} objects locked to this version.</p>
+        )}
+        {(config.versionHistory || []).length > 0 && (
+          <div className="space-y-1.5">
+            <p className="text-xs uppercase tracking-widest text-muted-foreground">Version history</p>
+            {config.versionHistory.slice().reverse().map((entry) => (
+              <div key={`${entry.versionId}-${entry.publishedAt}`} className="flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-background/40 px-3 py-2 text-xs">
+                <span className="min-w-0 truncate"><strong>{entry.versionId}</strong> · {new Date(entry.publishedAt).toLocaleString()} · <code>{entry.contentHash}</code></span>
+                <Button size="sm" variant="ghost" onClick={() => restoreVersion(entry)}>Restore</Button>
+              </div>
+            ))}
+            <p className="text-xs text-muted-foreground">Restoring loads that version back into the editor as a draft — nothing changes for visitors until you publish again.</p>
+          </div>
+        )}
       </Section>
     </section>
   );

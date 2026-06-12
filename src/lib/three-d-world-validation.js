@@ -37,6 +37,8 @@ export function createThreeDWorldConfig(overrides = {}) {
     colorToneOverride: "",
     fogOverride: "",
     glowOverride: "",
+    atmosphereEffect: "none",
+    backgroundMusicUrl: "",
     roomSize: "medium",
     layoutShape: "single_room",
     wallStyle: "white_gallery_wall",
@@ -52,11 +54,15 @@ export function createThreeDWorldConfig(overrides = {}) {
     objects: [],
     gamification: { enabled: false, systems: [], collectibles: [], questSteps: [], badges: [], completionReward: "" },
     npcGuide: { enabled: false, npcType: "", avatarStyle: "", tone: "", openingLine: "", script: "", dialogueSteps: [], triggerType: "on_room_start" },
+    accessibility: { sensoryWarning: "", textScale: "normal", highContrast: false, twoDFallbackEnabled: true, miniMapEnabled: true },
     performanceSettings: { maxObjectsMobile: THREE_D_WORLD_EDITOR_SEED.performanceRules.defaultMaxObjectsMobile, maxObjectsDesktop: THREE_D_WORLD_EDITOR_SEED.performanceRules.defaultMaxObjectsDesktop, optimisationsApplied: [] },
     previewMode: "admin_preview",
     previewChecked: false,
     recommendedWarningsConfirmed: false,
     publishStatus: "draft",
+    publishManifest: null,
+    versionHistory: [],
+    versionCounter: 0,
     ...overrides,
   };
 }
@@ -134,6 +140,30 @@ export function computeThreeDWorldWarnings(config = {}, allRooms = []) {
     warnings.push({ id: "unlabelled_object", severity: "recommended", message: warningById.unlabelled_object });
   }
 
+  // Accessibility checks — these feed the accessibility publish gate.
+  const altTextTypes = new Set(["image_frame", "artifact_display", "memory_capsule", "product_booth"]);
+  const missingAlt = objects.filter((object) => altTextTypes.has(object.type) && (object.imageUrl || object.mediaUrl) && !(object.altText || "").trim());
+  if (missingAlt.length) {
+    warnings.push({ id: "missing_alt_text", severity: "recommended", message: `${missingAlt.length} media object(s): ${warningById.missing_alt_text}` });
+  }
+  const missingTranscript = objects.filter((object) =>
+    ((object.type === "audio_point" && object.audioUrl) || (object.type === "video_wall" && object.videoUrl)) && !(object.transcript || "").trim());
+  if (missingTranscript.length) {
+    warnings.push({ id: "missing_transcript", severity: "recommended", message: `${missingTranscript.length} audio/video object(s): ${warningById.missing_transcript}` });
+  }
+
+  // Curator-grade truth layer + respectful gamification.
+  objects.forEach((object, index) => {
+    if (object.curatorialStatus === "curator_verified" && !(object.sourceCitation || "").trim()) {
+      warnings.push({ id: "uncited_claim", severity: "recommended", message: `${objectLabel(object, index)}: ${warningById.uncited_claim}` });
+    }
+    const sensitive = object.sensitivity && object.sensitivity !== "none";
+    const gamified = object.type === "collectible" || object.type === "quiz_station" || object.clickAction === "collect_item";
+    if (config.gamification?.enabled && sensitive && gamified) {
+      warnings.push({ id: "sensitive_gamification", severity: "recommended", message: `${objectLabel(object, index)}: ${warningById.sensitive_gamification}` });
+    }
+  });
+
   const navObjects = getNavigationObjects(config);
   if (!navObjects.length) {
     warnings.push({ id: "no_exit", severity: "required", message: warningById.no_exit });
@@ -206,6 +236,9 @@ export function evaluatePublishChecklist(config = {}, allRooms = []) {
       case "objects_have_titles": passed = !hasAnyWarning(["unlabelled_object"]); break;
       case "media_loaded": passed = !hasRequiredWarning(["missing_fallback_image"]); break;
       case "mobile_safe": passed = band !== "heavy" && !hasAnyWarning(["too_many_objects"]); break;
+      case "accessibility_ready": passed = !hasAnyWarning(["missing_alt_text", "missing_transcript"]); break;
+      case "sources_cited": passed = !hasAnyWarning(["uncited_claim"]); break;
+      case "respectful_gamification": passed = !hasAnyWarning(["sensitive_gamification"]); break;
       case "preview_checked": passed = !!config.previewChecked; break;
       case "performance_checked": passed = !hasAnyWarning(["too_many_objects", "large_video_files"]) || !!config.recommendedWarningsConfirmed; break;
       default: passed = true;
@@ -221,6 +254,51 @@ export function evaluatePublishChecklist(config = {}, allRooms = []) {
     requiredFailures,
     recommendedFailures,
     canPublish: requiredFailures.length === 0 && (recommendedFailures.length === 0 || !!config.recommendedWarningsConfirmed),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Deterministic publish manifest — the same world content always produces the
+// same fingerprint, so a published world is verifiably locked to a version.
+// ---------------------------------------------------------------------------
+
+function stableStringify(value) {
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(",")}}`;
+  }
+  return JSON.stringify(value) ?? "null";
+}
+
+// Keys that describe editor/publish state rather than world content; they are
+// excluded so the hash only changes when the visitor-facing world changes.
+const NON_CONTENT_KEYS = new Set(["versionHistory", "publishManifest", "publishStatus", "versionCounter", "previewMode", "previewChecked", "recommendedWarningsConfirmed"]);
+
+export function hashThreeDWorldConfig(config = {}) {
+  const content = Object.fromEntries(Object.entries(config).filter(([key]) => !NON_CONTENT_KEYS.has(key)));
+  const text = stableStringify(content);
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < text.length; i += 1) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+export function buildPublishManifest(config = {}) {
+  const objects = config.objects || [];
+  return {
+    versionId: `v${(Number(config.versionCounter) || 0) + 1}`,
+    contentHash: hashThreeDWorldConfig(config),
+    template: config.selectedTemplate || "",
+    moodPreset: config.moodPreset || "",
+    movementMode: config.movementMode || "click_to_move",
+    objectIds: objects.map((object) => object.id),
+    navigation: getNavigationObjects(config).map((object) => ({ id: object.id, destinationRoomId: object.destinationRoomId || "" })),
+    fallbacks: {
+      maxObjectsMobile: Number(config.performanceSettings?.maxObjectsMobile) || THREE_D_WORLD_EDITOR_SEED.performanceRules.defaultMaxObjectsMobile,
+      twoDViewEnabled: config.accessibility?.twoDFallbackEnabled !== false,
+    },
   };
 }
 

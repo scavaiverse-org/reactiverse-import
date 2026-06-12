@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { X, ChevronLeft, ChevronRight, Play, Pause, Trophy, Gift, MessageCircle, ShoppingBag, Compass, Box } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Play, Pause, Trophy, Gift, MessageCircle, ShoppingBag, Compass, Box, List, Music, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ResolvedMedia from "@/components/walkthrough/ResolvedMedia";
 import { getThreeDWorldConfig } from "@/lib/three-d-world-validation";
@@ -10,6 +10,7 @@ import {
   EYE_HEIGHT, titleCase, resolveColor, getRoomDimensions, getSurfaceVisuals, resolveMoodVisuals,
   buildRoomShell, buildLighting, buildObjectGroup, OBJECT_ICONS, objectLabelText,
   getSpawnPosition, getStations, clampToRoom, isDoorUnlocked, createCanvasTexture,
+  buildAtmosphere, seedFromString,
 } from "@/lib/three-d-world-render-helpers";
 
 const GROUND_MODES = new Set(["free_walk", "click_to_move", "click_to_move_guided"]);
@@ -64,15 +65,26 @@ export default function ThreeDWorldRoom({ room, context = {} }) {
   const [tour, setTour] = useState({ active: false, index: 0, playing: false, stations: [], label: "" });
   const [transitioning, setTransitioning] = useState(false);
   const [joystickActive, setJoystickActive] = useState(false);
+  const [musicMuted, setMusicMuted] = useState(false);
+  const [sensoryWarningVisible, setSensoryWarningVisible] = useState(false);
+  const [view2D, setView2D] = useState(false);
   const engineRef = useRef({});
+  const musicRef = useRef(null);
+  const playerDotRef = useRef(null);
 
   const reduceFx = !!(context.reducedMotion || context.calmMode);
+  const accessibility = config?.accessibility || {};
 
   useEffect(() => {
     if (!toast) return undefined;
     const timer = setTimeout(() => setToast(null), 3200);
     return () => clearTimeout(timer);
   }, [toast]);
+
+  useEffect(() => {
+    setSensoryWarningVisible(!!config?.accessibility?.sensoryWarning);
+    setView2D(false);
+  }, [room?.id]);
 
   useEffect(() => {
     if (!config) return undefined;
@@ -135,6 +147,18 @@ export default function ThreeDWorldRoom({ room, context = {} }) {
     const audioLoader = new THREE.AudioLoader();
     const positionalSounds = [];
 
+    // Background music — created muted/paused; starts on first visitor interaction per browser autoplay rules.
+    const musicUrl = getSafeMediaUrl(config.backgroundMusicUrl);
+    if (musicUrl) {
+      const music = new Audio(musicUrl);
+      music.loop = true;
+      music.volume = 0.35;
+      music.muted = musicMuted;
+      musicRef.current = music;
+    } else {
+      musicRef.current = null;
+    }
+
     // -- Object placement ------------------------------------------------------
     const objectGroups = new Map();
     const interactiveGroups = [];
@@ -152,6 +176,13 @@ export default function ThreeDWorldRoom({ room, context = {} }) {
     const rules = config.performanceSettings || {};
     const templateLimit = template?.recommendedObjectLimit || 80;
     const objectLimit = isMobile ? Math.min(Number(rules.maxObjectsMobile) || 40, templateLimit) : Math.max(Number(rules.maxObjectsDesktop) || 80, templateLimit);
+
+    // Atmosphere particles — deterministic per-room seed, reduced on mobile, skipped in reduced-motion mode.
+    let atmosphere = null;
+    if (config.atmosphereEffect && config.atmosphereEffect !== "none" && !reduceFx) {
+      atmosphere = buildAtmosphere(config.atmosphereEffect, dims, mood.accentColor, { seed: seedFromString(room.id || "world"), count: isMobile ? 40 : 130 });
+      if (atmosphere) scene.add(atmosphere.points);
+    }
 
     const placeObject = (object) => {
       const result = buildObjectGroup(object);
@@ -467,7 +498,13 @@ export default function ThreeDWorldRoom({ room, context = {} }) {
         setTour({ active: false, index: 0, playing: false, stations: [], label: "" });
       }
     };
-    engineRef.current = { setTourIndex, toggleTourPlaying, toggleAutoTour };
+    engineRef.current = {
+      setTourIndex, toggleTourPlaying, toggleAutoTour,
+      runObjectAction: (object) => {
+        const group = objectGroups.get(object.id) || { userData: { threeDObject: object } };
+        handleInteraction(group);
+      },
+    };
 
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
@@ -484,6 +521,7 @@ export default function ThreeDWorldRoom({ room, context = {} }) {
       lastX = event.clientX;
       lastY = event.clientY;
       listener.context.resume?.();
+      musicRef.current?.play().catch(() => {});
     };
 
     const onPointerMove = (event) => {
@@ -568,6 +606,8 @@ export default function ThreeDWorldRoom({ room, context = {} }) {
           }
         });
       }
+
+      if (atmosphere) atmosphere.update(elapsed, delta);
 
       for (let i = pulseQueue.length - 1; i >= 0; i -= 1) {
         const entry = pulseQueue[i];
@@ -654,6 +694,14 @@ export default function ThreeDWorldRoom({ room, context = {} }) {
         camera.rotation.set(pitch, yaw, 0);
       }
 
+      if (playerDotRef.current) {
+        const px = Math.max(0, Math.min(100, ((camera.position.x + dims.width / 2) / dims.width) * 100));
+        const pz = Math.max(0, Math.min(100, ((camera.position.z + dims.depth / 2) / dims.depth) * 100));
+        playerDotRef.current.style.left = `${px}%`;
+        playerDotRef.current.style.top = `${pz}%`;
+        playerDotRef.current.style.transform = `translate(-50%, -50%) rotate(${yaw}rad)`;
+      }
+
       renderer.render(scene, camera);
       animationFrame = requestAnimationFrame(animate);
     };
@@ -672,6 +720,8 @@ export default function ThreeDWorldRoom({ room, context = {} }) {
       videoResources.forEach((video) => { video.pause(); video.src = ""; });
       textureResources.forEach((texture) => texture.dispose());
       positionalSounds.forEach(({ sound }) => { if (sound.isPlaying) sound.stop(); });
+      if (atmosphere) { atmosphere.points.geometry.dispose(); atmosphere.points.material.dispose(); }
+      if (musicRef.current) { musicRef.current.pause(); musicRef.current.src = ""; musicRef.current = null; }
       renderer.dispose();
       scene.traverse((object) => {
         if (object.geometry) object.geometry.dispose();
@@ -695,6 +745,17 @@ export default function ThreeDWorldRoom({ room, context = {} }) {
   const movementMode = config.movementMode || "click_to_move";
   const isGroundMode = GROUND_MODES.has(movementMode);
   const showAutoTourToggle = isGroundMode && config.autoWalkthroughEnabled;
+  const dims = getRoomDimensions(config);
+  const hasMusic = !!getSafeMediaUrl(config.backgroundMusicUrl);
+  const miniMapEnabled = accessibility.miniMapEnabled !== false && isGroundMode;
+  const miniMapMarkers = miniMapEnabled
+    ? (config.objects || []).filter((object) => object.visible !== false && ["door", "portal", "npc_guide", "collectible", "quiz_station"].includes(object.type)).map((object) => ({
+        id: object.id,
+        type: object.type,
+        x: Math.max(0, Math.min(100, ((Number(object.position?.x || 0) + dims.width / 2) / dims.width) * 100)),
+        z: Math.max(0, Math.min(100, ((Number(object.position?.z || 0) + dims.depth / 2) / dims.depth) * 100)),
+      }))
+    : [];
 
   const closePanel = () => setPanel(null);
   const closeDialogue = () => setDialogue(null);
@@ -715,6 +776,15 @@ export default function ThreeDWorldRoom({ room, context = {} }) {
           <Box className="h-3.5 w-3.5 text-primary" />
           <span className="font-semibold">{room.title || template?.name || "3D World"}</span>
           {mood && <span className="text-muted-foreground">· {mood.name}</span>}
+          {hasMusic && (
+            <button
+              onClick={() => setMusicMuted((current) => { const next = !current; if (musicRef.current) musicRef.current.muted = next; return next; })}
+              className="rounded-full p-1 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-primary"
+              title={musicMuted ? "Unmute music" : "Mute music"}
+            >
+              <Music className={`h-3.5 w-3.5 ${musicMuted ? "text-muted-foreground" : "text-primary"}`} />
+            </button>
+          )}
         </div>
         {room.narration && (
           <div className="pointer-events-auto max-w-xs rounded-2xl border border-white/10 bg-background/50 p-3 text-xs leading-6 text-foreground/80 backdrop-blur-xl">
@@ -782,6 +852,62 @@ export default function ThreeDWorldRoom({ room, context = {} }) {
 
       {joystickActive && <Joystick />}
 
+      {miniMapEnabled && (
+        <div className="pointer-events-none absolute bottom-4 right-4 z-10 h-24 w-24 overflow-hidden rounded-xl border border-white/15 bg-background/60 backdrop-blur-xl sm:bottom-6 sm:right-6">
+          <div className="relative h-full w-full">
+            {miniMapMarkers.map((marker) => (
+              <span key={marker.id} title={titleCase(marker.type)} className="absolute h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary" style={{ left: `${marker.x}%`, top: `${marker.z}%` }} />
+            ))}
+            <div ref={playerDotRef} className="absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2" style={{ left: "50%", top: "50%" }}>
+              <div className="h-full w-full rounded-full border border-background bg-emerald-400" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {accessibility.twoDFallbackEnabled !== false && (
+        <div className="pointer-events-auto absolute bottom-4 left-4 z-10 sm:bottom-6 sm:left-6">
+          <Button size="sm" variant="outline" className="bg-background/70 backdrop-blur-xl" onClick={() => setView2D((v) => !v)}>
+            <List className="h-4 w-4" /> Text View
+          </Button>
+        </div>
+      )}
+
+      {sensoryWarningVisible && accessibility.sensoryWarning && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/70 p-4">
+          <div className="max-w-sm rounded-2xl border border-amber-400/30 bg-background/95 p-5 text-center shadow-2xl">
+            <AlertTriangle className="mx-auto h-8 w-8 text-amber-300" />
+            <p className="mt-3 text-sm leading-7 text-foreground/90">{accessibility.sensoryWarning}</p>
+            <Button className="mt-4" onClick={() => setSensoryWarningVisible(false)}>Continue</Button>
+          </div>
+        </div>
+      )}
+
+      {view2D && (
+        <div className="absolute inset-0 z-20 overflow-y-auto bg-background/95 p-4 sm:p-8">
+          <div className="mx-auto max-w-2xl space-y-3 pb-12">
+            <div className="flex items-center justify-between gap-3">
+              <h1 className="font-display text-xl font-bold">{room.title || template?.name || "3D World"} — Text View</h1>
+              <Button size="sm" variant="outline" onClick={() => setView2D(false)}><X className="h-4 w-4" /> Close</Button>
+            </div>
+            {room.narration && <p className="text-sm leading-7 text-muted-foreground">{room.narration}</p>}
+            {accessibility.sensoryWarning && <p className="rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-200">{accessibility.sensoryWarning}</p>}
+            <ul className="space-y-2">
+              {(config.objects || []).filter((object) => object.visible !== false).map((object) => (
+                <li key={object.id} className="rounded-xl border border-white/10 bg-background/60 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-semibold">{OBJECT_ICONS[object.type] || "•"} {objectLabelText(object) || titleCase(object.type)}</span>
+                    <Button size="sm" onClick={() => engineRef.current.runObjectAction?.(object)}>Open</Button>
+                  </div>
+                  {(object.description || object.body || object.story) && <p className="mt-1 text-sm leading-6 text-muted-foreground">{object.description || object.body || object.story}</p>}
+                  {object.altText && <p className="mt-1 text-xs text-muted-foreground">Image: {object.altText}</p>}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
       {dialogue && (
         <div className="pointer-events-auto absolute inset-x-4 bottom-24 z-20 mx-auto max-w-md rounded-2xl border border-white/15 bg-background/90 p-4 shadow-2xl backdrop-blur-xl sm:bottom-28">
           <div className="flex items-start justify-between gap-3">
@@ -795,7 +921,7 @@ export default function ThreeDWorldRoom({ room, context = {} }) {
         </div>
       )}
 
-      {panel && <ObjectPanel panel={panel} onClose={closePanel} onSubmitQuiz={(object, correct, reward) => {
+      {panel && <ObjectPanel panel={panel} accessibility={accessibility} onClose={closePanel} onSubmitQuiz={(object, correct, reward) => {
         if (correct) setToast(`✅ Correct!${reward ? ` +${reward} pts` : ""}`);
         else setToast("❌ Not quite — try again.");
       }} />}
@@ -843,10 +969,12 @@ function Joystick() {
   );
 }
 
-function ObjectPanel({ panel, onClose, onSubmitQuiz }) {
+function ObjectPanel({ panel, accessibility = {}, onClose, onSubmitQuiz }) {
   const { type, object } = panel;
   const [selected, setSelected] = useState(null);
   const title = objectLabelText(object) || titleCase(object.type || "Details");
+  const textSize = accessibility.textScale === "large" ? "text-base leading-8" : "text-sm leading-7";
+  const hasMetadata = !!(object.creator || object.period || object.culture || object.material || object.provenance || object.sourceCitation || object.curatorialStatus || (object.sensitivity && object.sensitivity !== "none"));
 
   const submitQuiz = () => {
     const correctIndex = typeof object.correctAnswer === "number" ? object.correctAnswer : null;
@@ -880,7 +1008,7 @@ function ObjectPanel({ panel, onClose, onSubmitQuiz }) {
     const linkUrl = getSafeNavigationUrl(object.linkUrl);
     body = (
       <div className="space-y-3">
-        {object.imageUrl && <ResolvedMedia url={object.imageUrl} mediaType="image" alt={object.productName || "Product"} className="h-40 w-full rounded-xl object-cover" fallbackVisual fallbackCompact />}
+        {object.imageUrl && <ResolvedMedia url={object.imageUrl} mediaType="image" alt={object.altText || object.productName || "Product"} className="h-40 w-full rounded-xl object-cover" fallbackVisual fallbackCompact />}
         <p className="text-xs uppercase tracking-widest text-primary">{object.brandName}</p>
         <p className="text-sm font-semibold">{object.productName}</p>
         {object.price && <p className="text-sm text-foreground/80">{object.price}</p>}
@@ -897,24 +1025,44 @@ function ObjectPanel({ panel, onClose, onSubmitQuiz }) {
   } else if (type === "video") {
     body = <ResolvedMedia url={object.videoUrl} mediaType="video" alt={title} className="aspect-video w-full rounded-xl" controls fallbackVisual fallbackCompact />;
   } else if (type === "story") {
-    body = <p className="text-sm leading-7 text-foreground/85">{object.story || object.body || object.description || "No story configured for this item yet."}</p>;
+    body = <p className={`${textSize} text-foreground/85`}>{object.story || object.body || object.description || "No story configured for this item yet."}</p>;
   } else {
     const mediaUrl = object.imageUrl || object.videoUrl || object.mediaUrl || object.modelUrl;
     body = (
       <div className="space-y-3">
-        {mediaUrl && <ResolvedMedia url={mediaUrl} mediaType={object.videoUrl ? "video" : "image"} alt={title} className="max-h-56 w-full rounded-xl object-cover" controls fallbackVisual fallbackCompact />}
-        <p className="text-sm leading-7 text-foreground/85">{object.description || object.body || object.story || "No details configured for this item yet."}</p>
+        {mediaUrl && <ResolvedMedia url={mediaUrl} mediaType={object.videoUrl ? "video" : "image"} alt={object.altText || title} className="max-h-56 w-full rounded-xl object-cover" controls fallbackVisual fallbackCompact />}
+        <p className={`${textSize} text-foreground/85`}>{object.description || object.body || object.story || "No details configured for this item yet."}</p>
       </div>
     );
   }
 
+  const highContrastClass = accessibility.highContrast ? "border-white/40 bg-black/95" : "border-white/15 bg-background/90";
+
   return (
-    <div className="pointer-events-auto fixed inset-x-4 bottom-24 z-30 mx-auto max-w-md rounded-3xl border border-white/15 bg-background/90 p-5 shadow-2xl backdrop-blur-xl sm:bottom-28">
+    <div className={`pointer-events-auto fixed inset-x-4 bottom-24 z-30 mx-auto max-w-md rounded-3xl border p-5 shadow-2xl backdrop-blur-xl sm:bottom-28 ${highContrastClass}`}>
       <div className="flex items-start justify-between gap-4">
         <h2 className="font-heading text-lg font-semibold tracking-tight">{title}</h2>
         <button onClick={onClose} className="rounded-full p-1 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-primary"><X className="h-4 w-4" /></button>
       </div>
       <div className="mt-3">{body}</div>
+      {type !== "audio" && object.transcript && (
+        <details className="mt-3 rounded-lg border border-white/10 bg-background/40 p-2 text-xs">
+          <summary className="cursor-pointer font-semibold text-muted-foreground">Transcript</summary>
+          <p className="mt-1 leading-6 text-foreground/80">{object.transcript}</p>
+        </details>
+      )}
+      {hasMetadata && (
+        <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg border border-white/10 bg-background/40 p-2 text-[11px] text-muted-foreground">
+          {object.creator && <span><strong className="text-foreground">Creator:</strong> {object.creator}</span>}
+          {object.period && <span><strong className="text-foreground">Period:</strong> {object.period}</span>}
+          {object.culture && <span><strong className="text-foreground">Culture:</strong> {object.culture}</span>}
+          {object.material && <span><strong className="text-foreground">Material:</strong> {object.material}</span>}
+          {object.provenance && <span className="col-span-2"><strong className="text-foreground">Provenance:</strong> {object.provenance}</span>}
+          {object.sourceCitation && <span className="col-span-2"><strong className="text-foreground">Source:</strong> {object.sourceCitation}</span>}
+          {object.curatorialStatus && <span className="col-span-2"><strong className="text-foreground">Status:</strong> {titleCase(object.curatorialStatus)}</span>}
+          {object.sensitivity && object.sensitivity !== "none" && <span className="col-span-2 text-amber-300"><strong>Note:</strong> {titleCase(object.sensitivity)} — please be respectful.</span>}
+        </div>
+      )}
     </div>
   );
 }
