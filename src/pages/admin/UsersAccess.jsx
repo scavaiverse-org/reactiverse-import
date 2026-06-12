@@ -6,6 +6,7 @@ import { ArrowRight, Filter, Monitor, Shield, Users } from "lucide-react";
 import AdminBreadcrumb from "@/components/admin/AdminBreadcrumb";
 import StatusBadge from "@/components/admin/StatusBadge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ROLES } from "@/lib/rbac";
 
 const ROLE_COLORS = ["text-blue-400", "text-violet-400", "text-cyan-400", "text-primary", "text-amber-400", "text-emerald-400", "text-pink-400", "text-red-400"];
 
@@ -15,12 +16,14 @@ function formatLabel(value = "") {
 
 export default function UsersAccess() {
   const queryClient = useQueryClient();
-  const { data: users = [], isLoading: loadingUsers } = useQuery({ queryKey: ["ua-user-profiles"], queryFn: () => base44.entities.UserProfile.list("email", 500) });
+  // profiles (not legacy user_profiles) is the role source of truth — it's
+  // what getAuthUser/the tour gate/edge functions actually read.
+  const { data: users = [], isLoading: loadingUsers } = useQuery({ queryKey: ["ua-user-profiles"], queryFn: () => base44.entities.Profile.list("email", 500) });
   const { data: tenantAccess = [] } = useQuery({ queryKey: ["ua-tenant-access"], queryFn: () => base44.entities.TenantAccess.list("tenant_id", 500) });
   const { data: rolePermissions = [] } = useQuery({ queryKey: ["ua-role-permissions"], queryFn: () => base44.entities.RolePermission.list("role", 500) });
 
   const roles = useMemo(() => {
-    const values = [...rolePermissions.map((item) => item.role), ...users.map((user) => user.role)].filter(Boolean);
+    const values = [...Object.values(ROLES), ...rolePermissions.map((item) => item.role), ...users.map((user) => user.role)].filter(Boolean);
     return [...new Set(values)].sort();
   }, [rolePermissions, users]);
 
@@ -43,7 +46,7 @@ export default function UsersAccess() {
   }, [tenantAccess]);
 
   const changeRole = useMutation({
-    mutationFn: ({ id, role }) => base44.entities.UserProfile.update(id, { role }),
+    mutationFn: ({ id, role }) => base44.entities.Profile.update(id, { role }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["ua-user-profiles"] }),
   });
 
@@ -108,7 +111,7 @@ export default function UsersAccess() {
       <div className="bg-white/[0.03] border border-white/8 rounded-xl p-5 mb-6">
         <div className="flex items-center justify-between mb-4">
           <p className="text-xs font-semibold text-foreground flex items-center gap-2"><Filter className="w-3.5 h-3.5 text-blue-400" />Role Assignments</p>
-          <span className="text-xs text-muted-foreground">Roles loaded from RolePermission</span>
+          <span className="text-xs text-muted-foreground">Canonical platform roles (rbac.js)</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">

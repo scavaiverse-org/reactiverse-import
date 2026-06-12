@@ -73,6 +73,9 @@ const entityTableMap = {
   TicketType: 'ticket_types',
   UserProfile: 'user_profiles',
   VisitPlan: 'visit_plans',
+  // Auth-linked RBAC profile — the role source of truth used by login,
+  // edge functions, and the tour gate (NOT the legacy user_profiles table).
+  Profile: 'profiles',
 };
 
 // All 65 Base44 entities now map to a real Supabase table. The catch-all
