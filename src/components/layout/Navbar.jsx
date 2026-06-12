@@ -39,7 +39,9 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
           <PublicHeaderLogo to="/" title="SCAVerse" subtitle="PUBLIC PLATFORM" />
 
-          <div className="hidden lg:flex items-center gap-1">
+          {/* min-w-0 + overflow-x-auto: on narrow desktop widths the pill row
+              scrolls inside its own lane instead of leaking past the page edge. */}
+          <div className="hidden lg:flex min-w-0 flex-1 items-center justify-end gap-1 overflow-x-auto pl-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {publicNav.map((link) => (
               <Link
                 key={link.path}
