@@ -121,6 +121,7 @@ export default function UsersAccess() {
               <tr className="text-muted-foreground border-b border-white/5">
                 <th className="pb-2 text-left font-medium">Name</th>
                 <th className="pb-2 text-left font-medium">Email</th>
+                <th className="pb-2 text-left font-medium">Signed Up Via</th>
                 <th className="pb-2 text-left font-medium">Status</th>
                 <th className="pb-2 text-left font-medium">Tenant</th>
                 <th className="pb-2 text-left font-medium">Franchise Interest</th>
@@ -132,6 +133,17 @@ export default function UsersAccess() {
                 <tr key={user.id} className="border-b border-white/5 last:border-0">
                   <td className="py-2 pr-3 text-foreground">{user.display_name || user.full_name || "Unnamed user"}</td>
                   <td className="py-2 pr-3 text-muted-foreground">{user.email}</td>
+                  <td className="py-2 pr-3">
+                    {user.provider === "google" ? (
+                      <span className="inline-flex items-center gap-1 text-[9px] font-bold tracking-widest px-2 py-0.5 rounded border text-blue-400 bg-blue-400/10 border-blue-400/30">
+                        <span className="w-1 h-1 rounded-full bg-current" />GOOGLE
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[9px] font-bold tracking-widest px-2 py-0.5 rounded border text-emerald-400 bg-emerald-400/10 border-emerald-400/30">
+                        <span className="w-1 h-1 rounded-full bg-current" />EMAIL
+                      </span>
+                    )}
+                  </td>
                   <td className="py-2 pr-3">{user.status ? <StatusBadge status={user.status} /> : <span className="text-muted-foreground">Not set</span>}</td>
                   <td className="py-2 pr-3 text-foreground/70">{user.tenant_id || "Global"}</td>
                   <td className="py-2 pr-3">
@@ -156,7 +168,7 @@ export default function UsersAccess() {
                 </tr>
               ))}
               {users.length === 0 && (
-                <tr><td colSpan={6} className="py-6 text-center text-muted-foreground">No user profile records yet</td></tr>
+                <tr><td colSpan={7} className="py-6 text-center text-muted-foreground">No user profile records yet</td></tr>
               )}
             </tbody>
           </table>
