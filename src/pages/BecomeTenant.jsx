@@ -7,10 +7,13 @@ import PlatformShell from "@/components/platform/PlatformShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { checkSubmitAllowed, honeypotInputProps, isHoneypotTripped, recordSubmit } from "@/lib/form-protection";
+import { toast } from "sonner";
 
 export default function BecomeTenant() {
   const [form, setForm] = useState({ organization: "", contact_name: "", email: "", museum_type: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
+  const [honeypot, setHoneypot] = useState("");
 
   const { data: configs = [] } = useQuery({
     queryKey: ["become-tenant-page-config"],
@@ -22,12 +25,21 @@ export default function BecomeTenant() {
 
   const mutation = useMutation({
     mutationFn: (data) => base44.entities.TenantInquiry.create({ ...data, status: "new", submitted_at: new Date().toISOString() }),
-    onSuccess: () => setSubmitted(true),
+    onSuccess: () => {
+      recordSubmit("tenant_inquiry");
+      setSubmitted(true);
+    },
   });
 
   const update = (field, value) => setForm((current) => ({ ...current, [field]: value }));
   const submit = (event) => {
     event.preventDefault();
+    if (isHoneypotTripped(honeypot)) return;
+    const guard = checkSubmitAllowed("tenant_inquiry");
+    if (!guard.allowed) {
+      toast.error(guard.message);
+      return;
+    }
     mutation.mutate(form);
   };
 
@@ -91,6 +103,7 @@ export default function BecomeTenant() {
             </div>
           ) : (
             <form onSubmit={submit} className="space-y-4">
+              <input {...honeypotInputProps()} value={honeypot} onChange={(event) => setHoneypot(event.target.value)} />
               <div>
                 <h2 className="font-display text-2xl font-bold">Apply / Enquire</h2>
                 <p className="mt-2 text-sm text-muted-foreground">Request a demo or contact the platform owner.</p>

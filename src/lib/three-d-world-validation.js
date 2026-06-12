@@ -79,6 +79,15 @@ export function buildSampleWorldConfig() {
 
 const NAVIGATION_TYPES = ["door", "portal"];
 
+// Approximate world coordinates for the named spawn point options, used to
+// detect objects placed on top of the visitor starting position.
+const NAMED_SPAWN_COORDS = {
+  front_center: { x: 0, z: 0 },
+  entrance_door: { x: 0, z: 2 },
+  middle_of_room: { x: 0, z: -3 },
+  cinematic_start_marker: { x: 0, z: 0 },
+};
+
 export function getNavigationObjects(config = {}) {
   return (config.objects || []).filter((object) => NAVIGATION_TYPES.includes(object.type));
 }
@@ -163,14 +172,21 @@ export function computeThreeDWorldWarnings(config = {}, allRooms = []) {
 
   if (!config.spawnPoint) {
     warnings.push({ id: "spawn_blocked", severity: "required", message: "Visitor starting point is not set." });
-  } else if (config.spawnPoint === "custom_xyz") {
-    const spawn = config.spawnPointCustom || {};
-    const blocked = objects.some((object) => {
-      const position = object.position || {};
-      return Math.abs(Number(position.x || 0) - Number(spawn.x || 0)) < 0.5
-        && Math.abs(Number(position.z || 0) - Number(spawn.z || 0)) < 0.5;
-    });
-    if (blocked) warnings.push({ id: "spawn_blocked", severity: "required", message: warningById.spawn_blocked });
+  } else {
+    // Named spawn points map to approximate world coordinates so the same
+    // collision check covers them; those are estimates, so the warning is
+    // only "recommended" — custom coordinates are exact and stay blocking.
+    const spawn = config.spawnPoint === "custom_xyz"
+      ? config.spawnPointCustom || {}
+      : NAMED_SPAWN_COORDS[config.spawnPoint];
+    if (spawn) {
+      const blocked = objects.some((object) => {
+        const position = object.position || {};
+        return Math.abs(Number(position.x || 0) - Number(spawn.x || 0)) < 0.5
+          && Math.abs(Number(position.z || 0) - Number(spawn.z || 0)) < 0.5;
+      });
+      if (blocked) warnings.push({ id: "spawn_blocked", severity: config.spawnPoint === "custom_xyz" ? "required" : "recommended", message: warningById.spawn_blocked });
+    }
   }
 
   return warnings;
@@ -200,7 +216,7 @@ export function evaluatePublishChecklist(config = {}, allRooms = []) {
     let passed = true;
     switch (item.id) {
       case "has_template": passed = !!config.selectedTemplate; break;
-      case "has_spawn_point": passed = !!config.spawnPoint; break;
+      case "has_spawn_point": passed = !!config.spawnPoint && !hasRequiredWarning(["spawn_blocked"]); break;
       case "has_exit": passed = navObjects.length > 0; break;
       case "all_doors_linked": passed = !hasRequiredWarning(["broken_door_link"]); break;
       case "objects_have_titles": passed = !hasAnyWarning(["unlabelled_object"]); break;

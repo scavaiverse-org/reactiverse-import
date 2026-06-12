@@ -12,6 +12,8 @@ import { base44 } from '@/api/base44Client';
 import { useActiveTenant } from '@/hooks/useActiveTenant';
 import { museumPath } from '@/lib/domain-registry';
 import { buildVendorPricing } from '@/lib/vendor-pricing';
+import { assertTenantId } from '@/lib/tenant-query';
+import { checkSubmitAllowed, honeypotInputProps, isHoneypotTripped, recordSubmit } from '@/lib/form-protection';
 import { toast } from 'sonner';
 
 export default function VendorRegister() {
@@ -34,12 +36,17 @@ export default function VendorRegister() {
     business_name: '', contact_name: '', email: '', phone: '',
     category: '', description: '', website_url: '', slot_type: 'standard',
   });
+  const [honeypot, setHoneypot] = useState('');
 
   const validate = () => {
     const next = {};
     if (!form.business_name.trim()) next.business_name = 'Business name is required';
     if (!form.contact_name.trim()) next.contact_name = 'Contact name is required';
-    if (!form.email.trim()) next.email = 'Email is required';
+    if (!form.email.trim()) {
+      next.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      next.email = 'Enter a valid email address';
+    }
     if (!form.phone.trim()) {
       next.phone = 'Phone is required';
     } else if (!/^[+]?[\d\s()-]{7,20}$/.test(form.phone.trim())) {
@@ -57,17 +64,31 @@ export default function VendorRegister() {
       toast.error(Object.values(validationErrors)[0]);
       return;
     }
+    if (isHoneypotTripped(honeypot)) return;
+    const guard = checkSubmitAllowed('vendor_application');
+    if (!guard.allowed) {
+      toast.error(guard.message);
+      return;
+    }
+    let tenantId;
+    try {
+      tenantId = assertTenantId(tenant?.id);
+    } catch {
+      toast.error('Museum is still loading. Please try again in a moment.');
+      return;
+    }
     setErrors({});
     setSubmitError('');
     setIsSubmitting(true);
     try {
-      base44.entities.AnalyticsEvent.create({ tenant_id: tenant?.id, tenant_name: tenant?.name, event_type: "vendor_signup", event_data: { slot_type: form.slot_type, category: form.category }, source_page: "vendor_register" }).catch(() => {});
+      base44.entities.AnalyticsEvent.create({ tenant_id: tenantId, tenant_name: tenant?.name, event_type: "vendor_signup", event_data: { slot_type: form.slot_type, category: form.category }, source_page: "vendor_register" }).catch(() => {});
       await base44.entities.Vendor.create({
         ...form,
-        tenant_id: tenant?.id,
+        tenant_id: tenantId,
         tenant_name: tenant?.name,
         status: 'pending',
       });
+      recordSubmit('vendor_application');
       setSubmitted(true);
       toast.success('Vendor application submitted.');
     } catch (err) {
@@ -126,6 +147,7 @@ export default function VendorRegister() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            <input {...honeypotInputProps()} value={honeypot} onChange={e => setHoneypot(e.target.value)} />
             <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
               <h3 className="font-display text-lg font-semibold text-foreground">Business Information</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

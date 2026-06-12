@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowDown, ArrowUp, Box, CheckCircle2, ChevronDown, Copy, DoorOpen, Eye, Plus, Sparkles, Trash2, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,9 @@ function prettify(value = "") {
 
 function Section({ index, title, hint, children, defaultOpen = true }) {
   const [open, setOpen] = useState(defaultOpen);
+  // Auto-expand when the section's content first appears (e.g. the first
+  // object is added, or gamification/NPC is enabled) — never force-close.
+  useEffect(() => { if (defaultOpen) setOpen(true); }, [defaultOpen]);
   return (
     <div className="overflow-hidden rounded-2xl border border-white/10 bg-background/30">
       <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-white/[0.03]">
@@ -81,6 +84,103 @@ function VectorInput({ label, value = {}, onChange }) {
 // object card always edits the right one.
 const MEDIA_FIELD_BY_TYPE = { image_frame: "imageUrl", video_wall: "videoUrl", audio_point: "audioUrl", artifact_display: "modelUrl", memory_capsule: "mediaUrl", product_booth: "imageUrl", collectible: "iconUrl" };
 
+// Sample-world objects store their text in `body` (text_panel) or `story`
+// (memory_capsule); always edit the field that already holds the text so the
+// editor never leaves a stale duplicate behind.
+function getDescriptionField(object = {}) {
+  if (object.description) return "description";
+  if (object.body != null) return "body";
+  if (object.story != null) return "story";
+  return "description";
+}
+
+// Type-specific fields beyond the shared title/description/media/transform
+// set, mirroring each object type's editableFields in the seed library.
+const TYPE_EXTRA_FIELDS = {
+  text_panel: [
+    { field: "fontSize", label: "Font size", kind: "select", options: ["small", "medium", "large"] },
+    { field: "alignment", label: "Alignment", kind: "select", options: ["left", "center", "right"] },
+  ],
+  video_wall: [
+    { field: "thumbnailUrl", label: "Thumbnail URL", kind: "text", placeholder: "https://…" },
+    { field: "autoplay", label: "Autoplay", kind: "toggle" },
+    { field: "mute", label: "Mute", kind: "toggle" },
+    { field: "loop", label: "Loop", kind: "toggle" },
+  ],
+  audio_point: [
+    { field: "transcript", label: "Transcript", kind: "textarea", hint: "Shown for accessibility alongside the audio." },
+    { field: "loop", label: "Loop", kind: "toggle" },
+  ],
+  artifact_display: [
+    { field: "imageUrl", label: "Fallback image URL", kind: "text", placeholder: "https://…", hint: "Shown on slower devices instead of the 3D model. Required for publish." },
+    { field: "lighting", label: "Lighting", kind: "text" },
+  ],
+  memory_capsule: [
+    { field: "emotionTag", label: "Emotion tag", kind: "text" },
+    { field: "color", label: "Color", kind: "text" },
+  ],
+  product_booth: [
+    { field: "brandName", label: "Brand name", kind: "text" },
+    { field: "productName", label: "Product name", kind: "text" },
+    { field: "price", label: "Price", kind: "text" },
+    { field: "linkUrl", label: "Link URL", kind: "text", placeholder: "https://…" },
+    { field: "ctaText", label: "CTA text", kind: "text" },
+  ],
+  npc_guide: [
+    { field: "script", label: "Guide script", kind: "textarea" },
+    { field: "avatarStyle", label: "Avatar style", kind: "text" },
+    { field: "dialogueSteps", label: "Dialogue steps", kind: "lines", hint: "One line per step, under 24 words each." },
+  ],
+  quiz_station: [
+    { field: "question", label: "Question", kind: "text" },
+    { field: "answers", label: "Answers", kind: "lines", hint: "One answer option per line." },
+    { field: "correctAnswer", label: "Correct answer", kind: "text" },
+    { field: "reward", label: "Reward", kind: "text" },
+  ],
+  collectible: [
+    { field: "rarity", label: "Rarity", kind: "select", options: ["common", "uncommon", "rare", "legendary"] },
+    { field: "rewardPoints", label: "Reward points", kind: "number" },
+    { field: "unlockEffect", label: "Unlock effect", kind: "text" },
+  ],
+  floating_button: [
+    { field: "targetUrl", label: "Target URL", kind: "text", placeholder: "https://…", hint: "Used when the click action opens a link." },
+    { field: "destinationRoomId", label: "Destination room id", kind: "text", hint: "Used when the click action is Go to Another Room." },
+  ],
+  direction_sign: [
+    { field: "arrowDirection", label: "Arrow direction", kind: "select", options: ["forward", "back", "left", "right", "up", "down"] },
+  ],
+  light_source: [
+    { field: "lightType", label: "Light type", kind: "select", options: ["spotlight", "ambient", "point", "highlight"] },
+    { field: "intensity", label: "Intensity", kind: "number" },
+    { field: "color", label: "Color", kind: "text" },
+    { field: "targetObjectId", label: "Target object id", kind: "text" },
+  ],
+  portal: [
+    { field: "portalEffect", label: "Portal effect", kind: "text" },
+    { field: "color", label: "Color", kind: "text" },
+  ],
+};
+
+function ExtraField({ definition, object, onUpdate }) {
+  const { field, label, kind, options = [], placeholder, hint } = definition;
+  const value = object[field];
+  if (kind === "toggle") return <Toggle label={label} checked={!!value} onChange={(checked) => onUpdate({ [field]: checked })} hint={hint} />;
+  if (kind === "select") {
+    return (
+      <Field label={label} hint={hint}>
+        <select className={selectClass} value={value || ""} onChange={(e) => onUpdate({ [field]: e.target.value })}>
+          <option value="">Choose…</option>
+          {options.map((option) => <option key={option} value={option}>{prettify(option)}</option>)}
+        </select>
+      </Field>
+    );
+  }
+  if (kind === "textarea") return <Field label={label} hint={hint}><Textarea rows={2} value={value || ""} onChange={(e) => onUpdate({ [field]: e.target.value })} /></Field>;
+  if (kind === "lines") return <Field label={label} hint={hint}><Textarea rows={2} value={(Array.isArray(value) ? value : []).join("\n")} onChange={(e) => onUpdate({ [field]: e.target.value.split("\n").filter(Boolean) })} /></Field>;
+  if (kind === "number") return <Field label={label} hint={hint}><Input type="number" value={value ?? ""} onChange={(e) => onUpdate({ [field]: e.target.value === "" ? undefined : Number(e.target.value) })} /></Field>;
+  return <Field label={label} hint={hint}><Input value={value || ""} placeholder={placeholder} onChange={(e) => onUpdate({ [field]: e.target.value })} /></Field>;
+}
+
 const ANCHOR_QUICK_ADD = [
   { label: "Add Image", type: "image_frame" },
   { label: "Add Video", type: "video_wall" },
@@ -110,6 +210,7 @@ function newObject(type, count) {
 }
 
 export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
+  const [addObjectType, setAddObjectType] = useState("image_frame");
   const config = getThreeDWorldConfig(room);
   const setConfig = (patch) => onChange({ ...room, threeDWorldConfig: { ...(config || createThreeDWorldConfig()), ...patch } });
 
@@ -134,11 +235,15 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
   const navObjects = getNavigationObjects(config);
   const warnings = computeThreeDWorldWarnings(config, rooms);
   const requiredWarnings = warnings.filter((warning) => warning.severity === "required");
-  const recommendedWarnings = warnings.filter((warning) => warning.severity !== "required");
   const weight = estimateMobileWeight(config);
   const checklist = evaluatePublishChecklist(config, rooms);
   const optimisations = suggestOptimisations(warnings);
-  const roomOptions = rooms.filter((entry) => entry.id !== room.id).map((entry) => ({ value: entry.id || entry.room_key, label: entry.title || entry.room_key || entry.id }));
+  // Compare by id only when both rooms actually have one — unsaved rooms all
+  // share id === undefined, which would wrongly exclude every sibling.
+  const isSameRoom = (entry) => entry === room
+    || (entry.id != null && room.id != null && entry.id === room.id)
+    || (entry.id == null && room.id == null && entry.room_key != null && entry.room_key === room.room_key);
+  const roomOptions = rooms.filter((entry) => !isSameRoom(entry)).map((entry) => ({ value: entry.id || entry.room_key, label: entry.title || entry.room_key || entry.id }));
 
   const updateObject = (id, patch) => setConfig({ objects: objects.map((object) => (object.id === id ? { ...object, ...patch } : object)) });
   const addObject = (type) => setConfig({ objects: [...objects, newObject(type, objects.length)] });
@@ -299,11 +404,11 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
       <Section index={5} title="Object Library" hint="Everything placed inside the world is an object. Add from the library, then fine-tune each one in Interactive Objects below.">
         <div className="flex flex-wrap items-end gap-3">
           <Field label="Object type">
-            <select id="three-d-add-object-type" className={selectClass} defaultValue="image_frame">
+            <select className={selectClass} value={addObjectType} onChange={(e) => setAddObjectType(e.target.value)}>
               {SEED.objectLibrary.map((entry) => <option key={entry.id} value={entry.id}>{entry.name} — {entry.category}</option>)}
             </select>
           </Field>
-          <Button onClick={() => addObject(document.getElementById("three-d-add-object-type")?.value || "image_frame")}><Plus className="h-4 w-4" /> Add object</Button>
+          <Button onClick={() => addObject(addObjectType)}><Plus className="h-4 w-4" /> Add object</Button>
         </div>
         {objects.length === 0 && <p className="text-xs text-muted-foreground">No objects yet. Add your first object above, use the quick-add buttons in Media & Content Anchors, or load the sample world.</p>}
         <div className="space-y-2">
@@ -325,14 +430,17 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
         <div className="space-y-3">
           {objects.map((object) => {
             const mediaField = MEDIA_FIELD_BY_TYPE[object.type];
+            const descriptionField = getDescriptionField(object);
+            const extraFields = TYPE_EXTRA_FIELDS[object.type] || [];
             return (
               <details key={object.id} className="rounded-xl border border-white/10 bg-background/40">
                 <summary className="cursor-pointer px-4 py-2.5 text-sm font-semibold">{object.title || object.name || "Untitled"} <span className="ml-2 text-xs font-normal text-muted-foreground">{getObjectType(object.type)?.name || prettify(object.type)}</span></summary>
                 <div className="space-y-3 border-t border-white/10 p-4">
                   <div className="grid gap-3 md:grid-cols-2">
                     <Field label="Title"><Input value={object.title || ""} onChange={(e) => updateObject(object.id, { title: e.target.value })} /></Field>
-                    <Field label="Description"><Input value={object.description || object.body || object.story || ""} onChange={(e) => updateObject(object.id, { description: e.target.value })} /></Field>
+                    <Field label="Description"><Input value={object[descriptionField] || ""} onChange={(e) => updateObject(object.id, { [descriptionField]: e.target.value })} /></Field>
                     {mediaField && <Field label={`Media URL (${prettify(mediaField.replace("Url", ""))})`}><Input value={object[mediaField] || ""} placeholder="https://…" onChange={(e) => updateObject(object.id, { [mediaField]: e.target.value })} /></Field>}
+                    {extraFields.map((definition) => <ExtraField key={definition.field} definition={definition} object={object} onUpdate={(patch) => updateObject(object.id, patch)} />)}
                     <Field label="Click action" hint="What happens when a visitor clicks this object.">
                       <select className={selectClass} value={object.clickAction || "open_popup"} onChange={(e) => updateObject(object.id, { clickAction: e.target.value })}>
                         {SEED.interactionTypes.map((action) => <option key={action.id} value={action.id}>{action.name}</option>)}

@@ -13,6 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import TenantNavbar from "@/components/tenant/TenantNavbar";
 import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { museumPath } from "@/lib/domain-registry";
+import { assertTenantId, legacyTenantFilter } from "@/lib/tenant-query";
+import { checkSubmitAllowed, honeypotInputProps, isHoneypotTripped, recordSubmit } from "@/lib/form-protection";
 
 const fallbackTickets = [
   { id: "virtual_general", label: "Virtual General", price: 18, currency: "SGD", access_mode: "virtual", icon: Monitor, features: ["Virtual walkthrough", "AI support", "Digital access"] },
@@ -210,6 +212,7 @@ export function TicketGateway() {
   const slug = tenantSlug || tenant?.slug || "asian-operatic-museum";
   const [selectedId, setSelectedId] = useState(tickets[0]?.id || "virtual_general");
   const [form, setForm] = useState({ visitor_name: "", visitor_email: "", quantity: 1, visit_date: "", accessibility_needs: "", group_type: "individual", notes: "" });
+  const [honeypot, setHoneypot] = useState("");
   useEffect(() => {
     if (tickets.length && !tickets.some((ticket) => ticket.id === selectedId)) setSelectedId(tickets[0].id);
   }, [tickets, selectedId]);
@@ -225,8 +228,21 @@ export function TicketGateway() {
       toast.error("Please select a valid visit date.");
       return;
     }
+    if (isHoneypotTripped(honeypot)) return;
+    const guard = checkSubmitAllowed("ticket_reservation");
+    if (!guard.allowed) {
+      toast.error(guard.message);
+      return;
+    }
+    let tenantId;
+    try {
+      tenantId = assertTenantId(tenant?.id);
+    } catch {
+      toast.error("Museum is still loading. Please try again in a moment.");
+      return;
+    }
     const payload = {
-      tenant_id: tenant?.id,
+      tenant_id: tenantId,
       tenant_name: tenant?.name,
       ticket_type: selected.id,
       visitor_name: form.visitor_name,
@@ -248,8 +264,9 @@ export function TicketGateway() {
     };
     try {
       const created = await base44.entities.Ticket.create(payload);
-      saveJourney(tenant?.id, { reservation: { ...payload, id: created?.id, ticket_label: selected.label } });
-      base44.entities.AnalyticsEvent.create({ tenant_id: tenant?.id, tenant_name: tenant?.name, event_type: "ticket_reservation_created", source_page: "tickets", event_data: { ticket_type: selected.id, quantity: payload.quantity, source_step: "tickets" } }).catch(() => {});
+      recordSubmit("ticket_reservation");
+      saveJourney(tenantId, { reservation: { ...payload, id: created?.id, ticket_label: selected.label } });
+      base44.entities.AnalyticsEvent.create({ tenant_id: tenantId, tenant_name: tenant?.name, event_type: "ticket_reservation_created", source_page: "tickets", event_data: { ticket_type: selected.id, quantity: payload.quantity, source_step: "tickets" } }).catch(() => {});
       navigate(museumPath(slug, "tickets-5"));
     } catch (error) {
       console.error("[tickets] reservation failed:", error);
@@ -275,6 +292,7 @@ export function TicketGateway() {
         <div className="rounded-3xl border border-border/40 bg-card/50 p-6 backdrop-blur-sm">
           <h2 className="font-heading text-2xl font-semibold">Reservation details</h2>
           <div className="mt-5 space-y-4">
+            <input {...honeypotInputProps()} value={honeypot} onChange={(e) => setHoneypot(e.target.value)} />
             <label className="space-y-2"><Label>Visitor name</Label><Input value={form.visitor_name} onChange={(e) => setForm({ ...form, visitor_name: e.target.value })} /></label>
             <label className="space-y-2"><Label>Email</Label><Input type="email" value={form.visitor_email} onChange={(e) => setForm({ ...form, visitor_email: e.target.value })} /></label>
             <div className="grid grid-cols-2 gap-3"><label className="space-y-2"><Label>Quantity</Label><Input type="number" min="1" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) || 1 })} /></label><label className="space-y-2"><Label>Visit date</Label><Input type="date" min={todayDateInput()} value={form.visit_date} onChange={(e) => setForm({ ...form, visit_date: e.target.value })} /></label></div>
@@ -310,12 +328,19 @@ export function VisitPlanning() {
       toast.error("Please select a valid visit date.");
       return;
     }
+    let tenantId;
+    try {
+      tenantId = assertTenantId(tenant?.id);
+    } catch {
+      setSaveStatus({ type: "error", message: "Museum is still loading. Please try again in a moment." });
+      return;
+    }
     setSaving(true);
     setSaveStatus(null);
     try {
-      saveJourney(tenant?.id, { plan });
+      saveJourney(tenantId, { plan });
       await base44.entities.VisitPlan.create({
-        tenant_id: tenant?.id,
+        tenant_id: tenantId,
         tenant_name: tenant?.name,
         stage: "planning",
         visit_date: plan.visit_date || null,
@@ -348,12 +373,19 @@ export function AddOns() {
   const toggle = (id) => setSelected((items) => items.includes(id) ? items.filter((item) => item !== id) : [...items, id]);
   const saveAddons = async () => {
     const commerce_interest = selected.includes("merch_bundle");
+    let tenantId;
+    try {
+      tenantId = assertTenantId(tenant?.id);
+    } catch {
+      setSaveStatus({ type: "error", message: "Museum is still loading. Please try again in a moment." });
+      return;
+    }
     setSaving(true);
     setSaveStatus(null);
     try {
-      saveJourney(tenant?.id, { addons: selected, commerce_interest });
+      saveJourney(tenantId, { addons: selected, commerce_interest });
       await base44.entities.VisitPlan.create({
-        tenant_id: tenant?.id,
+        tenant_id: tenantId,
         tenant_name: tenant?.name,
         stage: "addons",
         addons: selected,
@@ -379,11 +411,13 @@ export function Confirmation() {
   const journey = useMemo(() => readJourney(tenant?.id), [tenant?.id]);
   const savedReservation = journey.reservation || {};
   const [paying, setPaying] = useState(false);
-  const justPaid = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("payment") === "success";
+  const paymentParam = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("payment") : null;
+  const justPaid = paymentParam === "success";
+  const paymentCancelled = paymentParam === "cancelled";
   const { data: latestReservations = [] } = useQuery({
-    queryKey: ["ticket-confirmation-reservation", savedReservation.id],
-    queryFn: () => savedReservation.id ? base44.entities.Ticket.filter({ id: savedReservation.id }) : Promise.resolve([]),
-    enabled: !!savedReservation.id,
+    queryKey: ["ticket-confirmation-reservation", tenant?.id, savedReservation.id],
+    queryFn: () => savedReservation.id ? base44.entities.Ticket.filter(legacyTenantFilter(tenant.id, { id: savedReservation.id })) : Promise.resolve([]),
+    enabled: !!tenant?.id && !!savedReservation.id,
     initialData: [],
     // After returning from Stripe, poll briefly until the webhook flips status to paid.
     refetchInterval: (query) => {
@@ -429,7 +463,7 @@ export function Confirmation() {
   const statusLabel = hasConfirmedAccess ? status : "payment pending";
   const ticketLabel = reservation.ticket_label || reservation.ticket_type || reservation.ticket_id;
 
-  return <StageShell activeStage="tickets-5" eyebrow="Confirmation" title="Reservation summary and next steps." body="Your reservation is saved, but access will only unlock after payment confirmation."><div className="grid gap-6 lg:grid-cols-[1fr_0.8fr]"><div className={`rounded-3xl border p-6 ${hasConfirmedAccess ? "border-emerald-400/20 bg-emerald-400/10" : "border-amber-400/20 bg-amber-400/10"}`}><CheckCircle2 className={`mb-4 h-10 w-10 ${hasConfirmedAccess ? "text-emerald-300" : "text-amber-300"}`} /><h2 className="font-heading text-3xl font-semibold">Reservation received</h2><p className="mt-3 text-sm leading-7 text-muted-foreground">{reservation.visitor_name || "Visitor"}, your {ticketLabel} request is saved. Your reservation is saved, but access will only unlock after payment confirmation.</p>{!hasConfirmedAccess && <div className="mt-4 rounded-2xl border border-amber-300/30 bg-background/30 p-4 text-sm text-amber-100"><p className="font-semibold">{justPaid ? "Payment received — confirming your ticket…" : "Payment Pending"}</p><p className="mt-1 text-xs text-amber-100/80">{justPaid ? "Hang tight, this page will update automatically in a few seconds." : "Pay securely with Stripe below — tour access unlocks the moment payment is confirmed."}</p></div>}</div><div className="rounded-3xl border border-border/40 bg-card/50 p-6 backdrop-blur-sm"><h3 className="font-heading text-2xl font-semibold">Summary</h3><dl className="mt-4 space-y-3 text-sm"><div className="flex justify-between gap-4"><dt className="text-muted-foreground">Ticket</dt><dd>{ticketLabel}</dd></div><div className="flex justify-between gap-4"><dt className="text-muted-foreground">Quantity</dt><dd>{reservation.quantity}</dd></div><div className="flex justify-between gap-4"><dt className="text-muted-foreground">Visit date</dt><dd>{reservation.visit_date}</dd></div><div className="flex justify-between gap-4"><dt className="text-muted-foreground">Status</dt><dd><Badge className={hasConfirmedAccess ? "bg-emerald-400/10 text-emerald-200" : "bg-amber-400/10 text-amber-200"}>{statusLabel}</Badge></dd></div><div className="flex justify-between gap-4"><dt className="text-muted-foreground">Add-ons</dt><dd>{journey.addons?.length || 0}</dd></div></dl></div></div><div className="mt-8 flex flex-wrap gap-3">{hasConfirmedAccess ? <ActionLink to={museumPath(slug, "begin-tour")}>Begin Tour <ArrowRight className="h-4 w-4" /></ActionLink> : <Button onClick={startPayment} disabled={paying || justPaid} className="gap-2">{paying ? "Redirecting to Stripe…" : justPaid ? "Confirming payment…" : "Pay Now"}</Button>}<ActionLink to={museumPath(slug, "about")} variant="outline">Learn About Museum</ActionLink><ActionLink to={museumPath(slug, "tickets")} variant="outline">Reserve Another Ticket</ActionLink></div></StageShell>;
+  return <StageShell activeStage="tickets-5" eyebrow="Confirmation" title="Reservation summary and next steps." body="Your reservation is saved, but access will only unlock after payment confirmation.">{paymentCancelled && !hasConfirmedAccess && <div className="mb-6 rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-sm"><p className="font-semibold text-destructive-foreground">Payment was cancelled</p><p className="mt-1 text-xs text-muted-foreground">No charge was made. Your reservation is still saved — you can retry the payment below whenever you're ready, or contact support if something went wrong.</p></div>}<div className="grid gap-6 lg:grid-cols-[1fr_0.8fr]"><div className={`rounded-3xl border p-6 ${hasConfirmedAccess ? "border-emerald-400/20 bg-emerald-400/10" : "border-amber-400/20 bg-amber-400/10"}`}><CheckCircle2 className={`mb-4 h-10 w-10 ${hasConfirmedAccess ? "text-emerald-300" : "text-amber-300"}`} /><h2 className="font-heading text-3xl font-semibold">{hasConfirmedAccess ? "Payment confirmed" : "Reservation received"}</h2><p className="mt-3 text-sm leading-7 text-muted-foreground">{hasConfirmedAccess ? `${reservation.visitor_name || "Visitor"}, your ${ticketLabel} ticket is confirmed. A record of this purchase is attached to ${reservation.visitor_email || "your email"}. You can begin your tour at any time.` : `${reservation.visitor_name || "Visitor"}, your ${ticketLabel} request is saved. Your reservation is saved, but access will only unlock after payment confirmation.`}</p>{!hasConfirmedAccess && <div className="mt-4 rounded-2xl border border-amber-300/30 bg-background/30 p-4 text-sm text-amber-100"><p className="font-semibold">{justPaid ? "Payment received — confirming your ticket…" : "Payment Pending"}</p><p className="mt-1 text-xs text-amber-100/80">{justPaid ? "Hang tight, this page will update automatically in a few seconds." : "Pay securely with Stripe below — tour access unlocks the moment payment is confirmed."}</p></div>}</div><div className="rounded-3xl border border-border/40 bg-card/50 p-6 backdrop-blur-sm"><h3 className="font-heading text-2xl font-semibold">Summary</h3><dl className="mt-4 space-y-3 text-sm"><div className="flex justify-between gap-4"><dt className="text-muted-foreground">Ticket</dt><dd>{ticketLabel}</dd></div><div className="flex justify-between gap-4"><dt className="text-muted-foreground">Quantity</dt><dd>{reservation.quantity}</dd></div><div className="flex justify-between gap-4"><dt className="text-muted-foreground">Visit date</dt><dd>{reservation.visit_date}</dd></div><div className="flex justify-between gap-4"><dt className="text-muted-foreground">Status</dt><dd><Badge className={hasConfirmedAccess ? "bg-emerald-400/10 text-emerald-200" : "bg-amber-400/10 text-amber-200"}>{statusLabel}</Badge></dd></div><div className="flex justify-between gap-4"><dt className="text-muted-foreground">Add-ons</dt><dd>{journey.addons?.length || 0}</dd></div></dl><p className="mt-5 border-t border-white/10 pt-4 text-xs leading-relaxed text-muted-foreground">Payments are processed securely by Stripe. See the <Link to="/refund-policy" className="text-primary underline-offset-4 hover:underline">refund policy</Link> for cancellation terms. Need help with this reservation? <Link to="/contact" className="text-primary underline-offset-4 hover:underline">Contact support</Link>{tenant?.name ? ` or reach out to ${tenant.name} directly` : ""}.</p></div></div><div className="mt-8 flex flex-wrap gap-3">{hasConfirmedAccess ? <ActionLink to={museumPath(slug, "begin-tour")}>Begin Tour <ArrowRight className="h-4 w-4" /></ActionLink> : <Button onClick={startPayment} disabled={paying || justPaid} className="gap-2">{paying ? "Redirecting to Stripe…" : justPaid ? "Confirming payment…" : paymentCancelled ? "Retry Payment" : "Pay Now"}</Button>}<ActionLink to={museumPath(slug, "about")} variant="outline">Learn About Museum</ActionLink><ActionLink to={museumPath(slug, "tickets")} variant="outline">Reserve Another Ticket</ActionLink></div></StageShell>;
 }
 
 export function CommerceBridge() {

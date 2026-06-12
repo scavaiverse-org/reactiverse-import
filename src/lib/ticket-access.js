@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { canAccessMuseum } from "@/lib/access-control";
 import { isMasterUser } from "@/lib/rbac";
+import { legacyTenantFilter } from "@/lib/tenant-query";
 
 // Statuses that unlock tour access — mirrors the Confirmation stage in
 // TenantTicketJourney.jsx ("paid"/"confirmed" unlock Begin Tour).
@@ -37,7 +38,9 @@ export function useTourAccess(tenant) {
 
   const { data: tickets = [], isLoading } = useQuery({
     queryKey: ["tour-access-ticket", tenant?.id, reservation.id],
-    queryFn: () => base44.entities.Ticket.filter({ id: reservation.id }),
+    // Scope the lookup to this tenant so a reservation id from another
+    // museum (stale or forged localStorage) can never unlock this tour.
+    queryFn: () => base44.entities.Ticket.filter(legacyTenantFilter(tenant.id, { id: reservation.id })),
     enabled: !!tenant?.id && !!reservation.id && !staffBypass,
     initialData: [],
   });
