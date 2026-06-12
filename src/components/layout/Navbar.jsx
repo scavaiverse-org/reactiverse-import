@@ -1,15 +1,15 @@
-import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import { DEFAULT_MUSEUM_SLUG } from "@/lib/domain-registry";
 import PublicHeaderShell, { PublicHeaderLogo } from "./PublicHeaderShell";
-
-const SUPERAGENT_URL = "https://app.base44.com/superagent/6a2544656783af4b6e8309c9";
 
 // Legal/contact links live in the footer; keeping the top bar to core
 // destinations stops the pill labels being squeezed and clipped on
 // smaller desktop widths.
+//
+// NOTE: this bar deliberately has NO hamburger of its own — the global
+// floating MasterHamburgerNav (app shell) occupies the same top-right spot
+// on every page, and two stacked hamburgers opened overlapping menus on
+// mobile. On narrow screens the pill row scrolls horizontally instead.
 const publicNav = [
   { label: "Consumer Platform", path: "/platform/overview" },
   { label: "Available Museums", path: "/virtual-experience" },
@@ -20,86 +20,32 @@ const publicNav = [
   { label: "Login", path: "/login" },
 ];
 
-const mobilePublicNav = [
-  ...publicNav,
-  { label: "Privacy", path: "/privacy" },
-  { label: "Terms", path: "/terms" },
-  { label: "Refund Policy", path: "/refund-policy" },
-  { label: "Contact", path: "/contact" },
-  { label: "Accessibility", path: "/accessibility" },
-  { label: "Super", path: SUPERAGENT_URL, external: true },
-];
-
 export default function Navbar() {
-  const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
 
   return (
     <PublicHeaderShell className="bg-background/70">
-        <div className="flex items-center justify-between h-16">
-          <PublicHeaderLogo to="/" title="SCAVerse" subtitle="PUBLIC PLATFORM" />
+      <div className="flex h-16 items-center justify-between gap-3">
+        <PublicHeaderLogo to="/" title="SCAVerse" subtitle="PUBLIC PLATFORM" />
 
-          {/* min-w-0 + overflow-x-auto: on narrow desktop widths the pill row
-              scrolls inside its own lane instead of leaking past the page edge. */}
-          <div className="hidden lg:flex min-w-0 flex-1 items-center justify-end gap-1 overflow-x-auto pl-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {publicNav.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={`shrink-0 whitespace-nowrap rounded-full border px-4 py-2 font-ui text-xs font-semibold tracking-[0.08em] transition-colors ${
-                  location.pathname === link.path
-                    ? "border-primary/45 bg-primary/10 text-primary"
-                                         : "border-transparent text-muted-foreground hover:border-border/60 hover:bg-card/50 hover:text-foreground"
-                }`}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </div>
-
-          <button
-            className="lg:hidden p-2 text-foreground"
-            aria-label={mobileOpen ? "Close menu" : "Open menu"}
-            onClick={() => setMobileOpen(!mobileOpen)}
-          >
-            {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+        {/* Swipeable on phones/narrow widths; right-aligned with room to spare. */}
+        {/* pr-12 keeps the last pill clear of the floating hamburger button. */}
+        <div className="flex min-w-0 flex-1 items-center justify-start gap-1 overflow-x-auto pl-2 pr-12 sm:justify-end sm:pr-14 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {publicNav.map((link) => (
+            <Link
+              key={link.path}
+              to={link.path}
+              className={`shrink-0 whitespace-nowrap rounded-full border px-4 py-2 font-ui text-xs font-semibold tracking-[0.08em] transition-colors ${
+                location.pathname === link.path
+                  ? "border-primary/45 bg-primary/10 text-primary"
+                  : "border-transparent text-muted-foreground hover:border-border/60 hover:bg-card/50 hover:text-foreground"
+              }`}
+            >
+              {link.label}
+            </Link>
+          ))}
         </div>
-
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden bg-background/95 backdrop-blur-xl border-b border-border overflow-hidden"
-          >
-            <div className="px-4 py-4 space-y-1">
-              {mobilePublicNav.map((link) => {
-                const className = `block min-h-11 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                  location.pathname === link.path
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                }`;
-
-                if (link.external) {
-                  return (
-                    <a key={link.path} href={link.path} target="_blank" rel="noreferrer" onClick={() => setMobileOpen(false)} className={className}>
-                      {link.label}
-                    </a>
-                  );
-                }
-
-                return (
-                  <Link key={link.path} to={link.path} onClick={() => setMobileOpen(false)} className={className}>
-                    {link.label}
-                  </Link>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </div>
     </PublicHeaderShell>
   );
 }
