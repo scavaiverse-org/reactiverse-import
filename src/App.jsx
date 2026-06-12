@@ -58,7 +58,6 @@ import AdminExhibits from './pages/admin/AdminExhibits';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
 import MasterDashboard from './pages/admin/MasterDashboard';
 import UsersAccess from './pages/admin/UsersAccess';
-import Super from './pages/admin/Super';
 import ExperienceLayer from './pages/admin/ExperienceLayer';
 import ModulesOverview from './pages/admin/ModulesOverview';
 import PlatformServices from './pages/admin/PlatformServices';
@@ -297,7 +296,6 @@ const AuthenticatedApp = () => {
       <Route path="/platform/admin" element={<MasterAdminLayout />}>
         <Route index element={<MasterDashboard />} />
         <Route path="users-access" element={<UsersAccess />} />
-        <Route path="super" element={<Super />} />
         <Route path="experience-layer" element={<ExperienceLayer />} />
         <Route path="modules" element={<ModulesOverview />} />
         <Route path="modules/onboarding" element={<ModuleOnboarding />} />
