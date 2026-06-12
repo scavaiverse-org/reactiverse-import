@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, ChevronRight, Sparkles } from "lucide-react";
@@ -14,13 +14,14 @@ const item = {
 };
 
 export default function PremiumOnboardingStage({ stage, currentStage, totalStages, selections, multiSelections, onSelect, onNext, canProceed, isLastStage }) {
+  const prefersReducedMotion = useReducedMotion();
   return (
     <motion.div variants={container} initial="hidden" animate="show" exit={{ opacity: 0, y: -18, filter: "blur(10px)" }} className="relative">
       <motion.div variants={item} className="text-center mb-6">
         <div className="mx-auto mb-5 h-20 w-20 rounded-full border border-primary/25 bg-primary/10 shadow-[0_0_80px_rgba(245,174,56,0.18)] flex items-center justify-center">
           <span className="text-5xl text-primary/40 font-mono">{stage.visual}</span>
         </div>
-        <p className="mb-3 font-display text-[10px] font-medium uppercase tracking-[0.5em] text-primary/70">Museum Entrance · Step {currentStage + 1} of {totalStages}</p>
+        <p className="mb-3 font-display text-[10px] font-medium uppercase tracking-[0.5em] text-primary/70">SCAVers · Step {currentStage + 1} of {totalStages}</p>
         <h1 className="mb-4 font-heading text-4xl font-semibold leading-[0.95] tracking-tight text-foreground sm:text-5xl">{stage.title}</h1>
         <p className="mx-auto max-w-md font-body text-sm font-light leading-relaxed text-muted-foreground">{stage.subtitle}</p>
         <div className="mt-4 flex flex-wrap justify-center gap-2 text-[10px] text-muted-foreground">
@@ -33,6 +34,20 @@ export default function PremiumOnboardingStage({ stage, currentStage, totalStage
         <motion.p variants={item} className="mx-auto mb-8 max-w-xl rounded-2xl border border-primary/15 bg-card/50 px-6 py-5 text-center font-body text-sm font-light leading-relaxed text-muted-foreground shadow-2xl backdrop-blur-xl">
           {stage.content}
         </motion.p>
+      )}
+
+      {typeof stage.progress === "number" && (
+        <motion.div variants={item} className="mx-auto mb-8 max-w-xs">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+            <motion.div
+              className="h-full rounded-full bg-primary shadow-[0_0_20px_rgba(245,174,56,0.35)]"
+              initial={{ width: 0 }}
+              animate={{ width: `${stage.progress}%` }}
+              transition={{ duration: prefersReducedMotion ? 0 : 1.1, ease: [0.22, 1, 0.36, 1], delay: prefersReducedMotion ? 0 : 0.3 }}
+            />
+          </div>
+          <p className="mt-2 text-center text-[11px] text-muted-foreground">Journey progress: {stage.progress}%</p>
+        </motion.div>
       )}
 
       {stage.options && !stage.multiSelect && (

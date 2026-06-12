@@ -108,7 +108,7 @@ export default function HomepageOnboardingOverlay({ open, onClose, onMarkSeen })
           transition={{ duration: reduceMotion ? 0.1 : 0.6, ease: "easeOut" }}
           aria-modal="true"
           role="dialog"
-          aria-label="SCAVerse first-time visitor introduction"
+          aria-label="SCAVers first-time visitor introduction"
         >
           <video ref={videoRef} autoPlay muted loop playsInline preload="auto" className="pointer-events-none absolute inset-0 z-[100] h-full w-full object-cover" aria-hidden="true">
             <source src={SCOVERS_ONBOARDING_VIDEO_URL} type="video/mp4" />
@@ -145,7 +145,7 @@ export default function HomepageOnboardingOverlay({ open, onClose, onMarkSeen })
             <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-[#D6A85A]/70 to-transparent" />
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div className="inline-flex items-center gap-2 rounded-full border border-slate-200/20 bg-slate-200/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-100/80">
-                <Sparkles className="h-3.5 w-3.5" /> SCAVerse Intro
+                <Sparkles className="h-3.5 w-3.5" /> SCAVers Intro
               </div>
               <div className="flex flex-wrap items-center justify-end gap-2">
                 {musicAsset?.fileUrl && (
