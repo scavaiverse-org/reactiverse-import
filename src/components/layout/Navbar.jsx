@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { DEFAULT_MUSEUM_SLUG } from "@/lib/domain-registry";
+import { useAuth } from "@/lib/AuthContext";
 import PublicHeaderShell, { PublicHeaderLogo } from "./PublicHeaderShell";
 
 // Legal/contact links live in the footer; keeping the top bar to core
@@ -17,11 +18,18 @@ const publicNav = [
   { label: "Walkthrough", path: `/museum/${DEFAULT_MUSEUM_SLUG}/walkthrough` },
   { label: "AI Guide", path: `/museum/${DEFAULT_MUSEUM_SLUG}/guide` },
   { label: "Become Tenant", path: "/become-a-tenant" },
-  { label: "Login", path: "/login" },
 ];
+
+const pillClass = (active) =>
+  `shrink-0 whitespace-nowrap rounded-full border px-4 py-2 font-ui text-xs font-semibold tracking-[0.08em] transition-colors ${
+    active
+      ? "border-primary/45 bg-primary/10 text-primary"
+      : "border-transparent text-muted-foreground hover:border-border/60 hover:bg-card/50 hover:text-foreground"
+  }`;
 
 export default function Navbar() {
   const location = useLocation();
+  const { isAuthenticated, logout } = useAuth();
 
   return (
     <PublicHeaderShell className="bg-background/70">
@@ -32,18 +40,19 @@ export default function Navbar() {
         {/* pr-12 keeps the last pill clear of the floating hamburger button. */}
         <div className="flex min-w-0 flex-1 items-center justify-start gap-1 overflow-x-auto pl-2 pr-12 sm:justify-end sm:pr-14 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {publicNav.map((link) => (
-            <Link
-              key={link.path}
-              to={link.path}
-              className={`shrink-0 whitespace-nowrap rounded-full border px-4 py-2 font-ui text-xs font-semibold tracking-[0.08em] transition-colors ${
-                location.pathname === link.path
-                  ? "border-primary/45 bg-primary/10 text-primary"
-                  : "border-transparent text-muted-foreground hover:border-border/60 hover:bg-card/50 hover:text-foreground"
-              }`}
-            >
+            <Link key={link.path} to={link.path} className={pillClass(location.pathname === link.path)}>
               {link.label}
             </Link>
           ))}
+          {isAuthenticated ? (
+            <button type="button" onClick={() => logout(true)} className={pillClass(false)}>
+              Logout
+            </button>
+          ) : (
+            <Link to="/login" className={pillClass(location.pathname === "/login")}>
+              Login
+            </Link>
+          )}
         </div>
       </div>
     </PublicHeaderShell>
