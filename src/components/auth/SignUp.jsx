@@ -2,12 +2,10 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { UserPlus, Eye, EyeOff, MailCheck } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { fetchAuthProfile, resolvePostLoginDestination, shouldPromptFranchiseIntent } from "@/lib/post-login";
+import { fetchAuthProfile, resolvePostLoginDestination } from "@/lib/post-login";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import FranchiseIntentModal from "@/components/auth/FranchiseIntentModal";
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
 
 export default function SignUp() {
@@ -18,11 +16,9 @@ export default function SignUp() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [franchiseIntent, setFranchiseIntent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
-  const [showFranchisePrompt, setShowFranchisePrompt] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -38,7 +34,7 @@ export default function SignUp() {
       email,
       password,
       options: {
-        data: { full_name: fullName, franchise_intent: franchiseIntent },
+        data: { full_name: fullName },
       },
     });
 
@@ -63,11 +59,7 @@ export default function SignUp() {
 
     setLoading(false);
 
-    if (shouldPromptFranchiseIntent(profile)) {
-      setShowFranchisePrompt(true);
-      return;
-    }
-
+    // New public users land on "/" where AccountTypeGate asks consumer vs franchisee.
     const destination = await resolvePostLoginDestination(profile).catch(() => "/");
     navigate(destination, { replace: true });
   };
@@ -174,15 +166,6 @@ export default function SignUp() {
             />
           </div>
 
-          <label className="flex items-start gap-2.5 rounded-xl border border-border/50 bg-background/40 px-4 py-3 text-sm text-muted-foreground">
-            <Checkbox
-              checked={franchiseIntent}
-              onCheckedChange={(checked) => setFranchiseIntent(checked === true)}
-              className="mt-0.5"
-            />
-            <span>I&apos;m interested in opening a franchise / tenant space on SCAVers.</span>
-          </label>
-
           {error && (
             <p className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">
               {error}
@@ -208,12 +191,6 @@ export default function SignUp() {
           </Link>
         </p>
       </div>
-
-      <FranchiseIntentModal
-        open={showFranchisePrompt}
-        onApply={() => navigate("/become-a-tenant", { replace: true })}
-        onSkip={() => navigate("/", { replace: true })}
-      />
     </main>
   );
 }

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { ArrowRight, CheckCircle2, Image, MonitorPlay, UploadCloud } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { supabase } from "@/lib/supabase";
 import PlatformShell from "@/components/platform/PlatformShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +25,14 @@ export default function BecomeTenant() {
   const videoUrl = hero.backgroundVideoUrl || "https://res.cloudinary.com/dwc4hamrl/video/upload/q_auto/f_auto/v1780431698/grok_video_2026-06-03-04-21-15_eo9sqz.mp4";
 
   const mutation = useMutation({
-    mutationFn: (data) => base44.entities.TenantInquiry.create({ ...data, status: "new", submitted_at: new Date().toISOString() }),
+    // Plain insert (no read-back): inquiry reads are admin-only under RLS,
+    // so the entity wrapper's insert().select() would fail for visitors.
+    mutationFn: async (data) => {
+      const { error } = await supabase
+        .from("tenant_inquiries")
+        .insert({ ...data, status: "new", submitted_at: new Date().toISOString() });
+      if (error) throw error;
+    },
     onSuccess: () => {
       recordSubmit("tenant_inquiry");
       setSubmitted(true);
@@ -113,6 +121,11 @@ export default function BecomeTenant() {
               <Input required type="email" placeholder="Email" value={form.email} onChange={(e) => update("email", e.target.value)} />
               <Input placeholder="Museum type / collection focus" value={form.museum_type} onChange={(e) => update("museum_type", e.target.value)} />
               <Textarea className="min-h-32" placeholder="Tell us what you want to launch" value={form.message} onChange={(e) => update("message", e.target.value)} />
+              {mutation.isError && (
+                <p className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">
+                  Something went wrong sending your application — please try again.
+                </p>
+              )}
               <Button type="submit" disabled={mutation.isPending} className="w-full bg-primary text-primary-foreground">
                 {mutation.isPending ? "Sending..." : "Request Demo / Contact Platform Owner"}
               </Button>

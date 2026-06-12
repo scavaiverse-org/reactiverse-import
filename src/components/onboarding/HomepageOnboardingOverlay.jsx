@@ -72,7 +72,11 @@ export default function HomepageOnboardingOverlay({ open, onClose, onMarkSeen })
 
   const handleNavigate = async (route) => {
     await stopMusic({ reset: true, fade: true });
+    // Close (not just mark seen): the final consumer CTA routes to "/", and
+    // when we're already on "/" the navigation is a no-op — without closing,
+    // the overlay would stay frozen on screen.
     onMarkSeen();
+    onClose();
     navigate(route);
   };
 

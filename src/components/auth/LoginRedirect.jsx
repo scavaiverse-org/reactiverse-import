@@ -2,11 +2,10 @@ import { useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { LogIn, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { fetchAuthProfile, resolvePostLoginDestination, shouldPromptFranchiseIntent } from "@/lib/post-login";
+import { fetchAuthProfile, resolvePostLoginDestination } from "@/lib/post-login";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import FranchiseIntentModal from "@/components/auth/FranchiseIntentModal";
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
 
 export default function LoginRedirect() {
@@ -19,7 +18,6 @@ export default function LoginRedirect() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [showFranchisePrompt, setShowFranchisePrompt] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -46,11 +44,6 @@ export default function LoginRedirect() {
     }
 
     setLoading(false);
-
-    if (shouldPromptFranchiseIntent(profile)) {
-      setShowFranchisePrompt(true);
-      return;
-    }
 
     const destination = await resolvePostLoginDestination(profile).catch(() => "/");
     navigate(destination, { replace: true });
@@ -143,12 +136,6 @@ export default function LoginRedirect() {
           </Link>
         </p>
       </div>
-
-      <FranchiseIntentModal
-        open={showFranchisePrompt}
-        onApply={() => navigate("/become-a-tenant", { replace: true })}
-        onSkip={() => navigate("/", { replace: true })}
-      />
     </main>
   );
 }

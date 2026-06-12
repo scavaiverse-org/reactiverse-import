@@ -87,6 +87,7 @@ const QASentinel = lazy(() => import('./pages/admin/QASentinel'));
 const TenantMusic = lazy(() => import('./pages/tenant-admin/TenantMusic.jsx'));
 const TenantHomeEditor = lazy(() => import('./pages/tenant-admin/TenantHomeEditor.jsx'));
 
+import AccountTypeGate from './components/auth/AccountTypeGate';
 import { TenantAdminRedirect, TenantPublicRedirect } from './components/routing/CanonicalRedirects';
 import { DEFAULT_MUSEUM_SLUG, museumPath } from '@/lib/domain-registry';
 import { startSentinelRuntimeCapture } from '@/lib/qa-sentinel/browser-events';
@@ -138,6 +139,7 @@ const AuthenticatedApp = () => {
   return (
     <AnimatedPageShell key={location.pathname}>
       <PublicImmersiveLayer>
+        <AccountTypeGate />
         <InternalRapidPortalGateway />
         <MasterHamburgerNav />
         <div className="min-h-screen pt-16 sm:pt-20">
@@ -147,8 +149,10 @@ const AuthenticatedApp = () => {
       <Route path="/become-a-tenant" element={<BecomeTenant />} />
       <Route path="/virtual-experience" element={<VirtualExperience />} />
       <Route path="/tenant-login" element={<TenantLogin />} />
-      <Route path="/login" element={<LoginRedirect />} />
-      <Route path="/signup" element={<SignUp />} />
+      <Route element={<AppLayout />}>
+        <Route path="/login" element={<LoginRedirect />} />
+        <Route path="/signup" element={<SignUp />} />
+      </Route>
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/about" element={<Navigate to="/platform/overview" replace />} />
       <Route path="/pricing" element={<Navigate to="/become-a-tenant" replace />} />
@@ -229,11 +233,13 @@ const AuthenticatedApp = () => {
       <Route path="/museum/:tenantSlug/home-3" element={<TenantHome3 />} />
       <Route path="/museum/:tenantSlug/home-4" element={<TenantHome4 />} />
       <Route path="/museum/:tenantSlug/home-5" element={<TenantHome5 />} />
-      <Route path="/museum/:tenantSlug/tickets" element={gated("ticketing", <Tickets1 />)} />
-      <Route path="/museum/:tenantSlug/tickets-2" element={gated("ticketing", <Tickets2 />)} />
-      <Route path="/museum/:tenantSlug/tickets-3" element={gated("ticketing", <Tickets3 />)} />
-      <Route path="/museum/:tenantSlug/tickets-4" element={gated("ticketing", <Tickets4 />)} />
-      <Route path="/museum/:tenantSlug/tickets-5" element={gated("ticketing", <Tickets5 />)} />
+      <Route element={<AppLayout />}>
+        <Route path="/museum/:tenantSlug/tickets" element={gated("ticketing", <Tickets1 />)} />
+        <Route path="/museum/:tenantSlug/tickets-2" element={gated("ticketing", <Tickets2 />)} />
+        <Route path="/museum/:tenantSlug/tickets-3" element={gated("ticketing", <Tickets3 />)} />
+        <Route path="/museum/:tenantSlug/tickets-4" element={gated("ticketing", <Tickets4 />)} />
+        <Route path="/museum/:tenantSlug/tickets-5" element={gated("ticketing", <Tickets5 />)} />
+      </Route>
       <Route path="/museum/:tenantSlug/about" element={<About1 />} />
       <Route path="/museum/:tenantSlug/about-2" element={<About2 />} />
       <Route path="/museum/:tenantSlug/about-3" element={<About3 />} />
@@ -252,10 +258,10 @@ const AuthenticatedApp = () => {
         <Route path="/museum/:tenantSlug/vendors" element={gated("vendors", <Vendors />)} />
         <Route path="/museum/:tenantSlug/vendors/register" element={gated("vendors", <VendorRegister />)} />
         <Route path="/museum/:tenantSlug/commerce" element={gated("commerce", <Commerce />)} />
+        <Route path="/museum/:tenantSlug/walkthrough" element={gated("walkthrough", <Walkthrough />)} />
+        <Route path="/museum/:tenantSlug/walkthrough/:walkthroughKey" element={gated("walkthrough", <Walkthrough />)} />
+        <Route path="/museum/:tenantSlug/guide" element={gated("ai_guide", <AIGuide />)} />
       </Route>
-      <Route path="/museum/:tenantSlug/walkthrough" element={gated("walkthrough", <Walkthrough />)} />
-      <Route path="/museum/:tenantSlug/walkthrough/:walkthroughKey" element={gated("walkthrough", <Walkthrough />)} />
-      <Route path="/museum/:tenantSlug/guide" element={gated("ai_guide", <AIGuide />)} />
       <Route path="/museum/:tenantSlug/room-preview" element={<TenantPublicRedirect page="begin-tour" />} />
 
       {/* Platform-owned public routes */}

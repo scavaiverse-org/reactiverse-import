@@ -7,6 +7,27 @@ import { base44 } from "@/api/base44Client";
 import { Map, Compass, Building2, Globe, KeyRound } from "lucide-react";
 import { museumPath } from "@/lib/domain-registry";
 import { publicExperienceFilter } from "@/lib/tenant-query";
+import { supabase } from "@/lib/supabase";
+import { ROLES, normalizeRole } from "@/lib/rbac";
+import { ACCOUNT_TYPE_INTENT_KEY } from "@/components/auth/AccountTypeGate";
+
+// When a signed-in public user re-picks their pathway here, treat it as a
+// real account-type switch (same effect as the homepage "switch account
+// type" link) — users expect the onboarding choice to actually change it.
+// Admin/tenant roles are skipped: their access is managed by master admin.
+async function syncAccountTypeForSignedInUser(accountType) {
+  const { data } = await supabase.auth.getSession();
+  const userId = data?.session?.user?.id;
+  if (!userId) return;
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, account_type")
+    .eq("id", userId)
+    .single();
+  if (!profile || normalizeRole(profile.role) !== ROLES.PUBLIC_USER) return;
+  if (profile.account_type === accountType) return;
+  await supabase.from("profiles").update({ account_type: accountType }).eq("id", userId);
+}
 
 const AUDIENCE_SELECTOR = {
   id: "choose_audience",
@@ -280,6 +301,16 @@ export default function OnboardingFlow({ onNavigate, resetKey, showProgressDots 
       setCurrentStage(0);
       setSelections({});
       setMultiSelections([]);
+      // Remember the pathway so AccountTypeGate can auto-apply it at signup
+      // instead of asking the same consumer/franchisee question twice.
+      if (optionId === "consumer" || optionId === "franchisee") {
+        try {
+          window.localStorage.setItem(ACCOUNT_TYPE_INTENT_KEY, optionId);
+        } catch {
+          /* ignore */
+        }
+        syncAccountTypeForSignedInUser(optionId).catch(() => {});
+      }
       base44.entities.AnalyticsEvent.create({ tenant_id: activeTenant?.id, tenant_name: activeTenant?.name, event_type: "onboarding_audience_selected", event_data: { audience: optionId }, source_page: "onboarding" }).catch(() => {});
       return;
     }

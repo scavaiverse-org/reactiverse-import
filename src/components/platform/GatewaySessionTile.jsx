@@ -4,6 +4,7 @@ import { ArrowRight, LogOut, UserRound } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { fetchAuthProfile, resolvePostLoginDestination } from "@/lib/post-login";
 import PlatformGatewayBadge from "@/components/platform/PlatformGatewayBadge";
+import { ACCOUNT_TYPE_RESET_EVENT, ACCOUNT_TYPE_INTENT_KEY } from "@/components/auth/AccountTypeGate";
 
 /**
  * Session-aware replacement for the gateway "Login" tile. Logged-out
@@ -62,6 +63,19 @@ export default function GatewaySessionTile({ badge }) {
     setSessionUser(null);
   };
 
+  // Clears the consumer/franchisee choice so AccountTypeGate reappears.
+  const handleSwitchAccountType = async () => {
+    await supabase.from("profiles").update({ account_type: null }).eq("id", sessionUser.id);
+    try {
+      // Drop any stale intro-tour intent so the gate asks instead of
+      // silently re-applying the old choice.
+      window.localStorage.removeItem(ACCOUNT_TYPE_INTENT_KEY);
+    } catch {
+      /* ignore */
+    }
+    window.dispatchEvent(new Event(ACCOUNT_TYPE_RESET_EVENT));
+  };
+
   return (
     <div className="group block w-full">
       <button
@@ -75,7 +89,15 @@ export default function GatewaySessionTile({ badge }) {
         <ArrowRight className="relative h-4 w-4 text-primary transition group-hover:translate-x-1" />
       </button>
       <p className="mx-auto mt-3 max-w-lg text-center font-body text-xs font-light leading-6 text-muted-foreground sm:text-sm">
-        You&apos;re signed in as {sessionUser.email}. Continue to your space, or{" "}
+        You&apos;re signed in as {sessionUser.email}. Continue to your space,{" "}
+        <button
+          type="button"
+          onClick={handleSwitchAccountType}
+          className="text-primary underline-offset-4 hover:underline"
+        >
+          switch account type
+        </button>
+        , or{" "}
         <button
           type="button"
           onClick={handleSignOut}
