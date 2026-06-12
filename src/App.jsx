@@ -145,8 +145,10 @@ const AuthenticatedApp = () => {
       <Route path="/become-a-tenant" element={<BecomeTenant />} />
       <Route path="/virtual-experience" element={<VirtualExperience />} />
       <Route path="/tenant-login" element={<TenantLogin />} />
-      <Route path="/login" element={<LoginRedirect />} />
-      <Route path="/signup" element={<SignUp />} />
+      <Route element={<AppLayout />}>
+        <Route path="/login" element={<LoginRedirect />} />
+        <Route path="/signup" element={<SignUp />} />
+      </Route>
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/about" element={<Navigate to="/platform/overview" replace />} />
       <Route path="/pricing" element={<Navigate to="/become-a-tenant" replace />} />
@@ -250,10 +252,10 @@ const AuthenticatedApp = () => {
         <Route path="/museum/:tenantSlug/vendors" element={<Vendors />} />
         <Route path="/museum/:tenantSlug/vendors/register" element={<VendorRegister />} />
         <Route path="/museum/:tenantSlug/commerce" element={<Commerce />} />
+        <Route path="/museum/:tenantSlug/walkthrough" element={<Walkthrough />} />
+        <Route path="/museum/:tenantSlug/walkthrough/:walkthroughKey" element={<Walkthrough />} />
+        <Route path="/museum/:tenantSlug/guide" element={<AIGuide />} />
       </Route>
-      <Route path="/museum/:tenantSlug/walkthrough" element={<Walkthrough />} />
-      <Route path="/museum/:tenantSlug/walkthrough/:walkthroughKey" element={<Walkthrough />} />
-      <Route path="/museum/:tenantSlug/guide" element={<AIGuide />} />
       <Route path="/museum/:tenantSlug/room-preview" element={<TenantPublicRedirect page="begin-tour" />} />
 
       {/* Platform-owned public routes */}

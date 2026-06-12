@@ -37,22 +37,27 @@ export default function Navbar() {
         <PublicHeaderLogo to="/" title="SCAVerse" subtitle="PUBLIC PLATFORM" />
 
         {/* Swipeable on phones/narrow widths; right-aligned with room to spare. */}
-        {/* pr-12 keeps the last pill clear of the floating hamburger button. */}
-        <div className="flex min-w-0 flex-1 items-center justify-start gap-1 overflow-x-auto pl-2 pr-12 sm:justify-end sm:pr-14 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {publicNav.map((link) => (
-            <Link key={link.path} to={link.path} className={pillClass(location.pathname === link.path)}>
-              {link.label}
-            </Link>
-          ))}
-          {isAuthenticated ? (
-            <button type="button" onClick={() => logout(true)} className={pillClass(false)}>
-              Logout
-            </button>
-          ) : (
-            <Link to="/login" className={pillClass(location.pathname === "/login")}>
-              Login
-            </Link>
-          )}
+        {/* pr-12 keeps the last pill clear of the floating hamburger button.
+            The inner ml-auto wrapper right-aligns the pills when there's room
+            but (unlike justify-end) keeps the overflowed start reachable when
+            the row scrolls — justify-end clips the leading pills for good. */}
+        <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto pl-2 pr-12 sm:pr-14 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="ml-auto flex items-center gap-1">
+            {publicNav.map((link) => (
+              <Link key={link.path} to={link.path} className={pillClass(location.pathname === link.path)}>
+                {link.label}
+              </Link>
+            ))}
+            {isAuthenticated ? (
+              <button type="button" onClick={() => logout(true)} className={pillClass(false)}>
+                Logout
+              </button>
+            ) : (
+              <Link to="/login" className={pillClass(location.pathname === "/login")}>
+                Login
+              </Link>
+            )}
+          </div>
         </div>
       </div>
     </PublicHeaderShell>
