@@ -21,6 +21,7 @@ import ArchiveRoomEditor from "./type-editors/ArchiveRoomEditor";
 import BranchingChoiceRoomEditor from "./type-editors/BranchingChoiceRoomEditor";
 import MemoryCollectionRoomEditor from "./type-editors/MemoryCollectionRoomEditor";
 import FinaleRoomEditor from "./type-editors/FinaleRoomEditor";
+import ThreeDWorldBuilder from "./type-editors/ThreeDWorldBuilder";
 import MediaRenderCheck from "./MediaRenderCheck";
 import MediaUploadStatus from "./MediaUploadStatus";
 import ScrollableImageControls from "./ScrollableImageControls";
@@ -45,6 +46,7 @@ const typeEditors = {
   branching_choice_room: BranchingChoiceRoomEditor,
   memory_collection_room: MemoryCollectionRoomEditor,
   finale_room: FinaleRoomEditor,
+  three_d_world: ThreeDWorldBuilder,
 };
 
 function FieldLabel({ children, help }) {
@@ -65,7 +67,7 @@ function SectionHeading({ title, help, className = "" }) {
   );
 }
 
-export default function WalkthroughRoomEditor({ room, onChange, hasError = false, previewSlot = null }) {
+export default function WalkthroughRoomEditor({ room, onChange, hasError = false, previewSlot = null, rooms = [] }) {
   const [tab, setTab] = useState("basic");
   const [uploadStates, setUploadStates] = useState({});
   if (!room) return null;
@@ -216,7 +218,7 @@ export default function WalkthroughRoomEditor({ room, onChange, hasError = false
 
             <section>
               <SectionHeading title={`${PAGE_TYPES[room.page_type || "walkthrough_exhibition"]?.label || "Type"} settings`} help="Fields specific to this room's type — they shape how the room is laid out and what visitors can do in it." className="mb-3" />
-              <TypeEditor room={room} onChange={setRoom} />
+              <TypeEditor room={room} onChange={setRoom} rooms={rooms} />
             </section>
           </TabsContent>
 
