@@ -1,6 +1,7 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { supabase } from "@/lib/supabase";
 import { Link } from "react-router-dom";
 import { ArrowRight, Building2, Filter, Lock, Monitor, Shield, Users } from "lucide-react";
 import AdminBreadcrumb from "@/components/admin/AdminBreadcrumb";
@@ -47,10 +48,27 @@ export default function UsersAccess() {
 
   const franchiseLeads = useMemo(() => users.filter((user) => user.franchise_intent), [users]);
 
+  const [currentUserId, setCurrentUserId] = useState(null);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setCurrentUserId(data?.user?.id || null));
+  }, []);
+
   const changeRole = useMutation({
     mutationFn: ({ id, role }) => base44.entities.Profile.update(id, { role }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["ua-user-profiles"] }),
   });
+
+  // Guard against the one-click lockout that hit us on 2026-06-12: a master
+  // admin demoting their own account (or any accidental dropdown change).
+  const requestRoleChange = (user, role) => {
+    if (role === user.role) return;
+    if (user.id === currentUserId) {
+      window.alert("You can't change your own role — ask another master admin (prevents locking yourself out).");
+      return;
+    }
+    const ok = window.confirm(`Change role of ${user.email} from "${user.role || "unassigned"}" to "${role}"?`);
+    if (ok) changeRole.mutate({ id: user.id, role });
+  };
 
   return (
     <div className="min-h-screen bg-[#060c18] p-6 lg:p-8">
@@ -156,7 +174,7 @@ export default function UsersAccess() {
                     )}
                   </td>
                   <td className="py-2 min-w-44">
-                    <Select value={user.role || ""} onValueChange={(role) => changeRole.mutate({ id: user.id, role })} disabled={changeRole.isPending || roles.length === 0}>
+                    <Select value={user.role || ""} onValueChange={(role) => requestRoleChange(user, role)} disabled={changeRole.isPending || roles.length === 0}>
                       <SelectTrigger className="h-8 border-white/10 bg-white/[0.03] text-xs">
                         <SelectValue placeholder="Assign role" />
                       </SelectTrigger>
