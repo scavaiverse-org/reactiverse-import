@@ -264,6 +264,16 @@ export default function OnboardingFlow({ onNavigate, resetKey, showProgressDots 
     setMultiSelections([]);
   };
 
+  const canGoBack = !isAudienceStage;
+
+  const handleBack = () => {
+    if (currentStage > 0) {
+      setCurrentStage((prev) => prev - 1);
+    } else {
+      handleChangePath();
+    }
+  };
+
   const handleSelect = async (optionId) => {
     if (isAudienceStage) {
       setAudience(optionId);
@@ -278,13 +288,13 @@ export default function OnboardingFlow({ onNavigate, resetKey, showProgressDots 
     if (isLastStage && selectedOption?.route) {
       const finalSelections = { ...selections, [stage.id]: optionId };
       setSelections(finalSelections);
-      await base44.entities.OnboardingProgress.create({
+      base44.entities.OnboardingProgress.create({
         tenant_id: activeTenant?.id,
         tenant_name: activeTenant?.name,
         stage: "completed",
         completed_steps: configuredSlides.map((s) => s.id),
         preferences: { audience, interests: multiSelections, selected_options: finalSelections },
-      });
+      }).catch(() => {});
       base44.entities.AnalyticsEvent.create({ tenant_id: activeTenant?.id, tenant_name: activeTenant?.name, event_type: "onboarding_step", event_data: { stage: "completed", audience }, source_page: "onboarding" }).catch(() => {});
       onNavigate(selectedOption.route);
       return;
@@ -305,7 +315,7 @@ export default function OnboardingFlow({ onNavigate, resetKey, showProgressDots 
       preferences: { audience, interests: multiSelections, selected_options: selections },
     };
 
-    await base44.entities.OnboardingProgress.create(isLastStage ? { ...progressData, stage: "completed", completed_steps: configuredSlides.map((s) => s.id) } : progressData);
+    base44.entities.OnboardingProgress.create(isLastStage ? { ...progressData, stage: "completed", completed_steps: configuredSlides.map((s) => s.id) } : progressData).catch(() => {});
     base44.entities.AnalyticsEvent.create({ tenant_id: activeTenant?.id, tenant_name: activeTenant?.name, event_type: "onboarding_step", event_data: { stage: isLastStage ? "completed" : stage.id, audience }, source_page: "onboarding" }).catch(() => {});
 
     if (isLastStage) {
@@ -349,6 +359,8 @@ export default function OnboardingFlow({ onNavigate, resetKey, showProgressDots 
           multiSelections={multiSelections}
           onSelect={handleSelect}
           onNext={handleNext}
+          onBack={handleBack}
+          showBack={canGoBack}
           canProceed={canProceed}
           isLastStage={isLastStage}
           reduceMotion={reduceMotion}

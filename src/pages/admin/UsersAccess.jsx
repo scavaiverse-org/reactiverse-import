@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
-import { ArrowRight, Filter, Monitor, Shield, Users } from "lucide-react";
+import { ArrowRight, Building2, Filter, Lock, Monitor, Shield, Users } from "lucide-react";
 import AdminBreadcrumb from "@/components/admin/AdminBreadcrumb";
 import StatusBadge from "@/components/admin/StatusBadge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -44,6 +44,8 @@ export default function UsersAccess() {
     }, {});
     return Object.entries(counts).sort(([a], [b]) => a.localeCompare(b));
   }, [tenantAccess]);
+
+  const franchiseLeads = useMemo(() => users.filter((user) => user.franchise_intent), [users]);
 
   const changeRole = useMutation({
     mutationFn: ({ id, role }) => base44.entities.Profile.update(id, { role }),
@@ -121,6 +123,7 @@ export default function UsersAccess() {
                 <th className="pb-2 text-left font-medium">Email</th>
                 <th className="pb-2 text-left font-medium">Status</th>
                 <th className="pb-2 text-left font-medium">Tenant</th>
+                <th className="pb-2 text-left font-medium">Franchise Interest</th>
                 <th className="pb-2 text-left font-medium">Role</th>
               </tr>
             </thead>
@@ -131,6 +134,15 @@ export default function UsersAccess() {
                   <td className="py-2 pr-3 text-muted-foreground">{user.email}</td>
                   <td className="py-2 pr-3">{user.status ? <StatusBadge status={user.status} /> : <span className="text-muted-foreground">Not set</span>}</td>
                   <td className="py-2 pr-3 text-foreground/70">{user.tenant_id || "Global"}</td>
+                  <td className="py-2 pr-3">
+                    {user.franchise_intent ? (
+                      <span className="inline-flex items-center gap-1 text-[9px] font-bold tracking-widest px-2 py-0.5 rounded border text-amber-400 bg-amber-400/10 border-amber-400/30">
+                        <span className="w-1 h-1 rounded-full bg-current" />INTERESTED
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </td>
                   <td className="py-2 min-w-44">
                     <Select value={user.role || ""} onValueChange={(role) => changeRole.mutate({ id: user.id, role })} disabled={changeRole.isPending || roles.length === 0}>
                       <SelectTrigger className="h-8 border-white/10 bg-white/[0.03] text-xs">
@@ -144,10 +156,44 @@ export default function UsersAccess() {
                 </tr>
               ))}
               {users.length === 0 && (
-                <tr><td colSpan={5} className="py-6 text-center text-muted-foreground">No user profile records yet</td></tr>
+                <tr><td colSpan={6} className="py-6 text-center text-muted-foreground">No user profile records yet</td></tr>
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-6 mb-6">
+        <div className="bg-white/[0.03] border border-amber-400/15 rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Building2 className="w-4 h-4 text-amber-400" />
+            <p className="text-xs font-semibold text-foreground">Franchise / Tenant Leads</p>
+          </div>
+          <div className="space-y-2">
+            {franchiseLeads.map((user) => (
+              <div key={user.id} className="flex items-center justify-between py-1.5 border-b border-white/5 last:border-0">
+                <div>
+                  <p className="text-xs text-foreground">{user.display_name || user.full_name || "Unnamed user"}</p>
+                  <p className="text-[11px] text-muted-foreground">{user.email}</p>
+                </div>
+                <Link to="/platform/admin/tenants" className="text-[11px] text-primary underline-offset-4 hover:underline">Review</Link>
+              </div>
+            ))}
+            {franchiseLeads.length === 0 && <p className="py-6 text-center text-xs text-muted-foreground">No signups have indicated franchise interest yet</p>}
+          </div>
+        </div>
+
+        <div className="bg-white/[0.03] border border-white/8 rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Lock className="w-4 h-4 text-blue-400" />
+            <p className="text-xs font-semibold text-foreground">Data Protection (PDPA)</p>
+          </div>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            User signups are authenticated and stored through Supabase Auth, which salts and hashes every password
+            with bcrypt before it ever reaches application storage. Passwords are never written to this table, never
+            logged, and are not retrievable in plaintext by admins — only the profile fields shown above (name, email,
+            role, tenant scope, and franchise interest) are stored here for account management.
+          </p>
         </div>
       </div>
 

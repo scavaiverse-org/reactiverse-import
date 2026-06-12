@@ -1,17 +1,28 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { X } from "lucide-react";
+import { Volume2, VolumeX, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import useOnboardingAudio from "@/components/audio/useOnboardingAudio";
 import OnboardingFlow from "./OnboardingFlow";
+import { SCOVERS_ONBOARDING_VIDEO_URL } from "@/lib/scovers-onboarding-content";
 
 export default function HomepageOnboardingOverlay({ open, onClose, onMarkSeen }) {
   const [reduceMotion, setReduceMotion] = useState(false);
   const cardRef = useRef(null);
+  const videoRef = useRef(null);
   const navigate = useNavigate();
+  const { musicAsset, autoplayBlocked, musicEnabled, enableAudio, stopMusic } = useOnboardingAudio({ open, targetKey: "home_onboarding_intro" });
 
   useEffect(() => {
     setReduceMotion(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   }, []);
+
+  useEffect(() => {
+    if (!open || !videoRef.current) return;
+    videoRef.current.currentTime = 0;
+    videoRef.current.play().catch(() => {});
+  }, [open]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -22,6 +33,7 @@ export default function HomepageOnboardingOverlay({ open, onClose, onMarkSeen })
 
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {
+        stopMusic();
         onClose();
         return;
       }
@@ -48,18 +60,32 @@ export default function HomepageOnboardingOverlay({ open, onClose, onMarkSeen })
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [open, onClose]);
+  }, [open, onClose, stopMusic]);
 
-  const handleNavigate = (route) => {
+  const handleMusicToggle = () => {
+    if (musicEnabled) {
+      stopMusic({ reset: false, fade: true });
+      return;
+    }
+    enableAudio();
+  };
+
+  const handleNavigate = async (route) => {
+    await stopMusic({ reset: true, fade: true });
     onMarkSeen();
     navigate(route);
+  };
+
+  const handleClose = () => {
+    stopMusic();
+    onClose();
   };
 
   return (
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[100] flex h-screen w-screen items-center justify-center overflow-y-auto overflow-x-hidden bg-background/95 px-4 py-5 backdrop-blur-2xl sm:px-6"
+          className="fixed inset-0 z-[100] flex h-screen w-screen items-center justify-center overflow-y-auto overflow-x-hidden px-4 py-5 sm:px-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -68,6 +94,17 @@ export default function HomepageOnboardingOverlay({ open, onClose, onMarkSeen })
           role="dialog"
           aria-label="SCAVers introduction"
         >
+          <video ref={videoRef} autoPlay muted loop playsInline preload="auto" className="pointer-events-none absolute inset-0 z-[100] h-full w-full object-cover" aria-hidden="true">
+            <source src={SCOVERS_ONBOARDING_VIDEO_URL} type="video/mp4" />
+          </video>
+          <div className="pointer-events-none absolute inset-0 z-[101] bg-background/80 backdrop-blur-2xl" />
+
+          {autoplayBlocked && (
+            <button type="button" onClick={enableAudio} className="absolute bottom-8 right-8 z-[120] rounded-full border border-white/20 bg-black/60 px-5 py-3 text-xs font-semibold uppercase tracking-[0.22em] text-white backdrop-blur-xl hover:bg-black/80">
+              Tap to Enable Sound
+            </button>
+          )}
+
           <motion.div
             ref={cardRef}
             tabIndex={-1}
@@ -77,14 +114,22 @@ export default function HomepageOnboardingOverlay({ open, onClose, onMarkSeen })
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 18, scale: 0.98 }}
             transition={{ duration: reduceMotion ? 0.1 : 0.5, ease: "easeOut" }}
           >
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close intro"
-              className="absolute right-4 top-4 z-[120] flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-foreground/70 hover:bg-white/10 hover:text-foreground"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            <div className="absolute right-4 top-4 z-[120] flex items-center gap-2">
+              {musicAsset?.fileUrl && (
+                <Button type="button" variant="outline" size="sm" onClick={handleMusicToggle} className="border-white/10 bg-white/5 text-foreground/70 hover:bg-white/10 hover:text-foreground">
+                  {musicEnabled ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
+                  {musicEnabled ? "Music On" : "Play Music"}
+                </Button>
+              )}
+              <button
+                type="button"
+                onClick={handleClose}
+                aria-label="Close intro"
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-foreground/70 hover:bg-white/10 hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
 
             <OnboardingFlow onNavigate={handleNavigate} className="mx-auto max-w-3xl" />
           </motion.div>
