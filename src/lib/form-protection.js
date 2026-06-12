@@ -4,7 +4,7 @@
 // localStorage. This is a first line of defence — Supabase RLS and edge
 // functions remain the authoritative guard.
 
-const STORE_PREFIX = "scavers_form_guard_";
+const STORE_PREFIX = "scaverse_form_guard_";
 const DEFAULT_COOLDOWN_MS = 30 * 1000;
 const DEFAULT_MAX_PER_HOUR = 5;
 const HOUR_MS = 60 * 60 * 1000;

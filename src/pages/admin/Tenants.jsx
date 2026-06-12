@@ -204,7 +204,7 @@ export default function Tenants() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-foreground">{t.name}</p>
-                  <p className="text-[10px] text-muted-foreground">{t.region} · {t.custom_domain || `${t.slug}.scavai.io`}</p>
+                  <p className="text-[10px] text-muted-foreground">{t.region} · {t.custom_domain || `${t.slug}.scaverse.io`}</p>
                 </div>
               </div>
               <div className="flex flex-col items-end gap-1">

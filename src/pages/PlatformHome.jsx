@@ -8,7 +8,7 @@ import GatewaySessionTile from "@/components/platform/GatewaySessionTile";
 import HomepageOnboardingOverlay from "@/components/onboarding/HomepageOnboardingOverlay";
 import { PublicHeaderLogo } from "@/components/layout/PublicHeaderShell";
 import useFirstVisit from "@/hooks/useFirstVisit";
-import { SCOVERS_INTRO_STORAGE_KEY } from "@/lib/scovers-onboarding-content";
+import { SCAVERSE_INTRO_STORAGE_KEY } from "@/lib/scaverse-onboarding-content";
 
 const CANONICAL_BADGES = [
   {
@@ -61,7 +61,7 @@ function resolveGateway(config, mediaRecords = []) {
 }
 
 export default function PlatformHome() {
-  const { isOpen: onboardingOpen, closeOnboarding, markSeen } = useFirstVisit(SCOVERS_INTRO_STORAGE_KEY);
+  const { isOpen: onboardingOpen, closeOnboarding, markSeen } = useFirstVisit(SCAVERSE_INTRO_STORAGE_KEY);
 
   useEffect(() => {
     document.title = "SCAVerse";

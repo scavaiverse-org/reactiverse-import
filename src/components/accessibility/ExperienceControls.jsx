@@ -2,13 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { Accessibility, Eye, Moon, Type, ChevronUp, ChevronDown } from "lucide-react";
 
 const OPTIONS = [
-  { key: "reducedMotion", label: "Reduced motion", icon: Eye, className: "scavai-reduced-motion" },
-  { key: "calmMode", label: "Calm mode", icon: Moon, className: "scavai-calm-mode" },
-  { key: "largeText", label: "Larger text", icon: Type, className: "scavai-large-text" },
+  { key: "reducedMotion", label: "Reduced motion", icon: Eye, className: "scaverse-reduced-motion" },
+  { key: "calmMode", label: "Calm mode", icon: Moon, className: "scaverse-calm-mode" },
+  { key: "largeText", label: "Larger text", icon: Type, className: "scaverse-large-text" },
 ];
 
 const LONG_PRESS_MS = 450;
-const POSITION_KEY = "scavai_comfort_position";
+const POSITION_KEY = "scaverse_comfort_position";
 
 export default function ExperienceControls() {
   const panelRef = useRef(null);
@@ -18,7 +18,7 @@ export default function ExperienceControls() {
   const offsetRef = useRef({ x: 0, y: 0 });
   const [settings, setSettings] = useState(() => {
     if (typeof window === "undefined") return {};
-    return JSON.parse(window.localStorage.getItem("scavai_accessibility") || "{}");
+    return JSON.parse(window.localStorage.getItem("scaverse_accessibility") || "{}");
   });
   const [expanded, setExpanded] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -30,8 +30,8 @@ export default function ExperienceControls() {
   useEffect(() => {
     if (typeof document === "undefined") return;
     OPTIONS.forEach((option) => document.documentElement.classList.toggle(option.className, !!settings[option.key]));
-    window.localStorage.setItem("scavai_accessibility", JSON.stringify(settings));
-    window.dispatchEvent(new Event("scavai-accessibility-change"));
+    window.localStorage.setItem("scaverse_accessibility", JSON.stringify(settings));
+    window.dispatchEvent(new Event("scaverse-accessibility-change"));
   }, [settings]);
 
   const keepInViewport = (x, y) => {

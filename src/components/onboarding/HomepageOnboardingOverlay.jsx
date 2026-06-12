@@ -5,7 +5,7 @@ import { Volume2, VolumeX, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import useOnboardingAudio from "@/components/audio/useOnboardingAudio";
 import OnboardingFlow from "./OnboardingFlow";
-import { SCOVERS_ONBOARDING_VIDEO_URL } from "@/lib/scovers-onboarding-content";
+import { SCAVERSE_ONBOARDING_VIDEO_URL } from "@/lib/scaverse-onboarding-content";
 
 export default function HomepageOnboardingOverlay({ open, onClose, onMarkSeen }) {
   const [reduceMotion, setReduceMotion] = useState(false);
@@ -96,10 +96,10 @@ export default function HomepageOnboardingOverlay({ open, onClose, onMarkSeen })
           transition={{ duration: reduceMotion ? 0.1 : 0.45, ease: "easeOut" }}
           aria-modal="true"
           role="dialog"
-          aria-label="SCAVers introduction"
+          aria-label="SCAVerse introduction"
         >
           <video ref={videoRef} autoPlay muted loop playsInline preload="auto" className="pointer-events-none absolute inset-0 z-[100] h-full w-full object-cover" aria-hidden="true">
-            <source src={SCOVERS_ONBOARDING_VIDEO_URL} type="video/mp4" />
+            <source src={SCAVERSE_ONBOARDING_VIDEO_URL} type="video/mp4" />
           </video>
           <div className="pointer-events-none absolute inset-0 z-[101] bg-background/80 backdrop-blur-2xl" />
 

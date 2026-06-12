@@ -69,10 +69,10 @@ export default function MasterDashboard() {
     <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] tracking-[0.3em] text-primary font-semibold">AOM PLATFORM DASHBOARD</span>
+            <span className="text-[10px] tracking-[0.3em] text-primary font-semibold">SCAVerse PLATFORM DASHBOARD</span>
             <span className="text-[9px] text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-2 py-0.5 rounded-full">DATA-BACKED VIEW</span>
           </div>
-          <h1 className="text-3xl font-display font-bold text-foreground">AOM Platform Dashboard</h1>
+          <h1 className="text-3xl font-display font-bold text-foreground">SCAVerse Platform Dashboard</h1>
           <p className="text-sm text-muted-foreground mt-1">Manage platform pages, museum tenants, tickets, media, vendors, analytics, and publishing.</p>
         </div>
         <div className="flex flex-wrap gap-2">

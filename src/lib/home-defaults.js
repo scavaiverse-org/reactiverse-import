@@ -1,10 +1,10 @@
 export const defaultHomeConfig = {
-  title: "AOM Home",
+  title: "SCAVerse Home",
   status: "published",
   eyebrow: "Visit From Anywhere",
-  hero_title: "AOM",
+  hero_title: "SCAVerse",
   hero_subtitle: "A virtual museum experience for culture, stories, tickets, vendors, and guided digital journeys.",
-  hero_body: "AOM helps people explore rich cultural and branded experiences from any device, while giving operators the tools to launch, manage, and scale public-ready digital destinations.",
+  hero_body: "SCAVerse helps people explore rich cultural and branded experiences from any device, while giving operators the tools to launch, manage, and scale public-ready digital destinations.",
   primary_cta_label: "Enter Public Platform",
   primary_cta_path: "/platform",
   secondary_cta_label: "Become a Tenant",
@@ -36,7 +36,7 @@ export const defaultHomeConfig = {
   museumHighlightsSection: {
     visible: true,
     eyebrow: "Platform for the public",
-    title: "What AOM Powers",
+    title: "What SCAVerse Powers",
     description: "Create immersive destinations that combine storytelling, guided rooms, AI assistance, ticketing, vendor commerce, media, and analytics in one visitor-friendly platform.",
     backgroundMediaId: "",
     cardLayout: "single_cta",
@@ -55,21 +55,21 @@ export const defaultHomeConfig = {
     visible: true,
     eyebrow: "Mass-market ready",
     title: "Everything needed to launch a digital destination.",
-    description: "AOM is designed for visitors, museums, attractions, brands, schools, and operators who need a polished platform that is easy to enter and simple to manage.",
+    description: "SCAVerse is designed for visitors, museums, attractions, brands, schools, and operators who need a polished platform that is easy to enter and simple to manage.",
     backgroundMediaId: "",
     overlay: { overlayOpacity: 0.1, overlayColor: "6, 12, 24", overlayBlur: 0 }
   },
   homeCards: [
     { key: "welcome", title: "Visit From Anywhere", subtitle: "Public access", description: "Let audiences enter from mobile, tablet, or desktop and enjoy a guided experience without friction.", badge: "Visit", ctaLabel: "Start Visit", ctaRoute: "/onboarding", backgroundMediaId: "", mobileMediaId: "", visible: true, sortOrder: 1, overlay: { overlayOpacity: 0.68, overlayColor: "6, 12, 24", overlayBlur: 2 } },
     { key: "rooms", title: "Build Your Experience", subtitle: "Rooms and journeys", description: "Create walkthroughs, featured sections, story paths, and media-led rooms that feel premium and clear.", badge: "Build", ctaLabel: "Enter Walkthrough", ctaRoute: "/walkthrough", backgroundMediaId: "", mobileMediaId: "", visible: true, sortOrder: 2, overlay: { overlayOpacity: 0.68, overlayColor: "6, 12, 24", overlayBlur: 2 } },
-    { key: "aria", title: "Guide Every Visitor", subtitle: "AI support", description: "Use an AI guide to help people understand exhibits, services, tickets, and next steps in real time.", badge: "Guide", ctaLabel: "Ask AOM Guide", ctaRoute: "/guide", backgroundMediaId: "", mobileMediaId: "", visible: true, sortOrder: 3, overlay: { overlayOpacity: 0.68, overlayColor: "6, 12, 24", overlayBlur: 2 } },
+    { key: "aria", title: "Guide Every Visitor", subtitle: "AI support", description: "Use an AI guide to help people understand exhibits, services, tickets, and next steps in real time.", badge: "Guide", ctaLabel: "Ask SCAVerse Guide", ctaRoute: "/guide", backgroundMediaId: "", mobileMediaId: "", visible: true, sortOrder: 3, overlay: { overlayOpacity: 0.68, overlayColor: "6, 12, 24", overlayBlur: 2 } },
     { key: "tickets", title: "Grow Revenue", subtitle: "Tickets and vendors", description: "Connect experiences to bookings, commerce, vendors, campaigns, and visitor conversion opportunities.", badge: "Growth", ctaLabel: "View Tickets", ctaRoute: "/tickets", backgroundMediaId: "", mobileMediaId: "", visible: true, sortOrder: 4, overlay: { overlayOpacity: 0.68, overlayColor: "6, 12, 24", overlayBlur: 2 } }
   ],
   schoolsPartnersSection: {
     visible: true,
     eyebrow: "For visitors and operators",
     title: "A platform made for everyday audiences and serious operators.",
-    description: "AOM keeps the visitor journey simple while giving teams the structure to manage tenants, content, media, ticketing, vendors, analytics, and future expansion.",
+    description: "SCAVerse keeps the visitor journey simple while giving teams the structure to manage tenants, content, media, ticketing, vendors, analytics, and future expansion.",
     ctaLabel: "Explore Platform",
     route: "/platform/overview",
     showDeploymentSites: false,
@@ -79,7 +79,7 @@ export const defaultHomeConfig = {
   platformPreviewSection: {
     visible: false,
     title: "Built for Scale",
-    description: "AOM supports multi-tenant operations, branded experiences, public discovery, and admin control from one platform foundation.",
+    description: "SCAVerse supports multi-tenant operations, branded experiences, public discovery, and admin control from one platform foundation.",
     ctaLabel: "Learn More",
     route: "/platform/overview",
     backgroundMediaId: "",
@@ -87,7 +87,7 @@ export const defaultHomeConfig = {
   },
   finalCtaSection: {
     visible: true,
-    title: "AOM turns digital experiences into public-ready destinations.",
+    title: "SCAVerse turns digital experiences into public-ready destinations.",
     description: "Launch immersive rooms, AI-guided journeys, ticketing, vendors, analytics, and scalable tenant experiences from one polished platform.",
     buttonLabel: "Start Visit",
     buttonRoute: "/onboarding",
@@ -119,6 +119,6 @@ export const defaultHomeConfig = {
     { name: "Museums and attractions", status: "Tenant ready" },
     { name: "Brands and partners", status: "Growth ready" }
   ],
-  final_cta_title: "AOM turns digital experiences into public-ready destinations.",
+  final_cta_title: "SCAVerse turns digital experiences into public-ready destinations.",
   final_cta_body: "Launch immersive rooms, AI-guided journeys, ticketing, vendors, analytics, and scalable tenant experiences from one polished platform."
 };
