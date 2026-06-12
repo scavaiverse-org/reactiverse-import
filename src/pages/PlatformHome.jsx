@@ -4,6 +4,7 @@ import { Sparkles } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import PlatformGatewayBackground from "@/components/platform/PlatformGatewayBackground";
 import PlatformGatewayBadge from "@/components/platform/PlatformGatewayBadge";
+import GatewaySessionTile from "@/components/platform/GatewaySessionTile";
 import HomepageOnboardingOverlay from "@/components/onboarding/HomepageOnboardingOverlay";
 import { PublicHeaderLogo } from "@/components/layout/PublicHeaderShell";
 import useFirstVisit from "@/hooks/useFirstVisit";
@@ -106,7 +107,11 @@ export default function PlatformHome() {
           </p>
 
           <div className="mt-11 grid w-full max-w-3xl gap-5">
-            {gateway.badges.map((badge) => <PlatformGatewayBadge key={badge.key} badge={badge} variant="primary" />)}
+            {gateway.badges.map((badge) =>
+              badge.key === "login"
+                ? <GatewaySessionTile key={badge.key} badge={badge} />
+                : <PlatformGatewayBadge key={badge.key} badge={badge} variant="primary" />
+            )}
           </div>
         </div>
       </section>
