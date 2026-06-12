@@ -69,7 +69,7 @@ export default function ModuleVendors() {
           moduleKey="vendors"
           title={`Vendor Config${selected ? ` — ${selected.name}` : ""}`}
           description="Saved to ModuleConfig and used by vendor registration and approvals."
-          defaultValue={{ categories: ["cultural_arts", "food_beverage", "merchandise", "experiences"], slot_types: ["standard", "premium", "featured", "anchor"], approval_workflow: "manual_review" }}
+          defaultValue={{ categories: ["cultural_arts", "food_beverage", "merchandise", "experiences"], slot_types: ["standard", "featured"], approval_workflow: "manual_review", onboarding_fee_sgd: 300, commission_percent: 12, featured_placement_price_sgd: 150, featured_placement_max_slots: 4 }}
         >
           {({ draft, setDraft }) => (
             <div className="grid lg:grid-cols-3 gap-3">
@@ -88,6 +88,24 @@ export default function ModuleVendors() {
                   <option value="auto_approve">Auto Approve</option>
                   <option value="invite_only">Invite Only</option>
                 </select>
+              </div>
+              <div>
+                <label className="text-[10px] text-muted-foreground block mb-1">Onboarding Fee (SGD, one-time)</label>
+                <input type="number" min="0" value={draft.onboarding_fee_sgd ?? ""} onChange={e => setDraft({ ...draft, onboarding_fee_sgd: Number(e.target.value) || 0 })} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-foreground" />
+              </div>
+              <div>
+                <label className="text-[10px] text-muted-foreground block mb-1">Commission (%)</label>
+                <input type="number" min="0" max="100" value={draft.commission_percent ?? ""} onChange={e => setDraft({ ...draft, commission_percent: Number(e.target.value) || 0 })} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-foreground" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] text-muted-foreground block mb-1">Featured Placement (SGD/mo)</label>
+                  <input type="number" min="0" value={draft.featured_placement_price_sgd ?? ""} onChange={e => setDraft({ ...draft, featured_placement_price_sgd: Number(e.target.value) || 0 })} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-foreground" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground block mb-1">Featured Slots (max)</label>
+                  <input type="number" min="0" value={draft.featured_placement_max_slots ?? ""} onChange={e => setDraft({ ...draft, featured_placement_max_slots: Number(e.target.value) || 0 })} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-foreground" />
+                </div>
               </div>
             </div>
           )}

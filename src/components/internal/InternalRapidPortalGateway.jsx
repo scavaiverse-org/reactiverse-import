@@ -2,6 +2,8 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence, useMotionValue } from "framer-motion";
 import { Building2, Crown, Home, Network, ShieldCheck, Sparkles, Wand2, X } from "lucide-react";
+import { useAuth } from "@/lib/AuthContext";
+import { isMasterUser } from "@/lib/rbac";
 import { DEFAULT_MUSEUM_SLUG } from "@/lib/domain-registry";
 
 const DESTINATIONS = [
@@ -41,12 +43,15 @@ const HOLD_TO_DRAG_MS = 1500;
 
 export default function InternalRapidPortalGateway() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [dragEnabled, setDragEnabled] = useState(false);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const holdTimerRef = useRef(null);
   const draggedRef = useRef(false);
+
+  if (!isMasterUser(user)) return null;
 
   const clearHoldTimer = () => {
     if (holdTimerRef.current) {

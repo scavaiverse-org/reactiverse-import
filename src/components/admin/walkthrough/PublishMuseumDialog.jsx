@@ -43,7 +43,7 @@ export default function PublishMuseumDialog({ tenant, museumId }) {
 
   useMemo(() => {
     if (open) setIncluded(new Set(slots.filter((slot) => slot.roomCount > 0).map((slot) => slot.key)));
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const toggleSlot = (key) => setIncluded((prev) => {
     const next = new Set(prev);

@@ -131,7 +131,7 @@ export default function WalkthroughPreview({ room, rooms = [], activeIndex = 0, 
           <div className="flex items-center justify-between gap-3">
             <Button size="sm" variant="outline" onClick={goPrevious} disabled={currentRoomIndex === 0}><ChevronLeft className="h-4 w-4" /> Previous</Button>
             <div className="hidden flex-1 gap-1 px-4 sm:flex">{previewRooms.map((item, index) => <div key={item.id || index} className={`h-1 flex-1 rounded-full ${index <= currentRoomIndex ? "bg-primary" : "bg-white/10"}`} />)}</div>
-            <Button size="sm" onClick={goNext} disabled={currentRoomIndex === previewRooms.length - 1}>Next <ChevronRight className="h-4 w-4" /></Button>
+            <Button size="sm" onClick={goNext} disabled={currentRoomIndex === previewRooms.length - 1}>{currentRoomIndex === previewRooms.length - 1 ? "Complete Tour" : "Next"} <ChevronRight className="h-4 w-4" /></Button>
           </div>
         </div>
       </div>

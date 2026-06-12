@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Store, ArrowRight, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,20 +11,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { base44 } from '@/api/base44Client';
 import { useActiveTenant } from '@/hooks/useActiveTenant';
 import { museumPath } from '@/lib/domain-registry';
+import { buildVendorPricing } from '@/lib/vendor-pricing';
 import { toast } from 'sonner';
-
-const slotTypes = [
-  { id: 'standard', name: 'Standard Listing', price: 'SGD 300 one-time', description: 'Storefront listing setup, product photography guidelines, and 12% commission per sale.' },
-  { id: 'featured', name: 'Featured Placement', price: 'SGD 300 one-time + SGD 150/mo', description: 'Everything in Standard, plus homepage and room-exit placement (max 4 slots at a time). 12% commission per sale.' },
-];
-
-const COMMISSION_NOTE = 'All vendors: SGD 300 one-time onboarding fee covers storefront setup. SCAVerse takes a 12% commission on marketplace sales — you keep your own fulfilment.';
 
 export default function VendorRegister() {
   const navigate = useNavigate();
   const { tenantSlug: routeTenantSlug } = useParams();
   const { tenant } = useActiveTenant();
   const tenantSlug = routeTenantSlug || tenant?.slug || 'asian-operatic-museum';
+  const { data: moduleConfigs = [] } = useQuery({
+    queryKey: ["vendor-register-module-config", tenant?.id],
+    queryFn: () => tenant ? base44.entities.ModuleConfig.filter({ tenant_id: tenant.id, module_key: "vendors" }) : Promise.resolve([]),
+    enabled: !!tenant?.id,
+    initialData: [],
+  });
+  const { slotTypes, commissionNote } = buildVendorPricing(moduleConfigs[0]?.config_json);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -173,23 +175,23 @@ export default function VendorRegister() {
             {/* Slot Selection */}
             <div className="rounded-2xl border border-border bg-card p-6">
               <h3 className="font-display text-lg font-semibold text-foreground mb-1">Select Your Listing</h3>
-              <p className="text-muted-foreground text-xs font-body mb-4">{COMMISSION_NOTE}</p>
+              <p className="text-muted-foreground text-xs font-body mb-4">{commissionNote}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {slotTypes.map(slot => (
                   <button
-                    key={slot.id}
+                    key={slot.value}
                     type="button"
-                    onClick={() => update('slot_type', slot.id)}
+                    onClick={() => update('slot_type', slot.value)}
                     className={`p-4 rounded-xl border text-left transition-all ${
-                      form.slot_type === slot.id ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'
+                      form.slot_type === slot.value ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-body font-semibold text-foreground text-sm">{slot.name}</span>
-                      {form.slot_type === slot.id && <Check className="w-4 h-4 text-primary" />}
+                      <span className="font-body font-semibold text-foreground text-sm">{slot.label}</span>
+                      {form.slot_type === slot.value && <Check className="w-4 h-4 text-primary" />}
                     </div>
                     <span className="text-primary font-mono text-xs">{slot.price}</span>
-                    <p className="text-muted-foreground text-xs font-body mt-1">{slot.description}</p>
+                    <p className="text-muted-foreground text-xs font-body mt-1">{slot.desc}</p>
                   </button>
                 ))}
               </div>

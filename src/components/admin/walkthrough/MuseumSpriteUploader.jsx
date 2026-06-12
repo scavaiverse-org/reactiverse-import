@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Upload, Wand2 } from "lucide-react";
-import { base44 } from "@/api/base44Client";
 import { uploadFile } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
