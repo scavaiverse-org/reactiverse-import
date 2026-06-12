@@ -14,6 +14,7 @@ import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { museumPath } from "@/lib/domain-registry";
 import { assertTenantId, legacyTenantFilter } from "@/lib/tenant-query";
 import { checkSubmitAllowed, honeypotInputProps, isHoneypotTripped, recordSubmit } from "@/lib/form-protection";
+import MuseumOpenGate from "@/components/tenant/MuseumOpenGate";
 
 const fallbackTickets = [
   { id: "virtual_general", label: "Virtual General", price: 18, currency: "SGD", access_mode: "virtual", icon: Monitor, features: ["Virtual walkthrough", "AI support", "Digital access"] },
@@ -182,7 +183,9 @@ function StageShell({ activeStage, eyebrow, title, body, children }) {
   // Ticket pages render inside AppLayout (unified platform top bar) — the
   // museum's own fixed TenantNavbar would overlap it at top-0. The
   // "Museum Home" button below keeps the way back into the museum.
+  // MuseumOpenGate blocks ticket sales for unpublished museums.
   return (
+    <MuseumOpenGate>
     <main className="min-h-screen bg-background text-foreground">
       <section className="mx-auto max-w-7xl px-4 pb-20 pt-10 sm:px-6">
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
@@ -199,6 +202,7 @@ function StageShell({ activeStage, eyebrow, title, body, children }) {
         {children}
       </section>
     </main>
+    </MuseumOpenGate>
   );
 }
 
