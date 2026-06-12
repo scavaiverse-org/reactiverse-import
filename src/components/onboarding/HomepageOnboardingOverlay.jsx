@@ -1,32 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { RotateCcw, Sparkles, Volume2, VolumeX, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import useOnboardingAudio from "@/components/audio/useOnboardingAudio";
+import { X } from "lucide-react";
 import OnboardingFlow from "./OnboardingFlow";
-import CinematicTextureLayer from "./CinematicTextureLayer";
-import GoldDustField from "./GoldDustField";
-import OperaLightSweep from "./OperaLightSweep";
-import { SCOVERS_ONBOARDING_VIDEO_URL } from "@/lib/scovers-onboarding-content";
 
 export default function HomepageOnboardingOverlay({ open, onClose, onMarkSeen }) {
   const [reduceMotion, setReduceMotion] = useState(false);
-  const [resetKey, setResetKey] = useState(0);
   const cardRef = useRef(null);
-  const videoRef = useRef(null);
   const navigate = useNavigate();
-  const { musicAsset, autoplayBlocked, musicEnabled, enableAudio, replayMusic, stopMusic } = useOnboardingAudio({ open, targetKey: "home_onboarding_intro" });
 
   useEffect(() => {
     setReduceMotion(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   }, []);
-
-  useEffect(() => {
-    if (!open || !videoRef.current) return;
-    videoRef.current.currentTime = 0;
-    videoRef.current.play().catch(() => {});
-  }, [open]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -37,7 +22,6 @@ export default function HomepageOnboardingOverlay({ open, onClose, onMarkSeen })
 
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {
-        stopMusic();
         onClose();
         return;
       }
@@ -64,125 +48,45 @@ export default function HomepageOnboardingOverlay({ open, onClose, onMarkSeen })
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [open, onClose, stopMusic]);
+  }, [open, onClose]);
 
-  const replayVideo = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    // Seeking a video that hasn't buffered enough flashes a black frame on
-    // mobile decoders — only rewind once at least current-frame data exists.
-    try {
-      if (video.readyState >= 2) video.currentTime = 0;
-    } catch { /* ignore seek errors */ }
-    video.play().catch(() => {});
-  };
-
-  const handleMusicToggle = () => {
-    if (musicEnabled) {
-      stopMusic({ reset: false, fade: true });
-      return;
-    }
-    enableAudio();
-  };
-
-  const handleNavigate = async (route) => {
-    await stopMusic({ reset: true, fade: true });
+  const handleNavigate = (route) => {
     onMarkSeen();
     navigate(route);
-  };
-
-  const handleClose = () => {
-    stopMusic();
-    onClose();
-  };
-
-  const handleReplay = () => {
-    setResetKey((value) => value + 1);
-    replayVideo();
-    replayMusic();
   };
 
   return (
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[100] flex h-screen w-screen items-center justify-center overflow-y-auto overflow-x-hidden px-4 py-5 sm:px-6"
+          className="fixed inset-0 z-[100] flex h-screen w-screen items-center justify-center overflow-y-auto overflow-x-hidden bg-background/95 px-4 py-5 backdrop-blur-2xl sm:px-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: reduceMotion ? 0.1 : 0.6, ease: "easeOut" }}
+          transition={{ duration: reduceMotion ? 0.1 : 0.45, ease: "easeOut" }}
           aria-modal="true"
           role="dialog"
-          aria-label="SCAVerse first-time visitor introduction"
+          aria-label="SCAVers introduction"
         >
-          <video ref={videoRef} autoPlay muted loop playsInline preload="auto" className="pointer-events-none absolute inset-0 z-[100] h-full w-full object-cover" aria-hidden="true">
-            <source src={SCOVERS_ONBOARDING_VIDEO_URL} type="video/mp4" />
-          </video>
-          <div className="pointer-events-none absolute inset-0 z-[101] bg-black/50" />
-          <div className="pointer-events-none absolute inset-0 z-[102] bg-gradient-to-br from-[#02050b]/90 via-[#07101d]/50 to-black/90" />
-          <div className="pointer-events-none absolute inset-0 z-[103]">
-            <CinematicTextureLayer reduceMotion={reduceMotion} />
-            <GoldDustField reduceMotion={reduceMotion} />
-          </div>
-          {/* Sheen sweep uses transform (GPU-composited) — animating
-              background-position repaints the full screen each frame and
-              was a flicker source on mobile. */}
-          {!reduceMotion && (
-            <div className="pointer-events-none fixed inset-0 z-[105] overflow-hidden opacity-50">
-              <motion.div
-                className="absolute inset-y-0 w-2/3"
-                animate={{ x: ["-100%", "250%"] }}
-                transition={{ duration: 16, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-                style={{ backgroundImage: "linear-gradient(115deg, transparent 0%, rgba(226,232,240,0.07) 50%, transparent 100%)" }}
-              />
-            </div>
-          )}
-
-          {autoplayBlocked && (
-            <button type="button" onClick={enableAudio} className="absolute bottom-8 right-8 z-[120] rounded-full border border-white/20 bg-black/60 px-5 py-3 text-xs font-semibold uppercase tracking-[0.22em] text-white backdrop-blur-xl hover:bg-black/80">
-              Tap to Enable Sound
-            </button>
-          )}
-
           <motion.div
             ref={cardRef}
             tabIndex={-1}
-            className="relative z-[110] my-auto max-h-[94vh] w-full max-w-[984px] overflow-y-auto rounded-[2rem] border border-slate-200/20 bg-[#050914]/80 p-6 shadow-[0_30px_120px_rgba(0,0,0,0.76),0_0_70px_rgba(226,232,240,0.10)] outline-none backdrop-blur-2xl sm:p-10"
+            className="relative z-[110] my-auto max-h-[94vh] w-full max-w-[984px] overflow-y-auto rounded-[2rem] border border-white/10 bg-card/90 p-6 shadow-[0_30px_120px_rgba(0,0,0,0.5)] outline-none backdrop-blur-2xl sm:p-10"
             initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 28, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 18, scale: 0.98 }}
-            transition={{ duration: reduceMotion ? 0.1 : 0.72, ease: "easeOut" }}
+            transition={{ duration: reduceMotion ? 0.1 : 0.5, ease: "easeOut" }}
           >
-            <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-[2rem]"><OperaLightSweep reduceMotion={reduceMotion} /></div>
-            <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-[#D6A85A]/70 to-transparent" />
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200/20 bg-slate-200/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-100/80">
-                <Sparkles className="h-3.5 w-3.5" /> SCAVerse Intro
-              </div>
-              <div className="flex flex-wrap items-center justify-end gap-2">
-                {musicAsset?.fileUrl && (
-                  <Button type="button" variant="outline" size="sm" onClick={handleMusicToggle} className="border-slate-200/20 bg-slate-200/10 text-slate-100 hover:bg-slate-200/20 hover:text-white">
-                    {musicEnabled ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
-                    {musicEnabled ? "Music On" : "Play Music"}
-                  </Button>
-                )}
-                <Button type="button" variant="ghost" size="sm" onClick={handleReplay} className="text-foreground/60 hover:bg-white/10 hover:text-foreground">
-                  <RotateCcw className="h-3.5 w-3.5" /> Replay Animation
-                </Button>
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  aria-label="Close intro"
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200/25 bg-slate-200/10 text-slate-100/70 hover:bg-slate-200/20 hover:text-white"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close intro"
+              className="absolute right-4 top-4 z-[120] flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-foreground/70 hover:bg-white/10 hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
 
-            <div className="relative z-10">
-              <OnboardingFlow onNavigate={handleNavigate} resetKey={resetKey} reduceMotion={reduceMotion} />
-            </div>
+            <OnboardingFlow onNavigate={handleNavigate} className="mx-auto max-w-3xl" />
           </motion.div>
         </motion.div>
       )}

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, ChevronDown, Save } from "lucide-react";
+import { AlertTriangle, ChevronDown, PlayCircle, Save } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,7 @@ import RolloutControlPanel from "@/components/admin/walkthrough/RolloutControlPa
 import MuseumPresetAutofill from "@/components/admin/walkthrough/MuseumPresetAutofill";
 import AdminPanelTabGuidesDownload from "@/components/admin/AdminPanelTabGuidesDownload";
 import PublishMuseumDialog from "@/components/admin/walkthrough/PublishMuseumDialog";
+import TestPublishOverlay from "@/components/admin/walkthrough/TestPublishOverlay";
 import ImportMuseumZipPanel from "@/components/admin/walkthrough/ImportMuseumZipPanel";
 import TheV2Guide from "@/components/admin/walkthrough/TheV2Guide";
 import GlobalExperienceAutofill from "@/components/admin/walkthrough/GlobalExperienceAutofill";
@@ -26,6 +27,7 @@ import { WALKTHROUGH_EDITOR_TYPE, WALKTHROUGHS, createRoomByType, duplicateRoom,
 import { museumWalkthroughPath } from "@/lib/domain-registry";
 import { deepClone } from "@/lib/walkthrough-media-bindings";
 import { getErrorRoomKeys, getWalkthroughWarnings, hasGlobalIssue, validateWalkthroughRooms } from "@/lib/walkthrough-validation";
+import { compileVisibleRooms } from "@/lib/manifest-compiler";
 import { scoreWalkthroughQuality } from "@/lib/walkthrough-quality-scoring";
 import { createLegacyBackup } from "@/lib/walkthrough-migration";
 import { autofillEntireExperience, autofillMedia, autofillRoom, buildCanonicalExperienceConfig, generateCinematicLayout, generateMuseumNarrative, validateExperienceIntegrity } from "@/lib/experience-append-protection";
@@ -43,6 +45,7 @@ export default function TenantWalkthrough() {
   const [validationErrors, setValidationErrors] = useState([]);
   const [warnings, setWarnings] = useState([]);
   const [editorMode, setEditorMode] = useState("easy");
+  const [testPublishOpen, setTestPublishOpen] = useState(false);
 
   const selectedTenant = useMemo(() => routeTenant || tenants.find((tenant) => tenant.id === selectedTenantId) || tenants[0], [tenants, selectedTenantId, routeTenant]);
 
@@ -64,6 +67,7 @@ export default function TenantWalkthrough() {
 
   const record = configs[0];
   const qualityScores = useMemo(() => scoreWalkthroughQuality(rooms), [rooms]);
+  const testPublishRooms = useMemo(() => compileVisibleRooms(rooms, walkthroughKey), [rooms, walkthroughKey]);
 
   useEffect(() => {
     setRooms(extractRoomsFromConfig(record, walkthroughKey));
@@ -208,10 +212,13 @@ export default function TenantWalkthrough() {
             record={record}
             onDraftWritten={() => queryClient.invalidateQueries({ queryKey: ["tenant-walkthrough-config"] })}
           />
+          <Button variant="outline" onClick={() => setTestPublishOpen(true)} disabled={rooms.length === 0}><PlayCircle className="h-4 w-4" /> Test Publish</Button>
           <PublishMuseumDialog tenant={selectedTenant} museumId={museumFilter || selectedTenant.id} />
-          <HelpHint title="Import ZIP and Publish">
+          <HelpHint title="Import ZIP, Test Publish, and Publish">
             <strong>Import Museum ZIP</strong> reads an uploaded ZIP of media/content and turns it into a draft
-            walkthrough automatically. <strong>Publish</strong> makes the current draft live at the museum's
+            walkthrough automatically. <strong>Test Publish</strong> opens a full-screen run-through of this
+            walkthrough using your current draft, exactly as a visitor would experience it once published.
+            <strong> Publish</strong> makes the current draft live at the museum's
             public URL — it's blocked if there are unresolved validation errors.
           </HelpHint>
         </div>
@@ -305,6 +312,10 @@ export default function TenantWalkthrough() {
           </Tabs>
         </div>
       </div>}
+
+      {testPublishOpen && (
+        <TestPublishOverlay rooms={testPublishRooms} tenantSlug={selectedTenant.slug} onClose={() => setTestPublishOpen(false)} />
+      )}
 
       {editorMode === "easy" && (
         <div className="grid gap-6 lg:grid-cols-[1fr_360px]">

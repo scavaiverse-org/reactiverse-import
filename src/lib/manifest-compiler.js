@@ -20,6 +20,19 @@ function rawRoomsFromConfig(config) {
   return [];
 }
 
+/**
+ * Filter out hidden/draft rooms, order them deterministically, and strip
+ * editor-only fields. This is the exact room set a published manifest will
+ * contain for a walkthrough — reused by the publish compiler and by the
+ * admin "Test Publish" preview so both stay in lockstep.
+ */
+export function compileVisibleRooms(rooms = [], walkthroughKey = "walkthrough") {
+  return rooms
+    .filter((room) => room?.visibility !== "hidden" && room?.visibility !== "draft")
+    .sort((a, b) => Number(a.order || 0) - Number(b.order || 0) || String(a.room_key || "").localeCompare(String(b.room_key || "")))
+    .map((room, index) => ({ ...stripEditorFields(room), id: room.room_key || `${walkthroughKey}-room-${index + 1}`, order: index + 1 }));
+}
+
 function compileWalkthrough(config, walkthroughKey, errors) {
   const label = walkthroughLabel(walkthroughKey);
 
@@ -33,10 +46,7 @@ function compileWalkthrough(config, walkthroughKey, errors) {
     }
   });
 
-  const rooms = extractRoomsFromConfig(config, walkthroughKey)
-    .filter((room) => room.visibility !== "hidden" && room.visibility !== "draft")
-    .sort((a, b) => Number(a.order || 0) - Number(b.order || 0) || String(a.room_key || "").localeCompare(String(b.room_key || "")))
-    .map((room, index) => ({ ...stripEditorFields(room), id: room.room_key || `${walkthroughKey}-room-${index + 1}`, order: index + 1 }));
+  const rooms = compileVisibleRooms(extractRoomsFromConfig(config, walkthroughKey), walkthroughKey);
 
   if (rooms.length === 0) {
     errors.push(`${label}: has zero visible rooms.`);
