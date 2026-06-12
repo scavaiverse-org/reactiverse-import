@@ -4,20 +4,21 @@ import { useActiveTenant } from "@/hooks/useActiveTenant";
 import PremiumOnboardingStage from "./PremiumOnboardingStage";
 import { AnimatePresence } from "framer-motion";
 import { base44 } from "@/api/base44Client";
-import { Ticket, Map, Store, Brain, Compass, Building2, Globe, KeyRound } from "lucide-react";
+import { Map, Compass, Building2, Globe, KeyRound } from "lucide-react";
 import { museumPath } from "@/lib/domain-registry";
 import { publicExperienceFilter } from "@/lib/tenant-query";
 
 const AUDIENCE_SELECTOR = {
   id: "choose_audience",
-  title: "How would you like to experience AOM?",
-  subtitle: "Choose the path that fits you.",
-  visual: "◈",
-  content: "AOM serves two groups: visitors who want to explore the museum, and franchisees or cultural operators who want to run or license a museum experience.",
+  title: "How would you like to use SCAVers?",
+  subtitle: "Choose your path. We will guide you from here.",
+  visual: "◇",
+  content: "SCAVers connects visitors with immersive experiences, and gives tenants the tools to launch, manage, and grow their own spaces.",
   cta: "Continue",
+  animation: "Two large glass cards sit side by side — Consumer carries compass/map/ticket energy, Tenant carries building/dashboard/key energy. The chosen card expands and the background shifts from a neutral platform glow into that pathway's mood.",
   options: [
-    { id: "franchisee", icon: Building2, label: "I am a Franchisee / Museum Operator", desc: "I want to understand the platform, revenue model, tenant tools, and deployment possibilities.", route_after_completion: "/become-tenant" },
-    { id: "consumer", icon: Compass, label: "I am a Visitor / Consumer", desc: "I want to explore the museum, stories, tickets, ARIA, and the virtual walkthrough.", route_after_completion: "/walkthrough" },
+    { id: "consumer", icon: Compass, label: "I am a Consumer", desc: "I want to discover places, experiences, stories, rewards, and things to do.", route_after_completion: "/" },
+    { id: "franchisee", icon: Building2, label: "I am a Franchisee / Tenant", desc: "I want to understand how to list, manage, and grow my own space inside SCAVers.", route_after_completion: "/become-tenant" },
   ],
 };
 
@@ -25,121 +26,144 @@ const FALLBACK_CONSUMER_SLIDES = [
   {
     id: "consumer_welcome",
     audience: "consumer",
-    title: "Enter the Asian Operatic Museum",
-    subtitle: "A virtual museum you can visit from anywhere.",
+    title: "Welcome to SCAVers",
+    subtitle: "Your entry point into immersive places and experiences.",
     visual: "✦",
-    content: "Explore stories, costumes, music, characters, stagecraft, and cultural memory through a guided digital museum journey.",
-    cta: "Show Me the Museum",
-    route: "/museum",
+    content: "SCAVers helps you discover museums, cultural spaces, pop-ups, shops, events, and interactive experiences in one simple journey.",
+    cta: "Start exploring",
+    animation: "A dark cinematic city/map grid fades in and glowing pins appear one by one — each pin a place or experience — as the selected Consumer card visually transforms into the map.",
+    route: "/",
   },
   {
-    id: "consumer_walkthrough",
+    id: "consumer_discovery",
     audience: "consumer",
-    title: "Walk Through the Museum",
-    subtitle: "Move scene by scene at your own pace.",
-    visual: "▣",
-    content: "Tap hotspots, open story panels, view exhibits, and follow a guided museum path without needing to be physically there.",
-    cta: "Preview the Walkthrough",
-    route: "/room-preview",
-  },
-  {
-    id: "consumer_aria",
-    audience: "consumer",
-    title: "Ask ARIA",
-    subtitle: "Your AI cultural guide.",
+    title: "Discover What Is Around You",
+    subtitle: "Find experiences without needing to search everywhere.",
     visual: "◎",
-    content: "ARIA helps explain exhibits, costumes, characters, tickets, vendors, and where to go next using verified museum content.",
-    cta: "Meet ARIA",
-    route: "/guide",
+    content: "Browse featured spaces, hidden gems, tenant museums, events, food spots, retail activations, and cultural experiences from one SCAVers gateway.",
+    cta: "Show me discovery",
+    animation: "Floating cards slide in from the left and right representing Museums, Events, Food, Retail, and Hidden Gems, then settle into a carousel/grid with a soft hover glow on desktop and tap feedback on mobile.",
+    route: "/virtual-experience",
   },
   {
-    id: "consumer_access",
+    id: "consumer_passport",
     audience: "consumer",
-    title: "Choose Your Access",
-    subtitle: "Free previews and deeper guided access.",
+    title: "Collect Stamps and Rewards",
+    subtitle: "Your visits can become a journey.",
     visual: "◉",
-    content: "Visitors can preview parts of the museum, explore ticket options, or unlock deeper guided journeys for individuals, schools, and groups.",
-    cta: "View Tickets",
-    route: "/tickets",
+    content: "SCAVers can turn visits into stamps, missions, rewards, collectibles, discounts, and progress. Every place can become part of your personal trail.",
+    cta: "See rewards",
+    animation: "A digital passport opens and stamp marks appear one by one while a progress ring fills toward the value below, with a small \"Reward unlocked\" badge appearing near the CTA.",
+    progress: 60,
+    route: "/",
   },
   {
-    id: "consumer_begin",
+    id: "consumer_personalisation",
     audience: "consumer",
-    title: "Begin Your Visit",
-    subtitle: "You are ready to enter.",
+    title: "Follow Your Interests",
+    subtitle: "SCAVers learns what kind of experiences you enjoy.",
     visual: "◆",
-    content: "Start with the walkthrough, ask ARIA, view tickets, or explore the museum marketplace.",
-    cta: "Enter Walkthrough",
-    route: "/walkthrough",
+    content: "Choose what you like: art, heritage, food, family activities, shopping, nightlife, learning, games, or local discoveries. SCAVers can guide you better from there.",
+    cta: "Pick my interests",
+    multiSelect: true,
+    animation: "Interest bubbles float slowly; selected bubbles glow and drift toward the center.",
+    reducedMotion: "With reduced motion enabled, selected interests simply highlight in place without floating.",
     options: [
-      { id: "walkthrough", icon: Map, label: "Enter Walkthrough", desc: "Start the guided museum path", route: "/walkthrough" },
-      { id: "guide", icon: Brain, label: "Ask ARIA", desc: "Ask the AI cultural guide", route: "/guide" },
-      { id: "tickets", icon: Ticket, label: "View Tickets", desc: "See access options", route: "/tickets" },
-      { id: "vendors", icon: Store, label: "Explore Vendors", desc: "Browse cultural marketplace options", route: "/vendors" },
+      { id: "art", label: "Art" },
+      { id: "heritage", label: "Heritage" },
+      { id: "food", label: "Food" },
+      { id: "shopping", label: "Shopping" },
+      { id: "family", label: "Family" },
+      { id: "learning", label: "Learning" },
+      { id: "games", label: "Games" },
+      { id: "events", label: "Events" },
+      { id: "hidden_gems", label: "Hidden Gems" },
+    ],
+  },
+  {
+    id: "consumer_ready",
+    audience: "consumer",
+    title: "You Are Ready to Explore",
+    subtitle: "Enter SCAVers and start your journey.",
+    visual: "⬢",
+    content: "Start with discovery, explore a tenant space like AOM, collect rewards, or follow a trail built around your interests.",
+    cta: "Enter SCAVers",
+    optionsOptional: true,
+    animation: "The onboarding card zooms into a preview of the SCAVers home/discovery feed; three panels appear for Nearby Experiences, Featured Tenant, and Rewards, then the final CTA glows once before navigating.",
+    route: "/",
+    options: [
+      { id: "explore", icon: Compass, label: "Explore SCAVers", desc: "Go to the main discovery gateway", route: "/" },
+      { id: "tenants", icon: Map, label: "View Experiences", desc: "Browse available tenant spaces and experiences", route: "/virtual-experience" },
+      { id: "aom", icon: Building2, label: "Visit AOM", desc: "Open the AOM tenant experience", route: "/museum" },
     ],
   },
 ];
 
 const FALLBACK_FRANCHISEE_SLIDES = [
   {
-    id: "franchisee_welcome",
+    id: "tenant_welcome",
     audience: "franchisee",
-    title: "Run a Digital Museum Experience",
-    subtitle: "AOM is not only a museum. It is a museum platform.",
+    title: "Launch Your Space on SCAVers",
+    subtitle: "Turn your location, brand, or collection into a discoverable experience.",
     visual: "◇",
-    content: "Franchisees, cultural operators, schools, tourism partners, and museum owners can use AOM to launch a branded digital museum experience.",
-    cta: "Show Me the Platform",
+    content: "SCAVers gives tenants a platform layer to present their space, attract visitors, manage content, and build interactive journeys.",
+    cta: "Build my presence",
+    animation: "A plain storefront/gallery card appears, then transforms into a polished SCAVers listing with a glowing outline as it \"goes live\".",
     route: "/platform/overview",
   },
   {
-    id: "franchisee_features",
+    id: "tenant_profile",
     audience: "franchisee",
-    title: "What You Can Operate",
-    subtitle: "Museum, walkthrough, guide, tickets, vendors, and analytics.",
-    visual: "▦",
-    content: "The platform supports virtual exhibits, AI guide content, ticketing, vendor listings, commerce, tenant pages, walkthroughs, and public-facing museum journeys.",
-    cta: "Show Features",
-    route: "/platform/overview",
-  },
-  {
-    id: "franchisee_revenue",
-    audience: "franchisee",
-    title: "Built for Revenue Paths",
-    subtitle: "Tickets, vendors, partners, schools, and cultural packages.",
-    visual: "$",
-    content: "AOM can support paid access, guided packages, school programs, partner showcases, cultural marketplace listings, and future white-label museum deployments.",
-    cta: "See Business Path",
+    title: "Create Your Tenant Profile",
+    subtitle: "Show people who you are and why they should visit.",
+    visual: "▣",
+    content: "Add your name, category, story, location, images, opening details, visitor information, and featured experiences.",
+    cta: "Show profile setup",
+    animation: "Profile builder fields fill in one by one — Name, Category, Story, Photos, Location — while image placeholders drop into a gallery grid.",
     route: "/become-tenant",
   },
   {
-    id: "franchisee_admin",
+    id: "tenant_experience_builder",
     audience: "franchisee",
-    title: "Tenant Control Layer",
-    subtitle: "Each operator needs control without breaking the public museum.",
-    visual: "▣",
-    content: "Tenant tools should manage content, media, tickets, guide behavior, vendor visibility, analytics, and public page configuration in a controlled admin flow.",
-    cta: "View Tenant Access",
-    route: "/tenant-login",
+    title: "Build Your Experience",
+    subtitle: "Create the journey visitors will follow.",
+    visual: "▦",
+    content: "Tenants can structure rooms, pages, walkthroughs, exhibits, tickets, vendors, learning moments, and interactive stops.",
+    cta: "Show experience tools",
+    animation: "A flow map of connected nodes — Home, Tickets, Walkthrough, Guide, Vendors, Rewards — links together with animated lines, and the \"Published path\" line glows once complete.",
+    route: "/become-tenant",
   },
   {
-    id: "franchisee_apply",
+    id: "tenant_growth",
     audience: "franchisee",
-    title: "Start as a Franchisee or Partner",
-    subtitle: "Use AOM as a cultural technology layer.",
-    visual: "◆",
-    content: "Apply to become a tenant, franchisee, museum partner, school partner, or cultural deployment partner.",
-    cta: "Become a Tenant",
+    title: "Attract and Engage Visitors",
+    subtitle: "Use discovery, rewards, and storytelling to bring people in.",
+    visual: "◈",
+    content: "SCAVers can help tenants appear in discovery feeds, themed trails, featured sections, reward loops, and visitor journeys.",
+    cta: "Show growth tools",
+    animation: "Map dots move toward the tenant location while a spotlight highlights the tenant card; reward icons and visitor counters rise gently across metric cards for Views, Saves, Visits, and Redemptions.",
+    route: "/platform/overview",
+  },
+  {
+    id: "tenant_ready",
+    audience: "franchisee",
+    title: "Ready to Join SCAVers",
+    subtitle: "Start your tenant journey.",
+    visual: "⬢",
+    content: "Apply to become a tenant, explore the platform overview, or log in if you already manage a tenant space.",
+    cta: "Continue",
+    optionsOptional: true,
+    animation: "The onboarding view fades into a partner dashboard preview; dashboard cards for Profile, Experience Builder, Visitors, and Rewards animate upward, so the final CTA feels like a launch moment rather than an abrupt exit.",
     route: "/become-tenant",
     options: [
-      { id: "apply", icon: Building2, label: "Become a Tenant", desc: "Start the franchisee/partner path", route: "/become-tenant" },
-      { id: "platform", icon: Store, label: "View Platform", desc: "Understand the platform", route: "/platform/overview" },
-      { id: "white_label", icon: Globe, label: "White Label", desc: "Explore branded deployments", route: "/white-label" },
-      { id: "tenant_login", icon: KeyRound, label: "Tenant Login", desc: "Existing operator access", route: "/tenant-login" },
+      { id: "apply", icon: Building2, label: "Become a Tenant", desc: "Start the application path", route: "/become-tenant" },
+      { id: "overview", icon: Globe, label: "View Platform Overview", desc: "Understand how SCAVers works", route: "/platform/overview" },
+      { id: "login", icon: KeyRound, label: "Tenant Login", desc: "Access an existing tenant dashboard", route: "/tenant-login" },
     ],
   },
 ];
 
-const ROUTE_FOR_MAP_KEYS = ["/", "/museum", "/onboarding", "/room-preview", "/guide", "/tickets", "/walkthrough", "/vendors", "/platform/overview", "/become-tenant", "/tenant-login", "/white-label"];
+const ROUTE_FOR_MAP_KEYS = ["/museum", "/onboarding", "/room-preview", "/guide", "/tickets", "/walkthrough", "/vendors", "/platform/overview", "/become-tenant", "/tenant-login", "/white-label", "/virtual-experience"];
 
 // Maps a slide index to one of the constrained generic onboarding_progress
 // stages (welcome/discovery/exploration/activation/completed) so the fine-
@@ -178,7 +202,6 @@ export default function OnboardingFlow({ onNavigate, resetKey, showProgressDots 
   const routeFor = (route) => {
     if (!route) return route;
     const routeMap = {
-      "/": museumPath(tenantSlug, "home"),
       "/museum": museumPath(tenantSlug, "museum"),
       "/onboarding": museumPath(tenantSlug, "onboarding"),
       "/room-preview": museumPath(tenantSlug, "room-preview"),
@@ -187,9 +210,10 @@ export default function OnboardingFlow({ onNavigate, resetKey, showProgressDots 
       "/walkthrough": museumPath(tenantSlug, "walkthrough"),
       "/vendors": museumPath(tenantSlug, "vendors"),
       "/platform/overview": "/platform/overview",
-      "/become-tenant": "/become-tenant",
+      "/become-tenant": "/become-a-tenant",
       "/tenant-login": "/tenant-login",
       "/white-label": "/white-label",
+      "/virtual-experience": "/virtual-experience",
     };
     return ROUTE_FOR_MAP_KEYS.includes(route) ? routeMap[route] : route;
   };
@@ -221,6 +245,7 @@ export default function OnboardingFlow({ onNavigate, resetKey, showProgressDots 
 
   const canProceed = () => {
     if (!stage.options) return true;
+    if (stage.optionsOptional) return true;
     if (stage.multiSelect) return multiSelections.length > 0;
     return !!selections[stage.id];
   };
@@ -229,7 +254,7 @@ export default function OnboardingFlow({ onNavigate, resetKey, showProgressDots 
     const option = audienceSelector.options?.find((opt) => opt.id === selectedAudience);
     if (option?.route_after_completion) return routeFor(option.route_after_completion);
     if (onboardingConfig?.default_completion_route) return routeFor(onboardingConfig.default_completion_route);
-    return selectedAudience === "franchisee" ? routeFor("/become-tenant") : routeFor("/walkthrough");
+    return selectedAudience === "franchisee" ? routeFor("/become-tenant") : routeFor("/");
   };
 
   const handleChangePath = () => {
