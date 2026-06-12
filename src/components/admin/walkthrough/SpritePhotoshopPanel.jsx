@@ -5,7 +5,12 @@ import SubjectCropCanvas from "./SubjectCropCanvas";
 import SpriteEraserCanvas from "./SpriteEraserCanvas";
 import { estimateInitialFocusCrop, loadImageToCanvas, processMuseumSprite } from "@/lib/sprite-image-processing";
 
-export default function SpritePhotoshopPanel({ file, originalUrl, onAccept, onUseOriginal, onCancel }) {
+export default function SpritePhotoshopPanel({
+  file, originalUrl, onAccept, onUseOriginal, onCancel,
+  title = "Sprite Photoshop",
+  description = "Upload your artifact image. The central subject is isolated and the background is removed.",
+  acceptLabel = "Insert Into Museum",
+}) {
   const previewUrl = useMemo(() => file ? URL.createObjectURL(file) : originalUrl, [file, originalUrl]);
   const [status, setStatus] = useState("Finding the main subject…");
   const [busy, setBusy] = useState(false);
@@ -73,8 +78,8 @@ export default function SpritePhotoshopPanel({ file, originalUrl, onAccept, onUs
     <div className="rounded-2xl border border-primary/20 bg-background/70 p-4 space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h4 className="font-display text-lg font-bold">Sprite Photoshop</h4>
-          <p className="text-xs text-muted-foreground">Upload your artifact image. The central subject is isolated and the background is removed.</p>
+          <h4 className="font-display text-lg font-bold">{title}</h4>
+          <p className="text-xs text-muted-foreground">{description}</p>
         </div>
         <Button variant="outline" size="sm" onClick={onCancel}>Close</Button>
       </div>
@@ -112,7 +117,7 @@ export default function SpritePhotoshopPanel({ file, originalUrl, onAccept, onUs
         <Button variant="outline" onClick={() => runProcess(crop)} disabled={busy || !crop}><Scissors className="h-4 w-4" /> Use My Focus Box</Button>
         <Button variant={eraserActive ? "default" : "outline"} onClick={() => setEraserActive((active) => !active)} disabled={busy || !processedUrl}><Eraser className="h-4 w-4" /> Eraser Touch Up</Button>
         <Button variant="outline" onClick={() => { if (!imageSize) return; const nextCrop = estimateInitialFocusCrop(imageSize.width, imageSize.height); setCrop(nextCrop); runProcess(nextCrop); }} disabled={busy || !imageSize}><RotateCcw className="h-4 w-4" /> Reset Focus</Button>
-        <Button onClick={() => canInsert && onAccept?.({ blob: processedBlob, metadata })} disabled={!canInsert}>Insert Into Museum</Button>
+        <Button onClick={() => canInsert && onAccept?.({ blob: processedBlob, metadata })} disabled={!canInsert}>{acceptLabel}</Button>
         <Button variant="outline" onClick={onUseOriginal}>Use Original</Button>
       </div>
     </div>

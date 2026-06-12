@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { X, ChevronLeft, ChevronRight, Play, Pause, Trophy, Gift, MessageCircle, ShoppingBag, Compass, Box, List, Music, AlertTriangle } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Play, Pause, Trophy, Gift, MessageCircle, ShoppingBag, Compass, Box, List, Music, AlertTriangle, UserCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ResolvedMedia from "@/components/walkthrough/ResolvedMedia";
 import { getThreeDWorldConfig } from "@/lib/three-d-world-validation";
@@ -12,6 +12,10 @@ import {
   getSpawnPosition, getStations, clampToRoom, isDoorUnlocked, createCanvasTexture,
   buildAtmosphere, seedFromString,
 } from "@/lib/three-d-world-render-helpers";
+import { buildAvatarGroup, applyAvatarCutoutTexture, getThirdPersonOffset } from "@/lib/avatar-render-helpers";
+import useAvatarProfile from "@/hooks/useAvatarProfile";
+import useFirstVisit from "@/hooks/useFirstVisit";
+import AvatarCreatorOverlay from "@/components/avatar/AvatarCreatorOverlay";
 
 const GROUND_MODES = new Set(["free_walk", "click_to_move", "click_to_move_guided"]);
 const TOUR_MODES = new Set(["guided_walkthrough", "auto_walkthrough", "fixed_view_guided"]);
@@ -68,12 +72,27 @@ export default function ThreeDWorldRoom({ room, context = {} }) {
   const [musicMuted, setMusicMuted] = useState(false);
   const [sensoryWarningVisible, setSensoryWarningVisible] = useState(false);
   const [view2D, setView2D] = useState(false);
+  const [avatarOverlayOpen, setAvatarOverlayOpen] = useState(false);
   const engineRef = useRef({});
   const musicRef = useRef(null);
   const playerDotRef = useRef(null);
 
   const reduceFx = !!(context.reducedMotion || context.calmMode);
   const accessibility = config?.accessibility || {};
+
+  const avatarProfile = useAvatarProfile();
+  const avatarIntro = useFirstVisit("scaverse_avatar_creator_seen_v1");
+  const avatarConfigKey = avatarProfile.isLoading ? "loading" : JSON.stringify(avatarProfile.config);
+
+  useEffect(() => {
+    if (avatarProfile.isLoading || !avatarIntro.hasChecked) return;
+    if (!avatarProfile.hasAvatar && avatarIntro.isOpen) setAvatarOverlayOpen(true);
+  }, [avatarProfile.isLoading, avatarProfile.hasAvatar, avatarIntro.hasChecked, avatarIntro.isOpen]);
+
+  const closeAvatarOverlay = () => {
+    setAvatarOverlayOpen(false);
+    avatarIntro.closeOnboarding();
+  };
 
   useEffect(() => {
     if (!toast) return undefined;
@@ -183,6 +202,25 @@ export default function ThreeDWorldRoom({ room, context = {} }) {
     if (config.atmosphereEffect && config.atmosphereEffect !== "none" && !reduceFx) {
       atmosphere = buildAtmosphere(config.atmosphereEffect, dims, mood.accentColor, { seed: seedFromString(room.id || "world"), count: isMobile ? 40 : 130 });
       if (atmosphere) scene.add(atmosphere.points);
+    }
+
+    // -- Player avatar rig -------------------------------------------------------
+    // Only built once the avatar profile has loaded, and only for free-movement
+    // modes (tour/fixed-view modes don't have a walking player).
+    let avatarRig = null;
+    if (isGroundMode && !avatarProfile.isLoading) {
+      const built = buildAvatarGroup(avatarProfile.config);
+      built.group.visible = avatarProfile.config.view_mode === "third_person";
+      scene.add(built.group);
+      built.mediaRequests.forEach((request) => {
+        const safeUrl = getSafeMediaUrl(request.url);
+        if (!safeUrl) return;
+        new THREE.TextureLoader().load(safeUrl, (texture) => {
+          applyAvatarCutoutTexture(request.mesh, texture);
+          textureResources.push(texture);
+        });
+      });
+      avatarRig = { group: built.group, viewMode: avatarProfile.config.view_mode };
     }
 
     const placeObject = (object) => {
@@ -716,7 +754,21 @@ export default function ThreeDWorldRoom({ room, context = {} }) {
         playerDotRef.current.style.transform = `translate(-50%, -50%) rotate(${yaw}rad)`;
       }
 
-      renderer.render(scene, camera);
+      if (avatarRig) {
+        avatarRig.group.position.set(camera.position.x, 0, camera.position.z);
+        avatarRig.group.rotation.y = yaw + Math.PI;
+      }
+
+      if (avatarRig && avatarRig.viewMode === "third_person") {
+        const pivot = camera.position.clone();
+        const offset = getThirdPersonOffset(yaw, pitch);
+        const target = clampToRoom(pivot.x + offset.x, pivot.z + offset.z, dims, 0.3);
+        camera.position.set(target.x, Math.max(0.4, Math.min(dims.height - 0.2, pivot.y + offset.y)), target.z);
+        renderer.render(scene, camera);
+        camera.position.copy(pivot);
+      } else {
+        renderer.render(scene, camera);
+      }
       animationFrame = requestAnimationFrame(animate);
     };
     animate();
@@ -749,7 +801,7 @@ export default function ThreeDWorldRoom({ room, context = {} }) {
       });
       if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement);
     };
-  }, [room?.id]);
+  }, [room?.id, avatarConfigKey]);
 
   if (!config) return <FallbackWorld room={room} />;
 
@@ -879,13 +931,18 @@ export default function ThreeDWorldRoom({ room, context = {} }) {
         </div>
       )}
 
-      {accessibility.twoDFallbackEnabled !== false && (
-        <div className="pointer-events-auto absolute bottom-4 left-4 z-10 sm:bottom-6 sm:left-6">
+      <div className="pointer-events-auto absolute bottom-4 left-4 z-10 flex flex-wrap gap-2 sm:bottom-6 sm:left-6">
+        {accessibility.twoDFallbackEnabled !== false && (
           <Button size="sm" variant="outline" className="bg-background/70 backdrop-blur-xl" onClick={() => setView2D((v) => !v)}>
             <List className="h-4 w-4" /> Text View
           </Button>
-        </div>
-      )}
+        )}
+        {isGroundMode && (
+          <Button size="sm" variant="outline" className="bg-background/70 backdrop-blur-xl" onClick={() => setAvatarOverlayOpen(true)}>
+            <UserCircle2 className="h-4 w-4" /> Avatar
+          </Button>
+        )}
+      </div>
 
       {sensoryWarningVisible && accessibility.sensoryWarning && (
         <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/70 p-4">
@@ -939,6 +996,16 @@ export default function ThreeDWorldRoom({ room, context = {} }) {
         if (correct) setToast(`✅ Correct!${reward ? ` +${reward} pts` : ""}`);
         else setToast("❌ Not quite — try again.");
       }} />}
+
+      <AvatarCreatorOverlay
+        open={avatarOverlayOpen}
+        onClose={closeAvatarOverlay}
+        initialConfig={avatarProfile.config}
+        hasAvatar={avatarProfile.hasAvatar}
+        onSave={async (cfg) => { await avatarProfile.saveAvatar(cfg); closeAvatarOverlay(); }}
+        onDelete={avatarProfile.deleteAvatar}
+        ownerKey={avatarProfile.ownerKey}
+      />
     </div>
   );
 }
