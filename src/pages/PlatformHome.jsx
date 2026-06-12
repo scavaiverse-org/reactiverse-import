@@ -1,8 +1,7 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { RotateCcw, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { base44 } from "@/api/base44Client";
-import { Button } from "@/components/ui/button";
 import PlatformGatewayBackground from "@/components/platform/PlatformGatewayBackground";
 import PlatformGatewayBadge from "@/components/platform/PlatformGatewayBadge";
 import HomepageOnboardingOverlay from "@/components/onboarding/HomepageOnboardingOverlay";
@@ -61,7 +60,7 @@ function resolveGateway(config, mediaRecords = []) {
 }
 
 export default function PlatformHome() {
-  const { isOpen: onboardingOpen, openOnboarding, closeOnboarding, markSeen } = useFirstVisit(SCOVERS_INTRO_STORAGE_KEY);
+  const { isOpen: onboardingOpen, closeOnboarding, markSeen } = useFirstVisit(SCOVERS_INTRO_STORAGE_KEY);
 
   useEffect(() => {
     document.title = "SCAVerse";
@@ -90,14 +89,6 @@ export default function PlatformHome() {
           <div className="flex items-center gap-3 rounded-full border border-primary/25 bg-background/30 px-4 py-2 shadow-lg shadow-primary/10 backdrop-blur-xl">
             <PublicHeaderLogo as="static" title="SCAVerse" subtitle="Gateway" />
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={openOnboarding}
-            className="border-primary/25 bg-background/25 text-xs text-foreground/80 shadow-lg shadow-black/20 backdrop-blur-xl hover:bg-primary/15 hover:text-primary"
-          >
-            <RotateCcw className="h-3.5 w-3.5" /> Replay Intro
-          </Button>
         </header>
 
         <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center py-12 text-center">
