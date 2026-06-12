@@ -1,39 +1,55 @@
 import { useState } from "react";
-import { useNavigate, useSearchParams, Link } from "react-router-dom";
-import { LogIn, Eye, EyeOff } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import { UserPlus, Eye, EyeOff, MailCheck } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { fetchAuthProfile, resolvePostLoginDestination, shouldPromptFranchiseIntent } from "@/lib/post-login";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import FranchiseIntentModal from "@/components/auth/FranchiseIntentModal";
 
-export default function LoginRedirect() {
+export default function SignUp() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const redirectParam = searchParams.get("redirect");
 
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [franchiseIntent, setFranchiseIntent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const [showFranchisePrompt, setShowFranchisePrompt] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
-    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
-    if (authError) {
-      setLoading(false);
-      setError(authError.message);
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
       return;
     }
 
-    if (redirectParam) {
+    setLoading(true);
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: fullName, franchise_intent: franchiseIntent },
+      },
+    });
+
+    if (signUpError) {
       setLoading(false);
-      navigate(redirectParam, { replace: true });
+      setError(signUpError.message);
+      return;
+    }
+
+    if (!data?.session) {
+      setLoading(false);
+      setNeedsConfirmation(true);
       return;
     }
 
@@ -55,16 +71,48 @@ export default function LoginRedirect() {
     navigate(destination, { replace: true });
   };
 
+  if (needsConfirmation) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background px-4 text-foreground">
+        <div className="w-full max-w-md rounded-3xl border border-border/50 bg-card/70 p-8 text-center shadow-2xl">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-primary/25 bg-primary/10">
+            <MailCheck className="h-5 w-5 text-primary" />
+          </div>
+          <h1 className="font-display text-2xl font-bold text-foreground">Check your email</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            We sent a confirmation link to <span className="text-foreground">{email}</span>. Confirm your address, then sign in to continue.
+          </p>
+          <Button asChild className="mt-6 w-full bg-primary text-primary-foreground">
+            <Link to="/login">Go to sign in</Link>
+          </Button>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4 text-foreground">
       <div className="w-full max-w-md rounded-3xl border border-border/50 bg-card/70 p-8 shadow-2xl">
         <div className="mb-6 text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-primary">SCAVerse</p>
-          <h1 className="mt-3 font-display text-2xl font-bold text-foreground">Sign in to your account</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Enter your credentials to continue.</p>
+          <h1 className="mt-3 font-display text-2xl font-bold text-foreground">Create your account</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Sign up to start exploring SCAVers.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="fullName">Full name</Label>
+            <Input
+              id="fullName"
+              type="text"
+              autoComplete="name"
+              required
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Your name"
+            />
+          </div>
+
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -84,8 +132,9 @@ export default function LoginRedirect() {
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
-                autoComplete="current-password"
+                autoComplete="new-password"
                 required
+                minLength={6}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
@@ -102,6 +151,29 @@ export default function LoginRedirect() {
             </div>
           </div>
 
+          <div className="space-y-1.5">
+            <Label htmlFor="confirmPassword">Confirm password</Label>
+            <Input
+              id="confirmPassword"
+              type={showPassword ? "text" : "password"}
+              autoComplete="new-password"
+              required
+              minLength={6}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="••••••••"
+            />
+          </div>
+
+          <label className="flex items-start gap-2.5 rounded-xl border border-border/50 bg-background/40 px-4 py-3 text-sm text-muted-foreground">
+            <Checkbox
+              checked={franchiseIntent}
+              onCheckedChange={(checked) => setFranchiseIntent(checked === true)}
+              className="mt-0.5"
+            />
+            <span>I&apos;m interested in opening a franchise / tenant space on SCAVers.</span>
+          </label>
+
           {error && (
             <p className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">
               {error}
@@ -112,25 +184,18 @@ export default function LoginRedirect() {
             {loading ? (
               <span className="flex items-center gap-2">
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
-                Signing in…
+                Creating account…
               </span>
             ) : (
-              <span className="flex items-center gap-2"><LogIn className="h-4 w-4" /> Sign in</span>
+              <span className="flex items-center gap-2"><UserPlus className="h-4 w-4" /> Sign up</span>
             )}
           </Button>
         </form>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          Not a member yet?{" "}
-          <Link to="/signup" className="text-primary underline-offset-4 hover:underline">
-            Sign up here
-          </Link>
-        </p>
-
-        <p className="mt-2 text-center text-xs text-muted-foreground">
-          Not a tenant yet?{" "}
-          <Link to="/become-a-tenant" className="text-primary underline-offset-4 hover:underline">
-            Apply here
+          Already have an account?{" "}
+          <Link to="/login" className="text-primary underline-offset-4 hover:underline">
+            Sign in
           </Link>
         </p>
       </div>

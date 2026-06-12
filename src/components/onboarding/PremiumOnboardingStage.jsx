@@ -1,7 +1,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, ChevronRight, Sparkles } from "lucide-react";
+import { CheckCircle2, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 
 const container = {
   hidden: { opacity: 0 },
@@ -13,7 +13,7 @@ const item = {
   show: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.85, ease: [0.22, 1, 0.36, 1] } },
 };
 
-export default function PremiumOnboardingStage({ stage, currentStage, totalStages, selections, multiSelections, onSelect, onNext, canProceed, isLastStage }) {
+export default function PremiumOnboardingStage({ stage, currentStage, totalStages, selections, multiSelections, onSelect, onNext, onBack, showBack, canProceed, isLastStage }) {
   const prefersReducedMotion = useReducedMotion();
   return (
     <motion.div variants={container} initial="hidden" animate="show" exit={{ opacity: 0, y: -18, filter: "blur(10px)" }} className="relative">
@@ -103,7 +103,12 @@ export default function PremiumOnboardingStage({ stage, currentStage, totalStage
         </motion.div>
       )}
 
-      <motion.div variants={item} className="flex justify-center">
+      <motion.div variants={item} className="flex justify-center gap-3">
+        {showBack && (
+          <Button size="lg" variant="outline" onClick={onBack} className="gap-2 border-white/15 px-6 text-foreground/80 hover:text-foreground">
+            <ChevronLeft className="w-4 h-4" /> Back
+          </Button>
+        )}
         <Button size="lg" onClick={onNext} disabled={!canProceed()} className="bg-primary text-primary-foreground hover:bg-primary/90 px-10 gap-2 disabled:opacity-40 shadow-[0_0_40px_rgba(245,174,56,0.18)]">
           {stage.cta} {isLastStage ? <Sparkles className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
         </Button>
