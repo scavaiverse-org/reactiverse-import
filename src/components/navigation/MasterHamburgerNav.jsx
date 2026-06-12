@@ -8,18 +8,17 @@ import { useAuth } from "@/lib/AuthContext";
 import { ROLES, normalizeRole, isMasterUser, getUserTenantIds } from "@/lib/rbac";
 import { DEFAULT_MUSEUM_SLUG } from "@/lib/domain-registry";
 
-// Pages every visitor can reach, signed in or not.
+// Pages every visitor can reach, signed in or not. Each entry must point to
+// its own distinct page — "Pricing", "About", "Marketplace", "Showcase", and
+// "Documentation" used to be listed here too, but those routes are just
+// aliases that redirect into the pages already below, so they were removed
+// to avoid menu items that land on the same page.
 const PLATFORM_LINKS = [
   { label: "Platform Home", path: "/" },
   { label: "Onboarding", path: "/onboarding" },
   { label: "Platform Overview", path: "/platform/overview" },
   { label: "Become a Tenant", path: "/become-a-tenant" },
   { label: "Virtual Experience", path: "/virtual-experience" },
-  { label: "Pricing", path: "/pricing" },
-  { label: "About", path: "/about" },
-  { label: "Marketplace", path: "/marketplace" },
-  { label: "Showcase", path: "/showcase" },
-  { label: "Documentation", path: "/docs" },
   { label: "Contact", path: "/contact" },
 ];
 
