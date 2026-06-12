@@ -122,6 +122,21 @@ export default function AccountTypeGate() {
             {error}
           </p>
         )}
+
+        <p className="mt-8 text-xs text-muted-foreground">
+          Don&apos;t want to decide right now?{" "}
+          <button
+            type="button"
+            onClick={async () => {
+              await supabase.auth.signOut();
+              setPendingUserId(null);
+              navigate("/");
+            }}
+            className="text-primary underline-offset-4 hover:underline"
+          >
+            Sign out and just browse
+          </button>
+        </p>
       </div>
     </div>
   );
