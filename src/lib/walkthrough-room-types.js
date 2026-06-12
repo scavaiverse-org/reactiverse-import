@@ -13,6 +13,7 @@ export const PAGE_TYPES = {
   branching_choice_room: { label: "Branching Choice Room", description: "Visitor decisions, alternate paths, and replayability.", configKey: "branching_choice_config" },
   memory_collection_room: { label: "Memory Collection Room", description: "Saved discoveries, journals, unlocked items, and memories.", configKey: "memory_collection_config" },
   finale_room: { label: "Finale Room", description: "Recap, achievements, next CTAs, donations, shop, and follow-up.", configKey: "finale_config" },
+  three_d_world: { label: "3D World", description: "Immersive 3D room with templates, objects, portals, gamification, and an NPC guide — built without code.", configKey: "threeDWorldConfig" },
 };
 
 export const PAGE_TYPE_OPTIONS = Object.entries(PAGE_TYPES).map(([value, config]) => ({ value, ...config }));
@@ -77,6 +78,13 @@ export function createFinaleConfig() {
   return { completion_message: "You completed the experience.", achievement_title: "Museum Journey Complete", media_url: "", media_type: "", next_ctas: [] };
 }
 
+// The 3D World config is created by the 3D World Builder itself (so the
+// builder can show its "start building / load sample" intro until the admin
+// initialises it) — the factory only has to preserve whatever exists.
+export function createThreeDWorldRoomConfig() {
+  return {};
+}
+
 export function configFactoryForPageType(pageType) {
   return {
     onboarding_guide: createOnboardingGuideConfig,
@@ -91,6 +99,7 @@ export function configFactoryForPageType(pageType) {
     branching_choice_room: createBranchingChoiceConfig,
     memory_collection_room: createMemoryCollectionConfig,
     finale_room: createFinaleConfig,
+    three_d_world: createThreeDWorldRoomConfig,
   }[pageType] || createExhibitionConfig;
 }
 

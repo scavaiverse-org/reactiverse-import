@@ -5,7 +5,7 @@ import {
   ChevronRight, Globe, Brain, Ticket, Store, ShoppingBag,
   Gamepad2, Map, FileText, Image, User, Milestone,
   Tag, GitBranch, CreditCard, Bell, Search, Puzzle, Zap,
-  ClipboardCheck, Music, LayoutGrid, Bot
+  ClipboardCheck, Music, LayoutGrid
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DEFAULT_MUSEUM_SLUG } from "@/lib/domain-registry";
@@ -23,7 +23,6 @@ const NAV = [
     group: "Users & Access",
     items: [
       { label: "Users & Access", path: "/platform/admin/users-access", icon: Users },
-      { label: "Super", path: "/platform/admin/super", icon: Bot },
     ]
   },
   {

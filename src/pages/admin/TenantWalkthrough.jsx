@@ -287,7 +287,7 @@ export default function TenantWalkthrough() {
       {editorMode === "expert" && <div className="grid gap-6 xl:grid-cols-[340px_1fr_320px]">
         <JourneyMap rooms={rooms} activeIndex={activeRoom} onSelect={setActiveRoom} onAdd={() => { const next = normalizeRooms([...rooms, createRoomByType(rooms.length, walkthroughKey, "walkthrough_exhibition")], walkthroughKey); setRooms(next); setActiveRoom(next.length - 1); }} onDuplicate={(index) => { const next = duplicateRoom(rooms, index, walkthroughKey); setRooms(next); setActiveRoom(index + 1); }} onMove={(index, direction) => { setRooms(moveRoom(rooms, index, direction, walkthroughKey)); setActiveRoom(Math.max(0, Math.min(rooms.length - 1, index + direction))); }} onDelete={(index) => { const next = normalizeRooms(rooms.filter((_, i) => i !== index), walkthroughKey); setRooms(next); setActiveRoom(Math.max(0, index - 1)); }} errorRoomKeys={errorRoomKeys} hasGlobalIssue={hasUnresolvedGlobalIssue} />
         <div className="space-y-6">
-          <WalkthroughRoomEditor room={currentRoom} onChange={(room) => updateRoom(activeRoom, room)} hasError={errorRoomKeys.has(currentRoom?.room_key)} previewSlot={<WalkthroughPreview room={currentRoom} rooms={rooms} activeIndex={activeRoom} tenantSlug={selectedTenant.slug} onNavigateRoom={setActiveRoom} />} />
+          <WalkthroughRoomEditor room={currentRoom} onChange={(room) => updateRoom(activeRoom, room)} rooms={rooms} hasError={errorRoomKeys.has(currentRoom?.room_key)} previewSlot={<WalkthroughPreview room={currentRoom} rooms={rooms} activeIndex={activeRoom} tenantSlug={selectedTenant.slug} onNavigateRoom={setActiveRoom} />} />
         </div>
         <div>
           <Tabs defaultValue="pacing">
@@ -321,7 +321,7 @@ export default function TenantWalkthrough() {
         <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
           <div className="space-y-6">
             <JourneyMap rooms={rooms} activeIndex={activeRoom} onSelect={setActiveRoom} onAdd={() => { const next = normalizeRooms([...rooms, createRoomByType(rooms.length, walkthroughKey, "walkthrough_exhibition")], walkthroughKey); setRooms(next); setActiveRoom(next.length - 1); }} onDuplicate={(index) => { const next = duplicateRoom(rooms, index, walkthroughKey); setRooms(next); setActiveRoom(index + 1); }} onMove={(index, direction) => { setRooms(moveRoom(rooms, index, direction, walkthroughKey)); setActiveRoom(Math.max(0, Math.min(rooms.length - 1, index + direction))); }} onDelete={(index) => { const next = normalizeRooms(rooms.filter((_, i) => i !== index), walkthroughKey); setRooms(next); setActiveRoom(Math.max(0, index - 1)); }} />
-            <WalkthroughRoomEditor room={currentRoom} onChange={(room) => updateRoom(activeRoom, room)} previewSlot={<WalkthroughPreview room={currentRoom} rooms={rooms} activeIndex={activeRoom} tenantSlug={selectedTenant.slug} onNavigateRoom={setActiveRoom} />} />
+            <WalkthroughRoomEditor room={currentRoom} onChange={(room) => updateRoom(activeRoom, room)} rooms={rooms} previewSlot={<WalkthroughPreview room={currentRoom} rooms={rooms} activeIndex={activeRoom} tenantSlug={selectedTenant.slug} onNavigateRoom={setActiveRoom} />} />
           </div>
           <div>
             <Tabs defaultValue="pacing">

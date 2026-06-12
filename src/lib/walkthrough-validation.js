@@ -1,5 +1,6 @@
 import { PAGE_TYPES } from "@/lib/walkthrough-room-types";
 import { getMediaWarnings } from "@/lib/walkthrough-media-bindings";
+import { getThreeDWorldPublishErrors } from "@/lib/three-d-world-validation";
 
 function hasText(value) { return typeof value === "string" && value.trim().length > 0; }
 function roomLabel(room, index) { return room?.room_key || `Room ${index + 1}`; }
@@ -104,7 +105,7 @@ export function validateWalkthroughRooms(rooms = []) {
     if (room.page_type === "memory_collection_room" && !hasText(room.memory_collection_config?.collection_title)) errors.push(`${label}: collection title is required.`);
     if (room.page_type === "finale_room" && !hasText(room.finale_config?.completion_message)) errors.push(`${label}: completion message is required.`);
   });
-  return [...errors, ...findBrokenRoutes(rooms)];
+  return [...errors, ...findBrokenRoutes(rooms), ...getThreeDWorldPublishErrors(rooms)];
 }
 
 export function getWalkthroughWarnings(rooms = []) {
