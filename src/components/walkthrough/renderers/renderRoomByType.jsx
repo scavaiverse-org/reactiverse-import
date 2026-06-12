@@ -10,6 +10,7 @@ import ArchiveRoom from "./ArchiveRoom";
 import BranchingChoiceRoom from "./BranchingChoiceRoom";
 import MemoryCollectionRoom from "./MemoryCollectionRoom";
 import FinaleRoom from "./FinaleRoom";
+import ThreeDWorldRoom from "./ThreeDWorldRoom";
 
 export default function renderRoomByType(room, context = {}) {
   const props = { room, context, ...context };
@@ -26,6 +27,7 @@ export default function renderRoomByType(room, context = {}) {
     case "branching_choice_room": return <BranchingChoiceRoom {...props} />;
     case "memory_collection_room": return <MemoryCollectionRoom {...props} />;
     case "finale_room": return <FinaleRoom {...props} />;
+    case "three_d_world": return <ThreeDWorldRoom {...props} />;
     default: return <ExhibitionRoom {...props} activeHotspot={context.activeHotspot} onHotspotOpen={context.hotspotOpen} />;
   }
 }

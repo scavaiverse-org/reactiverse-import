@@ -112,6 +112,7 @@ function newObject(type, count) {
 export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
   const config = getThreeDWorldConfig(room);
   const setConfig = (patch) => onChange({ ...room, threeDWorldConfig: { ...(config || createThreeDWorldConfig()), ...patch } });
+  const [newObjectType, setNewObjectType] = useState("image_frame");
 
   // First visit for this room: offer a clean start or the seeded sample.
   if (!config) {
@@ -299,11 +300,11 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
       <Section index={5} title="Object Library" hint="Everything placed inside the world is an object. Add from the library, then fine-tune each one in Interactive Objects below.">
         <div className="flex flex-wrap items-end gap-3">
           <Field label="Object type">
-            <select id="three-d-add-object-type" className={selectClass} defaultValue="image_frame">
+            <select className={selectClass} value={newObjectType} onChange={(e) => setNewObjectType(e.target.value)}>
               {SEED.objectLibrary.map((entry) => <option key={entry.id} value={entry.id}>{entry.name} — {entry.category}</option>)}
             </select>
           </Field>
-          <Button onClick={() => addObject(document.getElementById("three-d-add-object-type")?.value || "image_frame")}><Plus className="h-4 w-4" /> Add object</Button>
+          <Button onClick={() => addObject(newObjectType)}><Plus className="h-4 w-4" /> Add object</Button>
         </div>
         {objects.length === 0 && <p className="text-xs text-muted-foreground">No objects yet. Add your first object above, use the quick-add buttons in Media & Content Anchors, or load the sample world.</p>}
         <div className="space-y-2">
