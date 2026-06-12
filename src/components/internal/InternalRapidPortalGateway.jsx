@@ -1,43 +1,62 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence, useMotionValue } from "framer-motion";
 import { Building2, Crown, Home, Network, ShieldCheck, Sparkles, Wand2, X } from "lucide-react";
+import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
-import { isMasterUser } from "@/lib/rbac";
+import { ROLES, normalizeRole, isMasterUser, getUserTenantIds } from "@/lib/rbac";
 import { DEFAULT_MUSEUM_SLUG } from "@/lib/domain-registry";
 
-const DESTINATIONS = [
-  {
-    title: "Home",
-    description: "Return to the main SCAVerse entry gateway.",
-    route: "/",
-    icon: Home,
-  },
-  {
-    title: "Tenant Admin",
-    description: "Manage tenant-specific museum operations, content, walkthroughs, tickets, and experiences.",
-    route: `/museum/${DEFAULT_MUSEUM_SLUG}/admin`,
-    icon: Building2,
-  },
-  {
-    title: "Master Admin",
-    description: "Global operational control center for platform-wide governance, intelligence systems, and tenancy orchestration.",
-    route: "/platform/admin",
-    icon: Crown,
-  },
-  {
-    title: "Architecture Blueprint",
-    description: "System-wide architectural visualization layer showing routing, entities, engines, pipelines, and relationships.",
-    route: "/platform/admin/architecture-blueprint",
-    icon: Network,
-  },
-  {
-    title: "Experience Editor",
-    description: "Direct access to the immersive cinematic experience editing environment.",
-    route: `/museum/${DEFAULT_MUSEUM_SLUG}/admin/walkthrough`,
-    icon: Wand2,
-  },
-];
+// Role isolation (Faheem's spec): consumers/public users never see the
+// portal; tenant operators get it scoped to their own museum WITHOUT the
+// master-only destinations; masters get everything.
+const buildDestinations = ({ isMaster, tenantSlug }) => {
+  const destinations = [
+    {
+      title: "Home",
+      description: "Return to the main SCAVerse entry gateway.",
+      route: "/",
+      icon: Home,
+    },
+  ];
+
+  if (tenantSlug) {
+    destinations.push(
+      {
+        title: "Tenant Admin",
+        description: "Manage tenant-specific museum operations, content, walkthroughs, tickets, and experiences.",
+        route: `/museum/${tenantSlug}/admin`,
+        icon: Building2,
+      },
+      {
+        title: "Experience Editor",
+        description: "Direct access to the immersive cinematic experience editing environment.",
+        route: `/museum/${tenantSlug}/admin/walkthrough`,
+        icon: Wand2,
+      }
+    );
+  }
+
+  if (isMaster) {
+    destinations.push(
+      {
+        title: "Master Admin",
+        description: "Global operational control center for platform-wide governance, intelligence systems, and tenancy orchestration.",
+        route: "/platform/admin",
+        icon: Crown,
+      },
+      {
+        title: "Architecture Blueprint",
+        description: "System-wide architectural visualization layer showing routing, entities, engines, pipelines, and relationships.",
+        route: "/platform/admin/architecture-blueprint",
+        icon: Network,
+      }
+    );
+  }
+
+  return destinations;
+};
 
 const HOLD_TO_DRAG_MS = 1500;
 
@@ -51,7 +70,24 @@ export default function InternalRapidPortalGateway() {
   const holdTimerRef = useRef(null);
   const draggedRef = useRef(false);
 
-  if (!isMasterUser(user)) return null;
+  const role = normalizeRole(user?.role);
+  const isMaster = isMasterUser(user);
+  const isTenantRole = !isMaster && !!user && role !== ROLES.PUBLIC_USER;
+
+  const { data: tenants = [] } = useQuery({
+    queryKey: ["portal-gateway-tenants"],
+    queryFn: () => base44.entities.MuseumTenant.list(),
+    enabled: isTenantRole,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Consumers / signed-out visitors never see the portal at all.
+  if (!isMaster && !isTenantRole) return null;
+
+  const userTenantIds = getUserTenantIds(user);
+  const userTenant = tenants.find((tenant) => userTenantIds.includes(tenant.id));
+  const tenantSlug = isMaster ? DEFAULT_MUSEUM_SLUG : userTenant?.slug || null;
+  const destinations = buildDestinations({ isMaster, tenantSlug });
 
   const clearHoldTimer = () => {
     if (holdTimerRef.current) {
@@ -155,7 +191,7 @@ export default function InternalRapidPortalGateway() {
                   </div>
 
                   <div className="grid gap-3 md:grid-cols-2">
-                    {DESTINATIONS.map((item) => {
+                    {destinations.map((item) => {
                       const Icon = item.icon;
                       return (
                         <button
