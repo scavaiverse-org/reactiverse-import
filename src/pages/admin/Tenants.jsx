@@ -3,13 +3,22 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Building2, Plus, Eye, Palette, LayoutDashboard, Trash2 } from "lucide-react";
+import { Building2, Plus, Eye, Inbox, Palette, LayoutDashboard, Trash2 } from "lucide-react";
 import AdminBreadcrumb from "@/components/admin/AdminBreadcrumb";
 import StatusBadge from "@/components/admin/StatusBadge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
 const MODULES_ALL = ["onboarding", "ticketing", "ai_guide", "walkthrough", "vendors", "commerce", "analytics", "gamification"];
+
+const INQUIRY_STATUSES = ["new", "contacted", "qualified", "closed"];
+
+const INQUIRY_STATUS_COLORS = {
+  new: "text-amber-400 bg-amber-400/10 border-amber-400/30",
+  contacted: "text-blue-400 bg-blue-400/10 border-blue-400/30",
+  qualified: "text-emerald-400 bg-emerald-400/10 border-emerald-400/30",
+  closed: "text-muted-foreground bg-white/5 border-white/10",
+};
 
 export default function Tenants() {
   const qc = useQueryClient();
@@ -45,6 +54,17 @@ export default function Tenants() {
       setTenantToDelete(null);
       toast.success("Museum deleted");
     }
+  });
+
+  // Franchise applications submitted via the public Become-a-Tenant form.
+  const { data: inquiries = [] } = useQuery({
+    queryKey: ["tenant-inquiries"],
+    queryFn: () => base44.entities.TenantInquiry.list("-created_at", 200),
+  });
+
+  const inquiryStatusMutation = useMutation({
+    mutationFn: ({ id, status }) => base44.entities.TenantInquiry.update(id, { status }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["tenant-inquiries"] }); toast.success("Application updated"); },
   });
 
   const handleCreate = () => {
@@ -118,6 +138,56 @@ export default function Tenants() {
           </div>
         </motion.div>
       )}
+
+      {/* Franchise Applications */}
+      <div className="bg-white/[0.03] border border-amber-400/15 rounded-xl p-5 mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Inbox className="w-4 h-4 text-amber-400" />
+          <p className="text-xs font-semibold text-foreground">Franchise Applications</p>
+          <span className="text-[10px] text-muted-foreground">({inquiries.length})</span>
+        </div>
+        <div className="space-y-3">
+          {inquiries.map((inquiry) => (
+            <div key={inquiry.id} className="rounded-lg border border-white/6 bg-white/[0.02] p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-foreground">{inquiry.organization}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {inquiry.contact_name} · {inquiry.email}
+                    {inquiry.museum_type ? ` · ${inquiry.museum_type}` : ""}
+                  </p>
+                  {inquiry.message && <p className="mt-2 text-xs leading-5 text-foreground/70">{inquiry.message}</p>}
+                  <p className="mt-1 text-[10px] text-muted-foreground/70">
+                    Applied {new Date(inquiry.submitted_at || inquiry.created_at).toLocaleString()}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={inquiry.status || "new"}
+                    onChange={(e) => inquiryStatusMutation.mutate({ id: inquiry.id, status: e.target.value })}
+                    disabled={inquiryStatusMutation.isPending}
+                    className={`rounded-lg border px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider focus:outline-none ${INQUIRY_STATUS_COLORS[inquiry.status] || INQUIRY_STATUS_COLORS.new} bg-[#060c18]`}
+                  >
+                    {INQUIRY_STATUSES.map((status) => (
+                      <option key={status} value={status}>{status}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => { setNewName(inquiry.organization); setShowNew(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                    className="rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-[10px] font-medium text-primary transition-colors hover:bg-primary/20"
+                  >
+                    Create Museum
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+          {inquiries.length === 0 && (
+            <p className="py-4 text-center text-xs text-muted-foreground">No franchise applications yet</p>
+          )}
+        </div>
+      </div>
 
       {/* Tenants Grid */}
       <div className="grid lg:grid-cols-2 gap-4">

@@ -21,6 +21,7 @@ export default function UsersAccess() {
   // what getAuthUser/the tour gate/edge functions actually read.
   const { data: users = [], isLoading: loadingUsers } = useQuery({ queryKey: ["ua-user-profiles"], queryFn: () => base44.entities.Profile.list("email", 500) });
   const { data: tenantAccess = [] } = useQuery({ queryKey: ["ua-tenant-access"], queryFn: () => base44.entities.TenantAccess.list("tenant_id", 500) });
+  const { data: museums = [] } = useQuery({ queryKey: ["ua-museums"], queryFn: () => base44.entities.MuseumTenant.list("name", 100) });
   const { data: rolePermissions = [] } = useQuery({ queryKey: ["ua-role-permissions"], queryFn: () => base44.entities.RolePermission.list("role", 500) });
 
   const roles = useMemo(() => {
@@ -60,6 +61,22 @@ export default function UsersAccess() {
     mutationFn: ({ id, role }) => base44.entities.Profile.update(id, { role }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["ua-user-profiles"] }),
   });
+
+  // Assigns/unassigns the user's museum (which museum their tenant role
+  // applies to). "none" clears the link.
+  const assignMuseum = useMutation({
+    mutationFn: ({ id, tenantId }) =>
+      base44.entities.Profile.update(id, { tenant_id: tenantId, tenant_ids: tenantId ? [tenantId] : [] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["ua-user-profiles"] }),
+  });
+
+  const requestMuseumChange = (user, value) => {
+    const tenantId = value === "none" ? null : value;
+    if ((user.tenant_id || null) === tenantId) return;
+    const museumName = museums.find((m) => m.id === tenantId)?.name || "no museum (Global)";
+    const ok = window.confirm(`Assign ${user.email} to ${museumName}?`);
+    if (ok) assignMuseum.mutate({ id: user.id, tenantId });
+  };
 
   // Guard against the one-click lockout that hit us on 2026-06-12: a master
   // admin demoting their own account (or any accidental dropdown change).
@@ -166,7 +183,23 @@ export default function UsersAccess() {
                     )}
                   </td>
                   <td className="py-2 pr-3">{user.status ? <StatusBadge status={user.status} /> : <span className="text-muted-foreground">Not set</span>}</td>
-                  <td className="py-2 pr-3 text-foreground/70">{user.tenant_id || "Global"}</td>
+                  <td className="py-2 pr-3 min-w-36">
+                    <Select
+                      value={user.tenant_id || "none"}
+                      onValueChange={(value) => requestMuseumChange(user, value)}
+                      disabled={assignMuseum.isPending}
+                    >
+                      <SelectTrigger className="h-8 border-white/10 bg-white/[0.03] text-xs">
+                        <SelectValue placeholder="Global" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Global (no museum)</SelectItem>
+                        {museums.map((museum) => (
+                          <SelectItem key={museum.id} value={museum.id}>{museum.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </td>
                   <td className="py-2 pr-3">
                     {user.franchise_intent ? (
                       <span className="inline-flex items-center gap-1 text-[9px] font-bold tracking-widest px-2 py-0.5 rounded border text-amber-400 bg-amber-400/10 border-amber-400/30">
