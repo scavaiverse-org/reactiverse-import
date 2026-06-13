@@ -46,6 +46,7 @@ export default function TenantWalkthrough() {
   const [warnings, setWarnings] = useState([]);
   const [editorMode, setEditorMode] = useState("easy");
   const [testPublishOpen, setTestPublishOpen] = useState(false);
+  const [bulkToolsOpen, setBulkToolsOpen] = useState(false);
 
   const selectedTenant = useMemo(() => routeTenant || tenants.find((tenant) => tenant.id === selectedTenantId) || tenants[0], [tenants, selectedTenantId, routeTenant]);
 
@@ -263,21 +264,23 @@ export default function TenantWalkthrough() {
         </div>
       </div>
 
-      <Collapsible defaultOpen={false}>
-        <CollapsibleTrigger asChild>
-          <button type="button" className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left text-sm font-semibold transition hover:bg-white/[0.06] [&[data-state=open]>svg]:rotate-180">
-            <span className="flex items-center gap-1.5">
-              Bulk Tools (Autofill &amp; Presets)
-              <HelpHint title="Bulk Tools">
-                Optional power tools for filling in lots of content at once: Global Experience Autofill (room,
-                media, layout, and narrative generators) and Museum Preset Autofill (populate the whole
-                walkthrough from a ready-made museum preset, or save/load your own presets). Expand only when
-                you need them.
-              </HelpHint>
-            </span>
-            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
-          </button>
-        </CollapsibleTrigger>
+      <Collapsible open={bulkToolsOpen} onOpenChange={setBulkToolsOpen}>
+        <div className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-semibold transition hover:bg-white/[0.06]">
+          <CollapsibleTrigger asChild>
+            <button type="button" className="flex flex-1 items-center text-left">
+              <span className="flex items-center gap-1.5">Bulk Tools (Autofill &amp; Presets)</span>
+            </button>
+          </CollapsibleTrigger>
+          <span className="flex items-center gap-1.5">
+            <HelpHint title="Bulk Tools">
+              Optional power tools for filling in lots of content at once: Global Experience Autofill (room,
+              media, layout, and narrative generators) and Museum Preset Autofill (populate the whole
+              walkthrough from a ready-made museum preset, or save/load your own presets). Expand only when
+              you need them.
+            </HelpHint>
+            <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${bulkToolsOpen ? "rotate-180" : ""}`} />
+          </span>
+        </div>
         <CollapsibleContent className="mt-3 space-y-6">
           <GlobalExperienceAutofill onAction={handleGlobalAutofill} disabled={saveMutation.isPending} />
           <MuseumPresetAutofill tenant={selectedTenant} museumId={museumFilter || selectedTenant.id} walkthroughKey={walkthroughKey} rooms={rooms} onPopulate={handlePresetPopulate} />

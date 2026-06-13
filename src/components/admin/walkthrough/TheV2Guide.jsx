@@ -14,7 +14,6 @@ import {
   Sparkles,
   FileArchive,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 const SECTIONS = [
   {
@@ -125,9 +124,9 @@ export default function TheV2Guide() {
           <span className="text-sm font-semibold">TheV2 — Experience Builder Guide</span>
           <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">Reference</span>
         </div>
-        <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0">
+        <span className="flex h-7 w-7 items-center justify-center rounded-md">
           {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </Button>
+        </span>
       </button>
 
       {open && (

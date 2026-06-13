@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { AlignLeft, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, DoorOpen, Gem, HelpCircle, Image as ImageIcon, Film, Lightbulb, Lock, MousePointerClick, Signpost, Sparkles, Star, Store, UserRound, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ResolvedMedia from "@/components/walkthrough/ResolvedMedia";
+import ThreeDWorldCanvas from "@/components/walkthrough/ThreeDWorldCanvas";
 import { getMoodPreset, getWorldTemplate } from "@/lib/three-d-world-seed";
 import { getNavigationObjects, getThreeDWorldConfig } from "@/lib/three-d-world-validation";
 
@@ -124,8 +125,13 @@ export default function ThreeDWorldRoom({ room, context = {} }) {
 
   if (!config) {
     return (
-      <div className="flex min-h-[70vh] items-center justify-center px-4 py-20">
-        <p className="max-w-md text-center text-sm text-muted-foreground">This 3D world has not been configured yet.</p>
+      <div className="relative min-h-screen">
+        <ThreeDWorldCanvas config={null} room={room} className="h-[70vh] w-full" />
+        <div className="relative z-10 mx-auto max-w-3xl px-4 py-10 text-center">
+          <p className="text-xs uppercase tracking-[0.28em] text-primary">3D World</p>
+          <h1 className="mt-3 font-display text-4xl font-bold text-foreground">{room.title || "3D World"}</h1>
+          <p className="mt-4 text-sm leading-7 text-muted-foreground">This world is still being put together — explore the empty gallery space above. Drag to look around and scroll to zoom.</p>
+        </div>
       </div>
     );
   }
@@ -162,6 +168,15 @@ export default function ThreeDWorldRoom({ room, context = {} }) {
     context.goToRoom?.(door.destinationRoomId);
   };
 
+  // Clicking a piece in the 3D canvas should do the same thing as tapping its
+  // card below — open the popup, start the quiz, collect it, or walk through
+  // the door — so the 3D view and the accessible card grid stay equivalent.
+  const handleCanvasSelect = (object) => {
+    if (object.type === "door" || object.type === "portal") { enterDoor(object); return; }
+    if (object.type === "light_source" || object.type === "direction_sign") return;
+    openObject(object);
+  };
+
   const dialogueSteps = npcGuide.dialogueSteps || [];
   const collectibleObjects = objects.filter((object) => COLLECTIBLE_TYPES.includes(object.type));
   const collectedCount = collectibleObjects.filter((object) => collected.has(object.id)).length;
@@ -171,6 +186,8 @@ export default function ThreeDWorldRoom({ room, context = {} }) {
       <div aria-hidden className={`pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b ${overlay}`} />
 
       <div className="relative z-10 mx-auto max-w-5xl">
+        <ThreeDWorldCanvas config={config} room={room} onSelectObject={handleCanvasSelect} className="mb-8 h-[60vh] min-h-[360px] w-full overflow-hidden rounded-2xl border border-white/10" />
+
         <p className="text-xs uppercase tracking-[0.28em] text-primary">{template?.name || "3D World"}{mood ? ` · ${mood.name}` : ""}</p>
         <h1 className="mt-3 max-w-3xl font-display text-5xl font-bold text-foreground">{room.title || template?.name || "3D World"}</h1>
         {room.narration || room.description ? <p className="mt-5 max-w-2xl text-sm leading-7 text-foreground/75">{room.narration || room.description}</p> : null}

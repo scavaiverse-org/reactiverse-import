@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { ArrowDown, ArrowUp, Box, CheckCircle2, ChevronDown, Copy, DoorOpen, Eye, Plus, Sparkles, Trash2, Wand2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Box, CheckCircle2, ChevronDown, Copy, DoorOpen, Eye, Plus, Sparkles, Trash2, Upload, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import HelpHint from "../HelpHint";
+import ThreeDWorldCanvas from "@/components/walkthrough/ThreeDWorldCanvas";
+import { uploadFile } from "@/lib/upload";
 import { THREE_D_WORLD_EDITOR_SEED, getMoodPreset, getObjectType, getWorldTemplate } from "@/lib/three-d-world-seed";
 import {
   buildSampleWorldConfig,
@@ -31,14 +33,16 @@ function Section({ index, title, hint, children, defaultOpen = true }) {
   useEffect(() => { if (defaultOpen) setOpen(true); }, [defaultOpen]);
   return (
     <div className="overflow-hidden rounded-2xl border border-white/10 bg-background/30">
-      <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-white/[0.03]">
-        <span className="flex items-center gap-2.5">
+      <div className="flex w-full items-center justify-between gap-3 px-4 py-3 transition hover:bg-white/[0.03]">
+        <button type="button" onClick={() => setOpen(!open)} className="flex flex-1 items-center gap-2.5 text-left">
           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-[11px] font-bold text-primary">{index}</span>
           <span className="text-sm font-semibold">{title}</span>
+        </button>
+        <span className="flex items-center gap-1.5">
           {hint && <HelpHint title={title}>{hint}</HelpHint>}
+          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
         </span>
-        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
+      </div>
       {open && <div className="space-y-4 border-t border-white/10 p-4">{children}</div>}
     </div>
   );
@@ -83,6 +87,16 @@ function VectorInput({ label, value = {}, onChange }) {
 // Primary media field differs per object type; map it so the generic
 // object card always edits the right one.
 const MEDIA_FIELD_BY_TYPE = { image_frame: "imageUrl", video_wall: "videoUrl", audio_point: "audioUrl", artifact_display: "modelUrl", memory_capsule: "mediaUrl", product_booth: "imageUrl", collectible: "iconUrl" };
+
+// File picker filters per media field, matched to what each object type actually renders.
+const MEDIA_ACCEPT_BY_FIELD = {
+  imageUrl: "image/*",
+  videoUrl: "video/*",
+  audioUrl: "audio/*",
+  modelUrl: ".glb,.gltf,.usdz,.obj",
+  mediaUrl: "image/*,video/*,audio/*",
+  iconUrl: "image/*",
+};
 
 // Sample-world objects store their text in `body` (text_panel) or `story`
 // (memory_capsule); always edit the field that already holds the text so the
@@ -211,6 +225,7 @@ function newObject(type, count) {
 
 export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
   const [addObjectType, setAddObjectType] = useState("image_frame");
+  const [uploadingField, setUploadingField] = useState(null);
   const config = getThreeDWorldConfig(room);
   const setConfig = (patch) => onChange({ ...room, threeDWorldConfig: { ...(config || createThreeDWorldConfig()), ...patch } });
 
@@ -224,6 +239,11 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
         <div className="flex flex-wrap justify-center gap-3">
           <Button onClick={() => onChange({ ...room, threeDWorldConfig: createThreeDWorldConfig() })}><Wand2 className="h-4 w-4" /> Start Building</Button>
           <Button variant="outline" onClick={() => onChange({ ...room, threeDWorldConfig: buildSampleWorldConfig() })}><Sparkles className="h-4 w-4" /> Load Sample World (AOM Heritage Portal)</Button>
+        </div>
+        <div className="space-y-2 text-left">
+          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-primary"><Eye className="h-3.5 w-3.5" /> Live preview — empty gallery</p>
+          <ThreeDWorldCanvas config={null} room={room} className="h-[360px] w-full overflow-hidden rounded-2xl border border-white/10" />
+          <p className="text-xs text-muted-foreground">This is the real 3D space visitors will walk through. Start building or load the sample world to fill it with objects — the preview updates as you edit.</p>
         </div>
       </section>
     );
@@ -246,6 +266,19 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
   const roomOptions = rooms.filter((entry) => !isSameRoom(entry)).map((entry) => ({ value: entry.id || entry.room_key, label: entry.title || entry.room_key || entry.id }));
 
   const updateObject = (id, patch) => setConfig({ objects: objects.map((object) => (object.id === id ? { ...object, ...patch } : object)) });
+  const uploadObjectMedia = async (id, field, file) => {
+    if (!file) return;
+    const key = `${id}:${field}`;
+    setUploadingField(key);
+    try {
+      const result = await uploadFile(file);
+      updateObject(id, { [field]: result.file_url });
+    } catch (error) {
+      console.error("Media upload failed", error);
+    } finally {
+      setUploadingField((current) => (current === key ? null : current));
+    }
+  };
   const addObject = (type) => setConfig({ objects: [...objects, newObject(type, objects.length)] });
   const removeObject = (id) => setConfig({ objects: objects.filter((object) => object.id !== id) });
   const duplicateObject = (id) => {
@@ -291,6 +324,12 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
           <span className="rounded-full bg-background/50 px-2.5 py-1 text-muted-foreground">{objects.length} objects</span>
           {requiredWarnings.length > 0 && <span className="rounded-full bg-rose-500/15 px-2.5 py-1 text-rose-300">{requiredWarnings.length} blocking</span>}
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-primary"><Eye className="h-3.5 w-3.5" /> Live preview · updates as you edit</p>
+        <ThreeDWorldCanvas config={config} room={room} debounceMs={400} className="h-[420px] w-full overflow-hidden rounded-2xl border border-white/10" />
+        <p className="text-xs text-muted-foreground">Drag to look around, scroll to zoom, click an object to see how it appears to visitors. This is the same renderer used on the published page.</p>
       </div>
 
       <Section index={1} title="World Template" hint="Pick the starting style of this world. The template sets sensible defaults for mood and movement — you can change everything afterwards.">
@@ -439,7 +478,24 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
                   <div className="grid gap-3 md:grid-cols-2">
                     <Field label="Title"><Input value={object.title || ""} onChange={(e) => updateObject(object.id, { title: e.target.value })} /></Field>
                     <Field label="Description"><Input value={object[descriptionField] || ""} onChange={(e) => updateObject(object.id, { [descriptionField]: e.target.value })} /></Field>
-                    {mediaField && <Field label={`Media URL (${prettify(mediaField.replace("Url", ""))})`}><Input value={object[mediaField] || ""} placeholder="https://…" onChange={(e) => updateObject(object.id, { [mediaField]: e.target.value })} /></Field>}
+                    {mediaField && (
+                      <Field label={`Media URL (${prettify(mediaField.replace("Url", ""))})`}>
+                        <div className="flex gap-2">
+                          <Input value={object[mediaField] || ""} placeholder="https://…" onChange={(e) => updateObject(object.id, { [mediaField]: e.target.value })} />
+                          <Button asChild variant="outline" size="sm">
+                            <label className="cursor-pointer whitespace-nowrap">
+                              <Upload className="h-3.5 w-3.5" /> {uploadingField === `${object.id}:${mediaField}` ? "Uploading…" : "Upload"}
+                              <input
+                                type="file"
+                                className="hidden"
+                                accept={MEDIA_ACCEPT_BY_FIELD[mediaField] || "*/*"}
+                                onChange={(e) => uploadObjectMedia(object.id, mediaField, e.target.files?.[0])}
+                              />
+                            </label>
+                          </Button>
+                        </div>
+                      </Field>
+                    )}
                     {extraFields.map((definition) => <ExtraField key={definition.field} definition={definition} object={object} onUpdate={(patch) => updateObject(object.id, patch)} />)}
                     <Field label="Click action" hint="What happens when a visitor clicks this object.">
                       <select className={selectClass} value={object.clickAction || "open_popup"} onChange={(e) => updateObject(object.id, { clickAction: e.target.value })}>
