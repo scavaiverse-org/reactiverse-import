@@ -1,7 +1,9 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
+import { ArrowRight, Loader2, Sparkles, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import MuseumGateShell from "@/components/tenant/MuseumGateShell";
 import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { DEFAULT_MUSEUM_SLUG, museumPath } from "@/lib/domain-registry";
 import { WALKTHROUGHS } from "@/lib/walkthrough-admin";
@@ -46,23 +48,29 @@ export default function Walkthrough() {
 
   if (checkingAccess) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-4 text-center text-muted-foreground">
-        <p className="text-lg font-medium text-foreground">Checking your ticket…</p>
-      </div>
+      <MuseumGateShell>
+        <Loader2 className="mx-auto h-7 w-7 animate-spin text-primary" />
+        <p className="mt-4 text-lg font-medium text-foreground">Checking your ticket…</p>
+      </MuseumGateShell>
     );
   }
 
   if (!hasAccess) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-4 text-center text-muted-foreground">
-        <p className="text-lg font-medium text-foreground">A ticket is required to enter this tour.</p>
-        <p className="max-w-md text-sm leading-6">Tour access unlocks once your ticket is paid or confirmed. Reserve a ticket to get started, or check your reservation status on the confirmation page.</p>
-        <div className="flex flex-wrap justify-center gap-3">
-          <Button onClick={() => navigate(museumPath(tenantSlug, "tickets"))}>Get Tickets</Button>
-          <Button variant="outline" onClick={() => navigate(museumPath(tenantSlug, "tickets-5"))}>Check Reservation</Button>
-          <Button variant="outline" onClick={() => navigate(museumPath(tenantSlug, "home"))}>Back to Museum Home</Button>
+      <MuseumGateShell>
+        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.32em] text-primary shadow-lg shadow-primary/10 backdrop-blur">
+          <Ticket className="h-3.5 w-3.5" /> Ticket required
         </div>
-      </div>
+        <h1 className="font-heading text-4xl font-bold tracking-tight drop-shadow-2xl sm:text-5xl">Your ticket unlocks this tour</h1>
+        <p className="mx-auto mt-5 max-w-md text-sm leading-7 text-muted-foreground sm:text-base">Tour access opens the moment your ticket is paid or confirmed. Reserve yours to step inside, or check your reservation status.</p>
+        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Button size="lg" className="bg-primary text-primary-foreground shadow-lg shadow-primary/25" onClick={() => navigate(museumPath(tenantSlug, "tickets"))}>
+            <Ticket className="h-4 w-4" /> Get Tickets <ArrowRight className="h-4 w-4" />
+          </Button>
+          <Button size="lg" variant="outline" className="border-white/15 bg-white/5 backdrop-blur" onClick={() => navigate(museumPath(tenantSlug, "tickets-5"))}>Check Reservation</Button>
+        </div>
+        <Button variant="ghost" className="mt-4 text-muted-foreground hover:text-foreground" onClick={() => navigate(museumPath(tenantSlug, "home"))}>Back to Museum Home</Button>
+      </MuseumGateShell>
     );
   }
 
@@ -72,19 +80,21 @@ export default function Walkthrough() {
     // Staff previewing (staffBypass) still get the plain unpublished notice.
     if (!staffBypass) {
       return (
-        <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-4 text-center text-muted-foreground">
-          <p className="text-4xl">🎉</p>
-          <p className="text-xl font-semibold text-foreground">You&apos;re confirmed — your spot is reserved.</p>
-          <p className="max-w-md text-sm leading-6">{tenant?.name || "The museum"} is putting the finishing touches on the experience. It isn&apos;t open just yet — but your ticket is locked in, and we&apos;ll email you the moment it goes live.</p>
-          <Button variant="outline" onClick={() => navigate(museumPath(tenantSlug, "home"))}>Back to Museum Home</Button>
-        </div>
+        <MuseumGateShell>
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-400/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.32em] text-emerald-300 shadow-lg shadow-emerald-400/10 backdrop-blur">
+            <Sparkles className="h-3.5 w-3.5" /> You&apos;re in
+          </div>
+          <h1 className="font-heading text-4xl font-bold tracking-tight drop-shadow-2xl sm:text-5xl">You&apos;re confirmed — your spot is reserved</h1>
+          <p className="mx-auto mt-5 max-w-md text-sm leading-7 text-muted-foreground sm:text-base">{tenant?.name || "The museum"} is putting the finishing touches on the experience. It isn&apos;t open just yet — but your ticket is locked in, and we&apos;ll email you the moment it goes live.</p>
+          <Button size="lg" variant="outline" className="mt-8 border-white/15 bg-white/5 backdrop-blur" onClick={() => navigate(museumPath(tenantSlug, "home"))}>Back to Museum Home</Button>
+        </MuseumGateShell>
       );
     }
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-4 text-center text-muted-foreground">
+      <MuseumGateShell>
         <p className="text-lg font-medium text-foreground">This experience has not been published yet.</p>
-        <Button variant="outline" onClick={() => navigate(museumPath(tenantSlug, "home"))}>Back to Museum Home</Button>
-      </div>
+        <Button variant="outline" className="mt-4" onClick={() => navigate(museumPath(tenantSlug, "home"))}>Back to Museum Home</Button>
+      </MuseumGateShell>
     );
   }
 
