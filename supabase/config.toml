@@ -56,3 +56,7 @@ verify_jwt = false
 
 [functions.qa-agent]
 verify_jwt = true
+
+# Public: called fire-and-forget by the anonymous tenant/vendor forms.
+[functions.notify-inquiry]
+verify_jwt = false

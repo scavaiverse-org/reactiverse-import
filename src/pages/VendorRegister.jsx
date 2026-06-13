@@ -82,12 +82,14 @@ export default function VendorRegister() {
     setIsSubmitting(true);
     try {
       base44.entities.AnalyticsEvent.create({ tenant_id: tenantId, tenant_name: tenant?.name, event_type: "vendor_signup", event_data: { slot_type: form.slot_type, category: form.category }, source_page: "vendor_register" }).catch(() => {});
-      await base44.entities.Vendor.create({
+      const created = await base44.entities.Vendor.create({
         ...form,
         tenant_id: tenantId,
         tenant_name: tenant?.name,
         status: 'pending',
       });
+      // Fire-and-forget: email the SCAVerse inbox. Never block the flow on it.
+      if (created?.id) base44.functions.invoke("notify-inquiry", { kind: "vendor_application", id: created.id }).catch(() => {});
       recordSubmit('vendor_application');
       setSubmitted(true);
       toast.success('Vendor application submitted.');

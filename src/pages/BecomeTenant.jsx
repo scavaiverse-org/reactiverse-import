@@ -51,6 +51,8 @@ export default function BecomeTenant() {
     },
     onSuccess: (id) => {
       recordSubmit("tenant_inquiry");
+      // Fire-and-forget: email the SCAVerse inbox. Never block the flow on it.
+      base44.functions.invoke("notify-inquiry", { kind: "tenant_inquiry", id }).catch(() => {});
       setInquiryId(id);
       setReference(`SCV-${id.slice(0, 8).toUpperCase()}`);
       setStep("checkout");
