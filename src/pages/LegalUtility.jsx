@@ -4,6 +4,21 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getLegalPage, LEGAL_LAST_UPDATED } from "@/lib/legal-content";
 
+// Renders a section body, turning a referenced contact email into a clickable
+// mailto link while keeping the surrounding text intact.
+function renderBody(section) {
+  const email = section.email;
+  if (!email || !section.body.includes(email)) return section.body;
+  const [before, after] = section.body.split(email);
+  return (
+    <>
+      {before}
+      <a href={`mailto:${email}`} className="text-primary underline-offset-4 hover:underline">{email}</a>
+      {after}
+    </>
+  );
+}
+
 export default function LegalUtility() {
   const location = useLocation();
   const page = getLegalPage(location.pathname);
@@ -40,7 +55,7 @@ export default function LegalUtility() {
             {page.sections.map((section) => (
               <section key={section.heading}>
                 <h2 className="mb-2 font-display text-lg font-semibold text-foreground">{section.heading}</h2>
-                <p className="text-sm leading-relaxed text-foreground/75">{section.body}</p>
+                <p className="text-sm leading-relaxed text-foreground/75">{renderBody(section)}</p>
               </section>
             ))}
           </div>

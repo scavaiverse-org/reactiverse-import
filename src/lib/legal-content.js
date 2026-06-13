@@ -3,6 +3,10 @@
 
 const LAST_UPDATED = "6 June 2026";
 
+// Single source of truth for the public contact email. Update here to change
+// it everywhere (legal pages, contact page, footer).
+export const CONTACT_EMAIL = "contact@scaverse.org";
+
 export const LEGAL_PAGES = {
   "/privacy": {
     title: "Privacy Policy",
@@ -23,7 +27,8 @@ export const LEGAL_PAGES = {
       },
       {
         heading: "Your Rights",
-        body: "Under the PDPA you may request access to, correction of, or deletion of your personal data, and may withdraw consent at any time. To exercise these rights, contact us via the official enquiry workflow.",
+        body: `Under the PDPA you may request access to, correction of, or deletion of your personal data, and may withdraw consent at any time. To exercise these rights, email us at ${CONTACT_EMAIL}.`,
+        email: CONTACT_EMAIL,
       },
       {
         heading: "Data Retention & Security",
@@ -77,7 +82,8 @@ export const LEGAL_PAGES = {
       },
       {
         heading: "How to Request a Refund",
-        body: "To request a refund or cancellation, contact us through the official enquiry workflow with your booking reference. Approved refunds are returned to the original payment method within 14 business days.",
+        body: `To request a refund or cancellation, email us at ${CONTACT_EMAIL} with your booking reference. Approved refunds are returned to the original payment method within 14 business days.`,
+        email: CONTACT_EMAIL,
       },
     ],
   },
@@ -87,7 +93,12 @@ export const LEGAL_PAGES = {
       "We're here to help with museum visits, partnerships, accessibility support, and more.",
     sections: [
       {
-        heading: "Get in Touch",
+        heading: "Email Us",
+        body: `For any enquiry, email us at ${CONTACT_EMAIL} and our team will get back to you.`,
+        email: CONTACT_EMAIL,
+      },
+      {
+        heading: "Other Ways to Reach Us",
         body: "For quick answers about visits, tickets, add-ons, and accessibility, ask ARIA — the museum's AI guide — available on every museum page. For vendor participation, apply directly through the vendor application form on the Vendors page. For corporate enquiries and platform partnerships, use the Become a Tenant page to start a conversation with the SCAVerse team.",
       },
       {
@@ -111,7 +122,8 @@ export const LEGAL_PAGES = {
       },
       {
         heading: "Feedback",
-        body: "If you encounter an accessibility barrier, please contact us through the official enquiry workflow so we can address it.",
+        body: `If you encounter an accessibility barrier, please email us at ${CONTACT_EMAIL} so we can address it.`,
+        email: CONTACT_EMAIL,
       },
     ],
   },

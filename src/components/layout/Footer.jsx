@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Globe, Sparkles } from "lucide-react";
+import { Globe, Mail, Sparkles } from "lucide-react";
+import { CONTACT_EMAIL } from "@/lib/legal-content";
 
 const footerLinks = [
   {
@@ -41,6 +42,12 @@ export default function Footer() {
             <p className="max-w-sm text-xs text-foreground/75 leading-relaxed">
               A focused public entry point for discovering available virtual museums.
             </p>
+            <a
+              href={`mailto:${CONTACT_EMAIL}`}
+              className="mt-4 inline-flex items-center gap-1.5 text-xs text-foreground/75 transition-colors hover:text-primary"
+            >
+              <Mail className="h-3.5 w-3.5 text-primary/70" /> {CONTACT_EMAIL}
+            </a>
           </div>
 
           {footerLinks.map((section) => (
