@@ -8,15 +8,16 @@ import HomepageOnboardingOverlay from "@/components/onboarding/HomepageOnboardin
 import { PublicHeaderLogo } from "@/components/layout/PublicHeaderShell";
 import useFirstVisit from "@/hooks/useFirstVisit";
 import { SCOVERS_INTRO_STORAGE_KEY } from "@/lib/scovers-onboarding-content";
+import { DEFAULT_MUSEUM_SLUG, museumPath } from "@/lib/domain-registry";
 
 const CANONICAL_BADGES = [
   {
     key: "consumer_platform",
     userType: "Consumer Platform",
     title: "Consumer Platform",
-    description: "Explore the consumer-facing museum platform and browse available virtual museums.",
+    description: "Reserve e-tickets for the pre-launch museum and explore what's coming to SCAVerse.",
     label: "Enter Consumer Platform",
-    route: "/presale",
+    route: museumPath(DEFAULT_MUSEUM_SLUG, "tickets"),
     visibility: true,
     sortOrder: 1,
   },
@@ -24,9 +25,9 @@ const CANONICAL_BADGES = [
     key: "become_tenant",
     userType: "Tenant / Franchise Applicant",
     title: "Become a Tenant / Franchise",
-    description: "Apply to launch your own museum, attraction, or cultural experience on SCAVerse.",
+    description: "Claim your free 1-week tenant trial — build your own museum, attraction, or cultural experience on SCAVerse.",
     label: "Apply as a Franchise",
-    route: "/presale",
+    route: museumPath(DEFAULT_MUSEUM_SLUG, "tickets"),
     visibility: true,
     sortOrder: 2,
   },
