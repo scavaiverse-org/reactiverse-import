@@ -17,6 +17,7 @@ import ModuleGate from './components/ModuleGate';
 
 // Eager pages: the platform gateway and auth flows users hit first.
 import PlatformHome from './pages/PlatformHome';
+import Discover from './pages/Discover';
 import BecomeTenant from './pages/BecomeTenant';
 import TenantLogin from './pages/TenantLogin';
 import LoginRedirect from './components/auth/LoginRedirect';
@@ -149,6 +150,7 @@ const AuthenticatedApp = () => {
       <Suspense fallback={<RouteLoadingFallback />}>
       <Routes>
       <Route path="/" element={<PlatformHome />} />
+      <Route path="/discover" element={<Discover />} />
       <Route path="/presale" element={<PresaleTickets />} />
       <Route path="/become-a-tenant" element={<BecomeTenant />} />
       <Route path="/virtual-experience" element={<VirtualExperience />} />

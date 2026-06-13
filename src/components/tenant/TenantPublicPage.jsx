@@ -91,7 +91,7 @@ function ParticleField() {
 
 function HomeContent({ slug, exhibits }) {
   const cards = [
-    { title: "Purchase Tickets", body: "Reserve timed entry, family passes, and museum access.", to: museumPath(slug, "tickets"), icon: Ticket },
+    { title: "Reserve Pre-Sale Tickets", body: "Lock in early-bird pre-sale pricing and guarantee your access when the museum opens.", to: museumPath(slug, "tickets"), icon: Ticket },
     { title: "About Us", body: "Explore the museum story, mission, and cultural background.", to: museumPath(slug, "about"), icon: Info },
     { title: "Begin Tour", body: "Start from the museum's public tour entry page.", to: museumPath(slug, "begin-tour"), icon: Play },
   ];
