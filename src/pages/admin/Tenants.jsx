@@ -30,6 +30,7 @@ export default function Tenants() {
   const [newName, setNewName] = useState("");
   const [newRegion, setNewRegion] = useState("");
   const [tenantToDelete, setTenantToDelete] = useState(null);
+  const [inquiryToDelete, setInquiryToDelete] = useState(null);
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
@@ -65,6 +66,11 @@ export default function Tenants() {
   const inquiryStatusMutation = useMutation({
     mutationFn: ({ id, status }) => base44.entities.TenantInquiry.update(id, { status }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["tenant-inquiries"] }); toast.success("Application updated"); },
+  });
+
+  const deleteInquiryMutation = useMutation({
+    mutationFn: (inquiry) => base44.entities.TenantInquiry.delete(inquiry.id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["tenant-inquiries"] }); setInquiryToDelete(null); toast.success("Application deleted"); },
   });
 
   const handleCreate = () => {
@@ -178,6 +184,14 @@ export default function Tenants() {
                     className="rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-[10px] font-medium text-primary transition-colors hover:bg-primary/20"
                   >
                     Create Museum
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setInquiryToDelete(inquiry)}
+                    title="Permanently delete this application"
+                    className="flex items-center gap-1 rounded-lg border border-destructive/25 px-2 py-1.5 text-[10px] font-medium text-destructive transition-colors hover:bg-destructive/10"
+                  >
+                    <Trash2 className="w-3 h-3" />Delete
                   </button>
                 </div>
               </div>
@@ -305,6 +319,23 @@ export default function Tenants() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteMutation.mutate(tenantToDelete)}>
               Delete Museum
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!inquiryToDelete} onOpenChange={(open) => !open && setInquiryToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete franchise application?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the application from {inquiryToDelete?.organization || 'this applicant'} ({inquiryToDelete?.email || 'no email'}). This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteInquiryMutation.mutate(inquiryToDelete)}>
+              Delete Application
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
