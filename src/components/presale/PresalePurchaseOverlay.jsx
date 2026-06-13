@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Ticket, Rocket, ShieldCheck, Copy, Check, Loader2, CheckCircle2, ArrowLeft, Sparkles } from "lucide-react";
+import { Ticket, Rocket, ShieldCheck, Copy, Check, Loader2, CheckCircle2, ArrowLeft, Sparkles, UploadCloud } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/lib/supabase";
+import { uploadPaymentProof } from "@/lib/upload";
 import {
   PRESALE_TICKET_PACKAGES, TENANT_TRIAL_OFFER, PAYNOW, PURCHASE_INSTRUCTIONS,
-  PRESALE_TENANT_ID, getPresalePackage,
+  getPresalePackage,
 } from "@/lib/presale-content";
 
 const fmt = (price, currency = "SGD") => (price ? `${currency} ${price}` : "Free");
@@ -25,6 +26,7 @@ export default function PresalePurchaseOverlay({ open, onClose, mode = "ticket",
   const [status, setStatus] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [proofFile, setProofFile] = useState(null);
 
   useEffect(() => {
     if (open) {
@@ -38,6 +40,7 @@ export default function PresalePurchaseOverlay({ open, onClose, mode = "ticket",
       setSubmitting(false);
       setDone(false);
       setCopied(false);
+      setProofFile(null);
     }
   }, [open, mode, packageId]);
 
@@ -60,33 +63,47 @@ export default function PresalePurchaseOverlay({ open, onClose, mode = "ticket",
 
   const submit = async () => {
     if (!emailValid) { setStatus("Please enter a valid email address — it must match your PayNow comment."); return; }
+    if (isTicket && !proofFile) { setStatus("Please upload your PayNow proof of payment (a screenshot of the transfer)."); return; }
     setSubmitting(true);
     setStatus("");
     try {
-      if (isTicket) {
-        await base44.entities.Ticket.create({
-          tenant_id: PRESALE_TENANT_ID,
-          ticket_type: pkg.id,
-          visitor_email: email.trim(),
-          quantity: Math.max(1, Number(quantity) || 1),
-          total_price: amount,
-          currency: pkg.currency,
-          status: "pending",
-          access_mode: pkg.accessMode || "virtual",
-          source_step: "presale_15jun",
-          notes: `Pre-sale PayNow to UEN ${PAYNOW.uen}. Awaiting admin payment verification before role is granted.`,
-        });
-      } else {
-        await base44.entities.TenantInquiry.create({
-          organization: organization.trim() || "(not provided)",
-          contact_name: contactName.trim() || "(not provided)",
-          email: email.trim(),
-          museum_type: "Pre-sale tenant trial",
-          message: `Requesting the 1-week free tenant trial (Experience Editor + 3D World Editor) via the 15 June pre-sale. Activate trial role for ${email.trim()}.`,
-          status: "new",
-          submitted_at: new Date().toISOString(),
-        });
+      let screenshotPath = null;
+      if (isTicket && proofFile) {
+        const uploaded = await uploadPaymentProof(proofFile);
+        screenshotPath = uploaded.path;
       }
+      // Record every pre-sale submission in payment_proofs (the master-admin
+      // "UEN" tab reads this). Plain insert with no select-back so anonymous
+      // buyers don't need a select policy.
+      const row = isTicket
+        ? {
+            kind: "ticket",
+            item_id: pkg.id,
+            item_label: pkg.label,
+            email: email.trim(),
+            amount,
+            currency: pkg.currency,
+            quantity: Math.max(1, Number(quantity) || 1),
+            screenshot_path: screenshotPath,
+            status: "pending",
+            notes: `Pre-sale PayNow to UEN ${PAYNOW.uen}. Verify transfer, then grant the e-ticket role for ${email.trim()}.`,
+          }
+        : {
+            kind: "tenant_trial",
+            item_id: "tenant_trial",
+            item_label: TENANT_TRIAL_OFFER.label,
+            email: email.trim(),
+            organization: organization.trim() || null,
+            contact_name: contactName.trim() || null,
+            amount: 0,
+            currency: "SGD",
+            quantity: 1,
+            screenshot_path: null,
+            status: "pending",
+            notes: `1-week free tenant trial (Experience Editor + 3D World Editor). Activate trial role for ${email.trim()}.`,
+          };
+      const { error } = await supabase.from("payment_proofs").insert(row);
+      if (error) throw error;
       setDone(true);
     } catch (err) {
       setStatus(err?.message || "Something went wrong submitting your request. Please try again.");
@@ -224,6 +241,23 @@ export default function PresalePurchaseOverlay({ open, onClose, mode = "ticket",
                       ))}
                     </ol>
                   </div>
+
+                  {/* Proof of payment upload — clearly labelled */}
+                  <div className="rounded-2xl border border-dashed border-primary/40 bg-primary/[0.04] p-4">
+                    <p className="flex items-center gap-2 text-sm font-semibold"><UploadCloud className="h-4 w-4 text-primary" /> Upload your proof of payment</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Attach a screenshot of your completed PayNow transfer. This is how we confirm your payment and activate your e-ticket.</p>
+                    <div className="mt-3 flex flex-wrap items-center gap-3">
+                      <Button asChild size="sm" variant="outline">
+                        <label className="cursor-pointer">
+                          <UploadCloud className="h-3.5 w-3.5" /> {proofFile ? "Change screenshot" : "Choose screenshot"}
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => setProofFile(e.target.files?.[0] || null)} />
+                        </label>
+                      </Button>
+                      {proofFile
+                        ? <span className="inline-flex items-center gap-1.5 text-xs text-emerald-300"><Check className="h-3.5 w-3.5" /> {proofFile.name}</span>
+                        : <span className="text-xs text-amber-300">Required — proof of payment screenshot</span>}
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -256,7 +290,7 @@ export default function PresalePurchaseOverlay({ open, onClose, mode = "ticket",
         {!done && (
           <footer className="flex items-center justify-between gap-2 border-t border-white/10 p-4">
             <Button variant="ghost" onClick={onClose}><ArrowLeft className="h-4 w-4" /> Cancel</Button>
-            <Button onClick={submit} disabled={submitting || !emailValid} className="bg-primary text-primary-foreground">
+            <Button onClick={submit} disabled={submitting || !emailValid || (isTicket && !proofFile)} className="bg-primary text-primary-foreground">
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : isTicket ? <Ticket className="h-4 w-4" /> : <Rocket className="h-4 w-4" />}
               {isTicket ? `I've paid — confirm order` : "Start free trial"}
             </Button>

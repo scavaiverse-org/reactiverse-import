@@ -25,6 +25,7 @@ const entityTableMap = {
   TenantPresetData: 'tenant_preset_data',
   Ticket: 'tickets',
   Vendor: 'vendors',
+  PaymentProof: 'payment_proofs',
 
   // Added in 0005_missing_entities.sql
   AIGuideConfig: 'ai_guide_configs',

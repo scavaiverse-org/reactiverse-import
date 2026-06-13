@@ -937,11 +937,12 @@ export default function ThreeDWorldRoom({ room, context = {} }) {
             <List className="h-4 w-4" /> Text View
           </Button>
         )}
-        {isGroundMode && (
-          <Button size="sm" variant="outline" className="bg-background/70 backdrop-blur-xl" onClick={() => setAvatarOverlayOpen(true)}>
-            <UserCircle2 className="h-4 w-4" /> Avatar
-          </Button>
-        )}
+        {/* Always reachable — visitors can create/edit their platform-wide
+            avatar from inside any 3D world, even tour/fixed-view modes where
+            there's no walking avatar rig. */}
+        <Button size="sm" variant="outline" className="bg-background/70 backdrop-blur-xl" onClick={() => setAvatarOverlayOpen(true)}>
+          <UserCircle2 className="h-4 w-4" /> {avatarProfile.hasAvatar ? "Avatar" : "Create avatar"}
+        </Button>
       </div>
 
       {sensoryWarningVisible && accessibility.sensoryWarning && (

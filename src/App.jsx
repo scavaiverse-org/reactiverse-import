@@ -84,6 +84,7 @@ import PlatformPages from './pages/admin/PlatformPages';
 import Music from './pages/admin/Music';
 import OnboardingSong from './pages/admin/OnboardingSong';
 import QASentinel from './pages/admin/QASentinel';
+import UENProofs from './pages/admin/UENProofs';
 import TenantMusic from './pages/tenant-admin/TenantMusic.jsx';
 import TenantHomeEditor from './pages/tenant-admin/TenantHomeEditor.jsx';
 import PlatformOverview from './pages/PlatformOverview';
@@ -315,6 +316,7 @@ const AuthenticatedApp = () => {
         <Route path="content/:contentKey" element={<ContentSubPage />} />
         <Route path="infrastructure" element={<Infrastructure />} />
         <Route path="qa-sentinel" element={<QASentinel />} />
+        <Route path="uen" element={<UENProofs />} />
         <Route path="testers-feedback" element={<TestersFeedback />} />
         <Route path="public-content" element={<PublicContent />} />
         <Route path="media" element={<Navigate to="public-content" replace />} />

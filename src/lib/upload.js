@@ -29,6 +29,30 @@ export async function uploadAvatarMedia(file, ownerKey) {
   return { file_url: publicUrl, path: data.path };
 }
 
+// Pre-sale payment proof screenshots go to the PRIVATE payment-proofs bucket,
+// which any visitor (authenticated or anonymous) may write to under the
+// proofs/ prefix, but only admins can read (via signed URLs). Returns the
+// object path — there is no public URL for a private bucket.
+export async function uploadPaymentProof(file) {
+  if (!file) throw new Error('No file provided');
+  const ext = file.name ? file.name.split('.').pop() : 'png';
+  const path = `proofs/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const { data, error } = await supabase.storage
+    .from('payment-proofs')
+    .upload(path, file, { upsert: false, contentType: file.type || 'image/png' });
+  if (error) throw new Error(`Upload failed: ${error.message}`);
+  return { path: data.path };
+}
+
+// Creates a short-lived signed URL for a private payment-proof screenshot.
+// Only succeeds for admins (per the storage RLS). Returns null on failure.
+export async function getPaymentProofSignedUrl(path, expiresInSeconds = 3600) {
+  if (!path) return null;
+  const { data, error } = await supabase.storage.from('payment-proofs').createSignedUrl(path, expiresInSeconds);
+  if (error) return null;
+  return data?.signedUrl || null;
+}
+
 // Best-effort deletion of an avatar cutout image from storage. Used by the
 // "delete avatar" flow; failures are swallowed since the DB row deletion is
 // the authoritative action.
