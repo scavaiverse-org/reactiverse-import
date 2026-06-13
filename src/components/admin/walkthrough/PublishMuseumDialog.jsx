@@ -84,6 +84,10 @@ export default function PublishMuseumDialog({ tenant, museumId }) {
         publishedBy: me?.email || me?.id || "admin",
         publishedAt: manifest.published_at,
       });
+      // Notify confirmed pre-bookers that the museum is now live. Idempotent on
+      // the server (only un-notified tickets) and fire-and-forget so it never
+      // blocks or fails the publish itself.
+      base44.functions.invoke("notify-launch", { tenant_id: tenant.id }).catch(() => {});
       return created;
     },
     onSuccess: () => {

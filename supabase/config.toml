@@ -65,3 +65,8 @@ verify_jwt = false
 # must be off (signature is verified inside the function via STRIPE_WEBHOOK_SECRET).
 [functions.stripe-webhook]
 verify_jwt = false
+
+# Admin-only: emails confirmed pre-bookers when a museum is published. Requires a
+# logged-in admin JWT (the function also re-checks the caller's role).
+[functions.notify-launch]
+verify_jwt = true
