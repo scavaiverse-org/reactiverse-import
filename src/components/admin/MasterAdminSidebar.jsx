@@ -1,4 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, Users, Layers, Package, Server, Database,
   Activity, Building2, Palette, BarChart3, Rocket,
@@ -93,8 +95,23 @@ const NAV = [
   }
 ];
 
+const UEN_PATH = "/platform/admin/uen";
+
 export default function MasterAdminSidebar() {
   const { pathname } = useLocation();
+
+  // Live count of payment proofs awaiting review — surfaces as a badge on the
+  // UEN nav item so admins notice new pre-sale submissions. Refetches on focus
+  // and every minute.
+  const { data: pendingProofs = 0 } = useQuery({
+    queryKey: ["uen-pending-count"],
+    queryFn: async () => {
+      const rows = await base44.entities.PaymentProof.filter({ status: "pending" }, "-created_at", 200);
+      return rows.length;
+    },
+    initialData: 0,
+    refetchInterval: 60000,
+  });
 
   return (
     <aside className="w-64 min-h-screen bg-[#070d1a] border-r border-white/5 flex flex-col flex-shrink-0">
@@ -132,7 +149,10 @@ export default function MasterAdminSidebar() {
                 >
                   <Icon className="w-3.5 h-3.5 flex-shrink-0" />
                   <span className="truncate">{item.label}</span>
-                  {active && <ChevronRight className="w-3 h-3 ml-auto text-primary/60" />}
+                  {item.path === UEN_PATH && pendingProofs > 0 && (
+                    <span className="ml-auto flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500/90 px-1 text-[9px] font-bold text-black">{pendingProofs}</span>
+                  )}
+                  {active && !(item.path === UEN_PATH && pendingProofs > 0) && <ChevronRight className="w-3 h-3 ml-auto text-primary/60" />}
                 </Link>
               );
             })}
