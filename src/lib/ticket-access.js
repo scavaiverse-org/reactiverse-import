@@ -1,9 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/AuthContext";
 import { canAccessMuseum } from "@/lib/access-control";
 import { isMasterUser } from "@/lib/rbac";
-import { legacyTenantFilter } from "@/lib/tenant-query";
 
 // Statuses that unlock tour access — mirrors the Confirmation stage in
 // TenantTicketJourney.jsx ("paid"/"confirmed" unlock Begin Tour).
@@ -38,14 +37,20 @@ export function useTourAccess(tenant) {
 
   const { data: tickets = [], isLoading } = useQuery({
     queryKey: ["tour-access-ticket", tenant?.id, reservation.id],
-    // Scope the lookup to this tenant so a reservation id from another
-    // museum (stale or forged localStorage) can never unlock this tour.
-    queryFn: () => base44.entities.Ticket.filter(legacyTenantFilter(tenant.id, { id: reservation.id })),
+    // Anonymous visitors can't read tickets directly under RLS, so resolve the
+    // reservation via the reservation_status RPC (status only, no PII).
+    queryFn: async () => {
+      const { data } = await supabase.rpc("reservation_status", { p_id: reservation.id });
+      return data || [];
+    },
     enabled: !!tenant?.id && !!reservation.id && !staffBypass,
     initialData: [],
   });
 
-  const ticket = tickets[0];
+  // Scope to this tenant so a reservation id from another museum (stale or
+  // forged localStorage) can never unlock this tour.
+  const row = tickets[0];
+  const ticket = row && String(row.tenant_id) === String(tenant?.id) ? row : null;
   const hasPaidTicket = !!ticket && isPaidTicketStatus(ticket.status);
   const checking = !staffBypass && !!reservation.id && isLoading;
 
