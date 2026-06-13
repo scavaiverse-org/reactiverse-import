@@ -12,9 +12,12 @@ import { isMasterUser, getUserTenantIds } from "@/lib/rbac";
  * which means any future tenant's half-built museum would be publicly
  * visible. Visitors now get a neutral "not open yet" screen until the
  * museum is published; master admins and the museum's own team bypass the
- * gate so they can keep building.
+ * gate so they can keep building. Presale pages (tickets / about) pass
+ * `allow` so they stay reachable before publish — tickets are sold ahead of
+ * launch, and the tour itself remains protected by its own routes +
+ * useTourAccess (paid-ticket check), so opening these doors leaks nothing.
  */
-export default function MuseumOpenGate({ children }) {
+export default function MuseumOpenGate({ children, allow = false }) {
   const { tenant, isLoading } = useActiveTenant();
   const { user, isLoadingAuth } = useAuth();
 
@@ -31,7 +34,7 @@ export default function MuseumOpenGate({ children }) {
 
   const isOpen = !!tenant.published_manifest_id;
   const isTeam = isMasterUser(user) || getUserTenantIds(user).includes(tenant.id);
-  if (isOpen || isTeam) return children;
+  if (allow || isOpen || isTeam) return children;
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4 text-foreground">

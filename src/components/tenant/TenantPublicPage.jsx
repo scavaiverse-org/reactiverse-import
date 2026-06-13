@@ -173,10 +173,13 @@ function FeaturedExhibits({ slug, exhibits }) {
 }
 
 // Gate first: unpublished museums show "not open yet" to outside visitors
-// (master admins and the museum's own team pass through).
+// (master admins and the museum's own team pass through). Tickets + about are
+// presale pages — they stay reachable before publish so visitors can buy
+// ahead of launch and read what they're buying; home/tour stay gated.
 export default function TenantPublicPage(props) {
+  const presale = props.pageType === "about" || props.pageType === "tickets";
   return (
-    <MuseumOpenGate>
+    <MuseumOpenGate allow={presale}>
       <TenantPublicPageInner {...props} />
     </MuseumOpenGate>
   );
