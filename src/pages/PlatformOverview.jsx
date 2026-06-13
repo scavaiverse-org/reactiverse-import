@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import OverviewHero from "@/components/platform/overview/OverviewHero";
+import PreBookingFeature from "@/components/platform/overview/PreBookingFeature";
 import { resolvePlatformOverviewContent } from "@/lib/platform-overview-content";
 
 export default function PlatformOverview() {
@@ -15,6 +16,7 @@ export default function PlatformOverview() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <OverviewHero content={content} />
+      <PreBookingFeature />
     </main>
   );
 }

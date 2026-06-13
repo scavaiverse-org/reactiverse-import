@@ -17,7 +17,7 @@ const CANONICAL_BADGES = [
     title: "Consumer Platform",
     description: "Discover immersive museums and experiences — and pre-book the launch of the Asian Operatic Museum.",
     label: "Enter Consumer Platform",
-    route: "/discover",
+    route: "/platform/overview",
     visibility: true,
     sortOrder: 1,
   },
