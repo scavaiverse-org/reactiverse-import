@@ -36,7 +36,7 @@ export default function Walkthrough() {
     initialData: null,
   });
 
-  const { hasAccess, checking: checkingAccess } = useTourAccess(tenant);
+  const { hasAccess, checking: checkingAccess, staffBypass } = useTourAccess(tenant);
 
   const walkthrough = getWalkthroughByIndex(manifest, walkthroughIndex);
   const rooms = useMemo(() => (walkthrough?.rooms || []).map((room) => ensureMediaTypes(room)), [walkthrough]);
@@ -67,6 +67,19 @@ export default function Walkthrough() {
   }
 
   if (!manifest || !walkthrough || !rooms.length) {
+    // A paying visitor with a confirmed ticket shouldn't hit a bare "not
+    // published" wall before launch — reassure them their pre-booking is safe.
+    // Staff previewing (staffBypass) still get the plain unpublished notice.
+    if (!staffBypass) {
+      return (
+        <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-4 text-center text-muted-foreground">
+          <p className="text-4xl">🎉</p>
+          <p className="text-xl font-semibold text-foreground">You&apos;re confirmed — your spot is reserved.</p>
+          <p className="max-w-md text-sm leading-6">{tenant?.name || "The museum"} is putting the finishing touches on the experience. It isn&apos;t open just yet — but your ticket is locked in, and we&apos;ll email you the moment it goes live.</p>
+          <Button variant="outline" onClick={() => navigate(museumPath(tenantSlug, "home"))}>Back to Museum Home</Button>
+        </div>
+      );
+    }
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-4 text-center text-muted-foreground">
         <p className="text-lg font-medium text-foreground">This experience has not been published yet.</p>
