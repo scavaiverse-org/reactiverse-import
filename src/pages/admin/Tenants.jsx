@@ -222,14 +222,30 @@ export default function Tenants() {
               </div>
             )}
 
-            {/* Module Pills */}
+            {/* Module Pills — click to enable/disable per museum (writes enabled_modules) */}
             <div className="flex flex-wrap gap-1 mb-3">
               {MODULES_ALL.map(m => {
                 const en = t.enabled_modules?.includes(m);
+                const label = m.replace(/_/g, " ");
+                const toggleModule = () => {
+                  // Disabling hides a module's public routes immediately, so confirm first.
+                  if (en && !window.confirm(`Disable "${label}" for ${t.name}? Its public pages stop working right away.`)) return;
+                  const next = en
+                    ? (t.enabled_modules || []).filter(x => x !== m)
+                    : [...(t.enabled_modules || []), m];
+                  updateMutation.mutate({ id: t.id, data: { enabled_modules: next } });
+                };
                 return (
-                  <span key={m} className={`text-[9px] px-2 py-0.5 rounded-full border font-medium capitalize ${en ? "text-emerald-400 border-emerald-400/30 bg-emerald-400/5" : "text-slate-600 border-slate-600/20"}`}>
-                    {m.replace(/_/g, " ")}
-                  </span>
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={toggleModule}
+                    disabled={updateMutation.isPending}
+                    title={en ? `Enabled — click to disable for ${t.name}` : `Disabled — click to enable for ${t.name}`}
+                    className={`text-[9px] px-2 py-0.5 rounded-full border font-medium capitalize transition-colors disabled:opacity-50 ${en ? "text-emerald-400 border-emerald-400/30 bg-emerald-400/5 hover:bg-emerald-400/10" : "text-slate-500 border-slate-600/20 hover:border-slate-400/40 hover:text-slate-300"}`}
+                  >
+                    {label}
+                  </button>
                 );
               })}
             </div>
