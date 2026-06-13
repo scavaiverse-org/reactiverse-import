@@ -19,6 +19,14 @@ export async function listPublishedMuseums() {
   return results.filter((entry) => !!entry.manifest);
 }
 
+// Museums currently in pre-sale: live tenants whose experience isn't published
+// yet. A tenant "enters pre-sale" by being set live before publishing, and
+// leaves it automatically once published (then it shows in listPublishedMuseums).
+export async function listPresaleMuseums() {
+  const tenants = await base44.entities.MuseumTenant.filter({ status: "live" }, "name", 100);
+  return (tenants || []).filter((tenant) => !tenant.published_manifest_id);
+}
+
 export function getWalkthroughByIndex(manifest, index = 1) {
   if (!manifest?.walkthroughs?.length) return null;
   return manifest.walkthroughs[index - 1] || null;
