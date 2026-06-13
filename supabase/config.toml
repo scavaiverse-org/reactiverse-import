@@ -60,3 +60,8 @@ verify_jwt = true
 # Public: called fire-and-forget by the anonymous tenant/vendor forms.
 [functions.notify-inquiry]
 verify_jwt = false
+
+# Public: Stripe posts webhook events with no Supabase JWT, so JWT verification
+# must be off (signature is verified inside the function via STRIPE_WEBHOOK_SECRET).
+[functions.stripe-webhook]
+verify_jwt = false
