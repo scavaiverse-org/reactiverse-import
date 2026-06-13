@@ -262,29 +262,31 @@ export default function Tenants() {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-2">
+            <div className="space-y-2">
               <select
                 value={t.status}
                 onChange={e => updateMutation.mutate({ id: t.id, data: { status: e.target.value } })}
-                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary/40"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary/40"
               >
                 <option value="draft">Draft</option>
                 <option value="staging">Staging</option>
                 <option value="live">Live</option>
                 <option value="archived">Archived</option>
               </select>
-              <Link to={`/museum/${t.slug}/admin`} className="px-3 py-1.5 border border-primary/25 rounded-lg text-xs text-primary hover:text-primary/80 transition-colors flex items-center gap-1">
-                <LayoutDashboard className="w-3 h-3" />Open Tenant Console
-              </Link>
-              <Link to="/platform/admin/white-label" className="px-3 py-1.5 border border-white/10 rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-                <Palette className="w-3 h-3" />Brand
-              </Link>
-              <Link to={`/museum/${t.slug}/home`} className="px-3 py-1.5 border border-white/10 rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-                <Eye className="w-3 h-3" />View
-              </Link>
-              <button onClick={() => setTenantToDelete(t)} className="px-3 py-1.5 border border-destructive/25 rounded-lg text-xs text-destructive hover:bg-destructive/10 transition-colors flex items-center gap-1">
-                <Trash2 className="w-3 h-3" />Delete
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <Link to={`/museum/${t.slug}/admin`} className="px-3 py-1.5 border border-primary/25 rounded-lg text-xs text-primary hover:text-primary/80 transition-colors flex items-center gap-1">
+                  <LayoutDashboard className="w-3 h-3" />Console
+                </Link>
+                <Link to="/platform/admin/white-label" className="px-3 py-1.5 border border-white/10 rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                  <Palette className="w-3 h-3" />Brand
+                </Link>
+                <Link to={`/museum/${t.slug}/home`} className="px-3 py-1.5 border border-white/10 rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                  <Eye className="w-3 h-3" />View
+                </Link>
+                <button onClick={() => setTenantToDelete(t)} className="px-3 py-1.5 border border-destructive/25 rounded-lg text-xs text-destructive hover:bg-destructive/10 transition-colors flex items-center gap-1">
+                  <Trash2 className="w-3 h-3" />Delete
+                </button>
+              </div>
             </div>
           </motion.div>
           );
