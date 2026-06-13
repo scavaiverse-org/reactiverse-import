@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { uploadFile } from "@/lib/upload";
-import { Upload, Wand2 } from "lucide-react";
+import { Box, Sparkles, Upload, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { MAX_AUTOFILL_3D_WORLDS } from "@/lib/three-d-world-autofill";
 import HelpHint from "./HelpHint";
 import PageTypeSelector from "./PageTypeSelector";
 import OnboardingGuideEditor from "./type-editors/OnboardingGuideEditor";
@@ -68,9 +70,11 @@ function SectionHeading({ title, help, className = "" }) {
   );
 }
 
-export default function WalkthroughRoomEditor({ room, onChange, hasError = false, previewSlot = null, rooms = [] }) {
+export default function WalkthroughRoomEditor({ room, onChange, hasError = false, previewSlot = null, rooms = [], onAddThreeDWorlds = null }) {
   const [tab, setTab] = useState("basic");
   const [uploadStates, setUploadStates] = useState({});
+  const [worldsOpen, setWorldsOpen] = useState(false);
+  const [worldCount, setWorldCount] = useState(3);
   if (!room) return null;
 
   const setRoom = (nextRoom) => onChange(ensureMediaTypes(ensureTypeConfigs(nextRoom)));
@@ -122,6 +126,11 @@ export default function WalkthroughRoomEditor({ room, onChange, hasError = false
     });
   };
 
+  const confirmWorlds = () => {
+    onAddThreeDWorlds?.(worldCount);
+    setWorldsOpen(false);
+  };
+
   return (
     <div className={`overflow-hidden rounded-3xl border bg-white/[0.035] shadow-2xl shadow-black/10 ${hasError ? "animate-error-glow border-destructive" : "border-white/10"}`}>
       <div className="flex flex-col gap-4 border-b border-white/10 bg-gradient-to-r from-primary/10 to-transparent p-5 lg:flex-row lg:items-start lg:justify-between">
@@ -156,8 +165,45 @@ export default function WalkthroughRoomEditor({ room, onChange, hasError = false
               (template, mood, layout, objects, and exits). Just click Publish after.
             </HelpHint>
           </div>
+          {onAddThreeDWorlds && (
+            <div className="flex items-center gap-1.5">
+              <Button size="sm" variant="outline" className="w-full" onClick={() => setWorldsOpen(true)}>
+                <Sparkles className="h-4 w-4" /> Autofill 3D Worlds…
+              </Button>
+              <HelpHint title="Autofill 3D Worlds">
+                Create several ready-built 3D world rooms at once (up to {MAX_AUTOFILL_3D_WORLDS}). You choose how many;
+                each is added to the walkthrough as its own draft 3D world, with its own template, mood, objects,
+                NPC guide, and exits. The editor jumps to the first new world so you can preview it right away.
+              </HelpHint>
+            </div>
+          )}
         </div>
       </div>
+
+      <Dialog open={worldsOpen} onOpenChange={setWorldsOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>How many 3D worlds?</DialogTitle>
+            <DialogDescription>Choose how many ready-built 3D world rooms to add to this walkthrough. You can create up to {MAX_AUTOFILL_3D_WORLDS} at once — each is added as a draft.</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-4 gap-2 py-2">
+            {Array.from({ length: MAX_AUTOFILL_3D_WORLDS }, (_, i) => i + 1).map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setWorldCount(n)}
+                className={`rounded-xl border px-3 py-3 text-sm font-bold transition ${worldCount === n ? "border-primary bg-primary text-primary-foreground" : "border-white/10 bg-background/40 text-muted-foreground hover:bg-white/5 hover:text-foreground"}`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setWorldsOpen(false)}>Cancel</Button>
+            <Button onClick={confirmWorlds}><Box className="h-4 w-4" /> Create {worldCount} 3D world{worldCount > 1 ? "s" : ""}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {previewSlot && <div className="px-5 pt-5">{previewSlot}</div>}
 
