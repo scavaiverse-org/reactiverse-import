@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { AlertTriangle, ArrowLeft, ArrowRight, Bot, Building2, CalendarDays, CheckCircle2, Crown, MapPin, Monitor, Package, School, ShieldCheck, ShoppingBag, Sparkles, Store, Ticket, Users } from "lucide-react";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -12,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { museumPath } from "@/lib/domain-registry";
-import { assertTenantId, legacyTenantFilter } from "@/lib/tenant-query";
+import { assertTenantId } from "@/lib/tenant-query";
 import { checkSubmitAllowed, honeypotInputProps, isHoneypotTripped, recordSubmit } from "@/lib/form-protection";
 
 const fallbackTickets = [
@@ -266,10 +267,15 @@ export function TicketGateway() {
       commerce_interest: false,
       ai_help_used: false,
     };
+    // Plain insert (no read-back): ticket reads are admin/owner-only under RLS,
+    // so the entity wrapper's insert().select() fails for anonymous visitors.
+    // The id is generated client-side so we can carry it into checkout.
+    const reservationId = crypto.randomUUID();
     try {
-      const created = await base44.entities.Ticket.create(payload);
+      const { error: insertError } = await supabase.from("tickets").insert({ ...payload, id: reservationId });
+      if (insertError) throw insertError;
       recordSubmit("ticket_reservation");
-      saveJourney(tenantId, { reservation: { ...payload, id: created?.id, ticket_label: selected.label } });
+      saveJourney(tenantId, { reservation: { ...payload, id: reservationId, ticket_label: selected.label } });
       base44.entities.AnalyticsEvent.create({ tenant_id: tenantId, tenant_name: tenant?.name, event_type: "ticket_reservation_created", source_page: "tickets", event_data: { ticket_type: selected.id, quantity: payload.quantity, source_step: "tickets" } }).catch(() => {});
       navigate(museumPath(slug, "tickets-5"));
     } catch (error) {
@@ -420,7 +426,11 @@ export function Confirmation() {
   const paymentCancelled = paymentParam === "cancelled";
   const { data: latestReservations = [] } = useQuery({
     queryKey: ["ticket-confirmation-reservation", tenant?.id, savedReservation.id],
-    queryFn: () => savedReservation.id ? base44.entities.Ticket.filter(legacyTenantFilter(tenant.id, { id: savedReservation.id })) : Promise.resolve([]),
+    queryFn: async () => {
+      if (!savedReservation.id) return [];
+      const { data } = await supabase.rpc("reservation_status", { p_id: savedReservation.id });
+      return (data || []).filter((row) => String(row.tenant_id) === String(tenant?.id));
+    },
     enabled: !!tenant?.id && !!savedReservation.id,
     initialData: [],
     // After returning from Stripe, poll briefly until the webhook flips status to paid.
