@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { ArrowDown, ArrowUp, Box, CheckCircle2, ChevronDown, Copy, DoorOpen, Eye, Plus, Sparkles, Trash2, Upload, Wand2 } from "lucide-react";
+import { ArrowDown, ArrowUp, BookOpen, Box, CheckCircle2, ChevronDown, Copy, DoorOpen, Eye, Plus, Sparkles, Trash2, Upload, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import HelpHint from "../HelpHint";
 import SpritePhotoshopPanel from "../SpritePhotoshopPanel";
+import ThreeDWorldSuperguide from "./ThreeDWorldSuperguide";
 import { uploadFile } from "@/lib/upload";
 import { THREE_D_WORLD_EDITOR_SEED, getMoodPreset, getObjectType, getWorldTemplate } from "@/lib/three-d-world-seed";
 import {
@@ -133,19 +134,25 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
   const [newObjectType, setNewObjectType] = useState("image_frame");
   const [transformClipboard, setTransformClipboard] = useState(null);
   const [spriteUploads, setSpriteUploads] = useState({});
+  const [superguideOpen, setSuperguideOpen] = useState(false);
+  const useExample = (exampleConfig) => onChange({ ...room, threeDWorldConfig: exampleConfig });
 
-  // First visit for this room: offer a clean start or the seeded sample.
+  // First visit for this room: offer a clean start, the seeded sample, or the Superguide.
   if (!config) {
     return (
-      <section className="space-y-4 rounded-2xl border border-primary/20 bg-primary/5 p-6 text-center">
-        <Box className="mx-auto h-10 w-10 text-primary" />
-        <h3 className="font-display text-2xl font-bold">{SEED.editorName}</h3>
-        <p className="mx-auto max-w-xl text-sm text-muted-foreground">{SEED.editorDescription}</p>
-        <div className="flex flex-wrap justify-center gap-3">
-          <Button onClick={() => onChange({ ...room, threeDWorldConfig: createThreeDWorldConfig() })}><Wand2 className="h-4 w-4" /> Start Building</Button>
-          <Button variant="outline" onClick={() => onChange({ ...room, threeDWorldConfig: buildSampleWorldConfig() })}><Sparkles className="h-4 w-4" /> Load Sample World (AOM Heritage Portal)</Button>
-        </div>
-      </section>
+      <>
+        <section className="space-y-4 rounded-2xl border border-primary/20 bg-primary/5 p-6 text-center">
+          <Box className="mx-auto h-10 w-10 text-primary" />
+          <h3 className="font-display text-2xl font-bold">{SEED.editorName}</h3>
+          <p className="mx-auto max-w-xl text-sm text-muted-foreground">{SEED.editorDescription}</p>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Button onClick={() => onChange({ ...room, threeDWorldConfig: createThreeDWorldConfig() })}><Wand2 className="h-4 w-4" /> Start Building</Button>
+            <Button variant="outline" onClick={() => onChange({ ...room, threeDWorldConfig: buildSampleWorldConfig() })}><Sparkles className="h-4 w-4" /> Load Sample World (AOM Heritage Portal)</Button>
+            <Button variant="outline" onClick={() => setSuperguideOpen(true)}><BookOpen className="h-4 w-4" /> Open Superguide</Button>
+          </div>
+        </section>
+        <ThreeDWorldSuperguide open={superguideOpen} onClose={() => setSuperguideOpen(false)} onUseExample={useExample} />
+      </>
     );
   }
 
@@ -261,6 +268,7 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
           <span className={`rounded-full px-2.5 py-1 font-semibold ${config.publishStatus === "published" ? "bg-emerald-500/15 text-emerald-300" : "bg-amber-500/15 text-amber-300"}`}>{config.publishStatus === "published" ? "World published" : "World draft"}</span>
           <span className="rounded-full bg-background/50 px-2.5 py-1 text-muted-foreground">{objects.length} objects</span>
           {requiredWarnings.length > 0 && <span className="rounded-full bg-rose-500/15 px-2.5 py-1 text-rose-300">{requiredWarnings.length} blocking</span>}
+          <Button size="sm" variant="outline" onClick={() => setSuperguideOpen(true)}><BookOpen className="h-3.5 w-3.5" /> Superguide</Button>
         </div>
       </div>
 
@@ -738,6 +746,8 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
           </div>
         )}
       </Section>
+
+      <ThreeDWorldSuperguide open={superguideOpen} onClose={() => setSuperguideOpen(false)} onUseExample={useExample} />
     </section>
   );
 }
