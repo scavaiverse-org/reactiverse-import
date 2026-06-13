@@ -20,7 +20,7 @@ export default function PreBookingFeature() {
               Our flagship launch — a cinematic journey through the living art of Asian opera. Reserve your pre-sale ticket now and be among the first inside when the doors open.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <Link to={museumPath(DEFAULT_MUSEUM_SLUG, "home")}>
+              <Link to={museumPath(DEFAULT_MUSEUM_SLUG, "tickets")}>
                 <Button size="lg" className="bg-primary text-primary-foreground">
                   <Ticket className="h-4 w-4" /> Reserve Pre-Sale Tickets <ArrowRight className="h-4 w-4" />
                 </Button>
