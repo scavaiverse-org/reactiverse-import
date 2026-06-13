@@ -35,7 +35,7 @@ const knowledgeBase = {
   "tell me about the walkthrough": "Our Virtual Walkthrough takes you through immersive stations with cinematic imagery, guided narration, and interactive hotspots.",
   "how can vendors join": "Vendors can register through our Vendor Ecosystem page. We offer Standard, Premium, Featured, and Anchor Sponsor tiers with marketplace placement, AI-powered recommendations, and revenue analytics.",
   "what is chinese opera": "Chinese opera is one of the world's oldest theatrical traditions, dating back over 2,000 years. It combines music, vocal performance, mime, dance, and acrobatics. Key regional styles include Peking Opera, Cantonese Opera, Hokkien Opera, and Teochew Opera.",
-  "what makes scava unique": "SCAVAI is a cultural technology platform combining AI-guided onboarding, virtual walkthroughs, experiential commerce, vendor ecosystems, and white-label regional deployment capabilities.",
+  "what makes scaverse unique": "SCAVerse is a cultural technology platform combining AI-guided onboarding, virtual walkthroughs, experiential commerce, vendor ecosystems, and white-label regional deployment capabilities.",
 };
 
 const PROMPT_ICONS = { Ticket, ShoppingBag, Store, MapPin, BookOpen, Landmark, Bot, Sparkles };
@@ -367,7 +367,7 @@ export default function AIGuide() {
             </div>
           </div>
           <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px]">
-            <Sparkles className="w-2.5 h-2.5 mr-1" /> SCAVAI
+            <Sparkles className="w-2.5 h-2.5 mr-1" /> SCAVerse
           </Badge>
         </div>
       </div>

@@ -8,7 +8,7 @@ export default function ModuleGate({ moduleKey, children }) {
   const { tenant, isLoading, isModuleEnabled } = useActiveTenant();
   const tenantSlug = tenant?.slug || DEFAULT_MUSEUM_SLUG;
 
-  if (isLoading) {
+  if (isLoading && !tenant) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4 bg-background">
         <div className="text-center">

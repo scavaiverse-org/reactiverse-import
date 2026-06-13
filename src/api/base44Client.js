@@ -79,7 +79,7 @@ const entityTableMap = {
   // edge functions, and the tour gate (NOT the legacy user_profiles table).
   Profile: 'profiles',
 
-  // Added in 0013_avatar_creator.sql
+  // Added in 0018_avatar_creator.sql
   Avatar: 'avatars',
 };
 

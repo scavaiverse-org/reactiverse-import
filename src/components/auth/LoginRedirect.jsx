@@ -2,11 +2,11 @@ import { useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { LogIn, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { fetchAuthProfile, resolvePostLoginDestination, shouldPromptFranchiseIntent } from "@/lib/post-login";
+import { fetchAuthProfile, resolvePostLoginDestination } from "@/lib/post-login";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import FranchiseIntentModal from "@/components/auth/FranchiseIntentModal";
+import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
 
 export default function LoginRedirect() {
   const navigate = useNavigate();
@@ -18,7 +18,6 @@ export default function LoginRedirect() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [showFranchisePrompt, setShowFranchisePrompt] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -46,11 +45,6 @@ export default function LoginRedirect() {
 
     setLoading(false);
 
-    if (shouldPromptFranchiseIntent(profile)) {
-      setShowFranchisePrompt(true);
-      return;
-    }
-
     const destination = await resolvePostLoginDestination(profile).catch(() => "/");
     navigate(destination, { replace: true });
   };
@@ -62,6 +56,14 @@ export default function LoginRedirect() {
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-primary">SCAVerse</p>
           <h1 className="mt-3 font-display text-2xl font-bold text-foreground">Sign in to your account</h1>
           <p className="mt-2 text-sm text-muted-foreground">Enter your credentials to continue.</p>
+        </div>
+
+        <GoogleAuthButton redirect={redirectParam} />
+
+        <div className="my-5 flex items-center gap-3">
+          <span className="h-px flex-1 bg-border/60" />
+          <span className="text-xs uppercase tracking-wider text-muted-foreground">or sign in with email</span>
+          <span className="h-px flex-1 bg-border/60" />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -134,12 +136,6 @@ export default function LoginRedirect() {
           </Link>
         </p>
       </div>
-
-      <FranchiseIntentModal
-        open={showFranchisePrompt}
-        onApply={() => navigate("/become-a-tenant", { replace: true })}
-        onSkip={() => navigate("/", { replace: true })}
-      />
     </main>
   );
 }

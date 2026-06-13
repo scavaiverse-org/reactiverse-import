@@ -6,13 +6,13 @@ function useReducedMotion() {
 
   useEffect(() => {
     const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReduced(query.matches || document.documentElement.classList.contains("scavai-reduced-motion"));
-    const onChange = () => setReduced(query.matches || document.documentElement.classList.contains("scavai-reduced-motion"));
+    setReduced(query.matches || document.documentElement.classList.contains("scaverse-reduced-motion"));
+    const onChange = () => setReduced(query.matches || document.documentElement.classList.contains("scaverse-reduced-motion"));
     query.addEventListener("change", onChange);
-    window.addEventListener("scavai-accessibility-change", onChange);
+    window.addEventListener("scaverse-accessibility-change", onChange);
     return () => {
       query.removeEventListener("change", onChange);
-      window.removeEventListener("scavai-accessibility-change", onChange);
+      window.removeEventListener("scaverse-accessibility-change", onChange);
     };
   }, []);
 

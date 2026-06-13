@@ -7,7 +7,7 @@ const VISITOR_ID_KEY = "scaverse_avatar_visitor_id_v1";
 
 // A random, unguessable id used to own an avatar row when the visitor isn't
 // logged in. Stored in localStorage and acts as a capability token (see RLS
-// policies in 0013_avatar_creator.sql).
+// policies in 0018_avatar_creator.sql).
 export function getOrCreateVisitorId() {
   if (typeof window === "undefined" || !window.localStorage) return null;
   let id = window.localStorage.getItem(VISITOR_ID_KEY);

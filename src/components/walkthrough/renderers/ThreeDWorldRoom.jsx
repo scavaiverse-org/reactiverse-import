@@ -1,1150 +1,297 @@
-import { useEffect, useRef, useState } from "react";
-import * as THREE from "three";
-import { X, ChevronLeft, ChevronRight, Play, Pause, Trophy, Gift, MessageCircle, ShoppingBag, Compass, Box, List, Music, AlertTriangle, UserCircle2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import { AlignLeft, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, DoorOpen, Gem, HelpCircle, Image as ImageIcon, Film, Lightbulb, Lock, MousePointerClick, Signpost, Sparkles, Star, Store, UserRound, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ResolvedMedia from "@/components/walkthrough/ResolvedMedia";
-import { getThreeDWorldConfig } from "@/lib/three-d-world-validation";
-import { getWorldTemplate, getMoodPreset } from "@/lib/three-d-world-seed";
-import { getSafeMediaUrl, getSafeNavigationUrl } from "@/lib/walkthrough-media-url";
-import {
-  EYE_HEIGHT, titleCase, resolveColor, getRoomDimensions, getSurfaceVisuals, resolveMoodVisuals,
-  buildRoomShell, buildLighting, buildObjectGroup, OBJECT_ICONS, objectLabelText,
-  getSpawnPosition, getStations, clampToRoom, isDoorUnlocked, createCanvasTexture,
-  buildAtmosphere, seedFromString,
-} from "@/lib/three-d-world-render-helpers";
-import { buildAvatarGroup, applyAvatarCutoutTexture, getThirdPersonOffset } from "@/lib/avatar-render-helpers";
-import useAvatarProfile from "@/hooks/useAvatarProfile";
-import useFirstVisit from "@/hooks/useFirstVisit";
-import AvatarCreatorOverlay from "@/components/avatar/AvatarCreatorOverlay";
+import ThreeDWorldCanvas from "@/components/walkthrough/ThreeDWorldCanvas";
+import { getMoodPreset, getWorldTemplate } from "@/lib/three-d-world-seed";
+import { getNavigationObjects, getThreeDWorldConfig } from "@/lib/three-d-world-validation";
 
-const GROUND_MODES = new Set(["free_walk", "click_to_move", "click_to_move_guided"]);
-const TOUR_MODES = new Set(["guided_walkthrough", "auto_walkthrough", "fixed_view_guided"]);
-const MOVE_SPEED = 2.6;
-const STATION_DWELL_SECONDS = 6;
+const TONE_OVERLAYS = {
+  warm_white_gold: "from-amber-200/10 via-transparent to-amber-900/25",
+  sepia_gold: "from-amber-400/15 via-transparent to-orange-950/30",
+  black_blue_gold: "from-slate-900/40 via-transparent to-blue-950/40",
+  blue_purple_cyan: "from-indigo-500/15 via-transparent to-cyan-900/25",
+  bright_multicolor: "from-white/10 via-transparent to-transparent",
+  black_red_gold: "from-red-900/25 via-transparent to-black/45",
+  white_gray: "from-white/5 via-transparent to-transparent",
+};
 
-function isObjectUnlocked(object, collectedIds, collectibles) {
-  if (!object.lockCondition) return true;
-  return isDoorUnlocked({ id: object.id, locked: true, unlockCondition: object.lockCondition }, collectedIds, collectibles);
+const OBJECT_ICONS = {
+  image_frame: ImageIcon,
+  video_wall: Film,
+  audio_point: Volume2,
+  text_panel: AlignLeft,
+  artifact_display: Gem,
+  memory_capsule: Sparkles,
+  product_booth: Store,
+  npc_guide: UserRound,
+  quiz_station: HelpCircle,
+  collectible: Star,
+  floating_button: MousePointerClick,
+  direction_sign: Signpost,
+  light_source: Lightbulb,
+};
+
+const ARROW_ICONS = { forward: ArrowUp, up: ArrowUp, back: ArrowDown, down: ArrowDown, left: ArrowLeft, right: ArrowRight };
+
+const COLLECTIBLE_TYPES = ["collectible", "memory_capsule"];
+
+function normalizeToken(value) {
+  return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
 }
 
-function unlockHint(condition = "") {
-  const hint = String(condition || "").replace(/^visitor_collects_/, "").replace(/_/g, " ").trim();
-  return hint ? `Find ${titleCase(hint)} to unlock this.` : "This is locked for now.";
+function objectDescription(object = {}) {
+  return object.description || object.body || object.story || "";
 }
 
-// Object types that visitors can click for an interaction; everything else
-// (light_source, direction_sign decoration) is purely environmental.
-const INTERACTIVE_TYPES = new Set([
-  "image_frame", "video_wall", "audio_point", "text_panel", "artifact_display", "memory_capsule",
-  "door", "portal", "product_booth", "npc_guide", "quiz_station", "collectible", "floating_button", "direction_sign",
-]);
+// Maps a 3D world object onto the hotspot shape the runner's shared popup
+// understands, so popups stay consistent with every other room type.
+function toHotspot(object = {}) {
+  const media = object.imageUrl || object.thumbnailUrl || object.videoUrl || object.audioUrl || object.mediaUrl || object.iconUrl || "";
+  const mediaType = object.videoUrl ? "video" : object.audioUrl ? "audio" : media ? "image" : "";
+  return {
+    id: object.id,
+    title: object.title || object.name || object.label,
+    description: objectDescription(object) || object.transcript || "",
+    media_url: media,
+    media_type: mediaType,
+    cta_route: object.linkUrl || object.targetUrl || "",
+    cta_label: object.ctaText || "",
+  };
+}
 
-function FallbackWorld({ room }) {
+function QuizStation({ object, track }) {
+  const [answer, setAnswer] = useState(null);
+  const answers = Array.isArray(object.answers) ? object.answers : String(object.answers || "").split("\n").filter(Boolean);
+  if (!object.question || answers.length === 0) {
+    return <p className="mt-2 text-xs text-muted-foreground">This quiz has not been configured yet.</p>;
+  }
+  const correct = answer != null && normalizeToken(answer) === normalizeToken(object.correctAnswer);
   return (
-    <div className="relative flex min-h-screen items-center justify-center px-4 py-24">
-      <div className="max-w-md rounded-2xl border border-white/10 bg-background/70 p-8 text-center backdrop-blur-xl">
-        <Box className="mx-auto h-10 w-10 text-primary" />
-        <h1 className="mt-4 font-display text-2xl font-bold text-foreground">{room?.title || "3D World"}</h1>
-        <p className="mt-3 text-sm leading-7 text-muted-foreground">This 3D World room has not been built yet. Check back soon.</p>
-      </div>
+    <div className="mt-3 space-y-2">
+      <p className="text-sm font-semibold">{object.question}</p>
+      {answers.map((option) => (
+        <button
+          key={option}
+          type="button"
+          onClick={() => { setAnswer(option); track?.("three_d_world_quiz_answered", { object_id: object.id, correct: normalizeToken(option) === normalizeToken(object.correctAnswer) }); }}
+          className={`w-full rounded-lg border px-3 py-2 text-left text-xs transition ${answer === option ? (normalizeToken(option) === normalizeToken(object.correctAnswer) ? "border-emerald-400/50 bg-emerald-400/10 text-emerald-200" : "border-destructive/50 bg-destructive/10 text-destructive") : "border-white/10 bg-background/40 hover:border-primary/40"}`}
+        >
+          {option}
+        </button>
+      ))}
+      {correct && object.reward && <p className="text-xs text-emerald-300">Reward: {object.reward}</p>}
     </div>
   );
 }
 
 export default function ThreeDWorldRoom({ room, context = {} }) {
   const config = getThreeDWorldConfig(room);
-  const mountRef = useRef(null);
-  const [hud, setHud] = useState({
-    score: 0,
-    collectedCount: 0,
-    totalCollectibles: 0,
-    questSteps: [],
-    badges: [],
-    completionReward: "",
-    allCollected: false,
-  });
-  const [panel, setPanel] = useState(null);
-  const [dialogue, setDialogue] = useState(null);
-  const [toast, setToast] = useState(null);
-  const [tour, setTour] = useState({ active: false, index: 0, playing: false, stations: [], label: "" });
-  const [transitioning, setTransitioning] = useState(false);
-  const [joystickActive, setJoystickActive] = useState(false);
-  const [musicMuted, setMusicMuted] = useState(false);
-  const [sensoryWarningVisible, setSensoryWarningVisible] = useState(false);
-  const [view2D, setView2D] = useState(false);
-  const [avatarOverlayOpen, setAvatarOverlayOpen] = useState(false);
-  const engineRef = useRef({});
-  const musicRef = useRef(null);
-  const playerDotRef = useRef(null);
+  const [collected, setCollected] = useState(() => new Set());
+  const [dialogueIndex, setDialogueIndex] = useState(0);
+  const [openQuiz, setOpenQuiz] = useState(null);
 
-  const reduceFx = !!(context.reducedMotion || context.calmMode);
-  const accessibility = config?.accessibility || {};
+  const objects = (config?.objects || []).filter((object) => object.visible !== false);
+  const navObjects = getNavigationObjects({ objects });
+  const contentObjects = objects.filter((object) => !navObjects.includes(object) && object.type !== "light_source" && object.type !== "direction_sign");
+  const signs = objects.filter((object) => object.type === "direction_sign");
+  const lights = objects.filter((object) => object.type === "light_source");
+  const gamification = config?.gamification || {};
+  const npcGuide = config?.npcGuide || {};
+  const template = getWorldTemplate(config?.selectedTemplate);
+  const mood = getMoodPreset(config?.moodPreset);
+  const tone = config?.colorToneOverride || mood?.colorTone || "";
+  const overlay = TONE_OVERLAYS[tone] || "from-white/5 via-transparent to-black/20";
 
-  const avatarProfile = useAvatarProfile();
-  const avatarIntro = useFirstVisit("scaverse_avatar_creator_seen_v1");
-  const avatarConfigKey = avatarProfile.isLoading ? "loading" : JSON.stringify(avatarProfile.config);
-
-  useEffect(() => {
-    if (avatarProfile.isLoading || !avatarIntro.hasChecked) return;
-    if (!avatarProfile.hasAvatar && avatarIntro.isOpen) setAvatarOverlayOpen(true);
-  }, [avatarProfile.isLoading, avatarProfile.hasAvatar, avatarIntro.hasChecked, avatarIntro.isOpen]);
-
-  const closeAvatarOverlay = () => {
-    setAvatarOverlayOpen(false);
-    avatarIntro.closeOnboarding();
-  };
-
-  useEffect(() => {
-    if (!toast) return undefined;
-    const timer = setTimeout(() => setToast(null), 3200);
-    return () => clearTimeout(timer);
-  }, [toast]);
-
-  useEffect(() => {
-    setSensoryWarningVisible(!!config?.accessibility?.sensoryWarning);
-    setView2D(false);
-  }, [room?.id]);
-
-  useEffect(() => {
-    if (!config) return undefined;
-    const mount = mountRef.current;
-    if (!mount) return undefined;
-
-    const dims = getRoomDimensions(config);
-    const surfaces = getSurfaceVisuals(config);
-    const mood = resolveMoodVisuals(config);
-    const template = getWorldTemplate(config.selectedTemplate);
-    const gamification = config.gamification || {};
-    const collectibles = gamification.collectibles || [];
-    const movementMode = config.movementMode || "click_to_move";
-    const isGroundMode = GROUND_MODES.has(movementMode);
-    const isTourMode = TOUR_MODES.has(movementMode);
-    const stations = getStations(config, dims);
-
-    // -- Scene / camera / renderer -----------------------------------------
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(mood.skyColor);
-    if (mood.fogDensity > 0) scene.fog = new THREE.FogExp2(mood.fogColor, mood.fogDensity);
-
-    const camera = new THREE.PerspectiveCamera(60, mount.clientWidth / mount.clientHeight, 0.1, 200);
-    camera.rotation.order = "YXZ";
-    const spawn = getSpawnPosition(config, dims);
-    camera.position.set(spawn.x, spawn.y, spawn.z);
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-    renderer.setSize(mount.clientWidth, mount.clientHeight);
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    mount.appendChild(renderer.domElement);
-
-    const shell = buildRoomShell(dims, surfaces, (config.zones || []).length);
-    scene.add(shell.group);
-    buildLighting(mood, dims).forEach((light) => scene.add(light));
-
-    if (mood.glowIntensity > 0) {
-      const accentGlow = new THREE.PointLight(mood.accentColor, mood.glowIntensity * 2, dims.depth);
-      accentGlow.position.set(0, dims.height * 0.7, -dims.depth * 0.35);
-      scene.add(accentGlow);
-    }
-
-    // Guided path: a soft line connecting tour stations along the floor.
-    if (config.guidedPathEnabled || movementMode === "click_to_move_guided") {
-      const points = stations.map((station) => new THREE.Vector3(station.position.x, 0.03, station.position.z));
-      if (points.length > 1) {
-        const pathGeometry = new THREE.BufferGeometry().setFromPoints(points);
-        const pathLine = new THREE.Line(pathGeometry, new THREE.LineBasicMaterial({ color: mood.accentColor, transparent: true, opacity: 0.5 }));
-        scene.add(pathLine);
-      }
-    }
-
-    // -- Audio listener -------------------------------------------------------
-    const listener = new THREE.AudioListener();
-    camera.add(listener);
-    scene.add(camera);
-    const audioLoader = new THREE.AudioLoader();
-    const positionalSounds = [];
-
-    // Background music — created muted/paused; starts on first visitor interaction per browser autoplay rules.
-    const musicUrl = getSafeMediaUrl(config.backgroundMusicUrl);
-    if (musicUrl) {
-      const music = new Audio(musicUrl);
-      music.loop = true;
-      music.volume = 0.35;
-      music.muted = musicMuted;
-      musicRef.current = music;
-    } else {
-      musicRef.current = null;
-    }
-
-    // -- Object placement ------------------------------------------------------
-    const objectGroups = new Map();
-    const interactiveGroups = [];
-    const animatedEntries = [];
-    const billboardEntries = [];
-    const pulseQueue = [];
-    const textureResources = [];
-    const videoResources = [];
-    const collectedIds = new Set();
-    const quizCorrect = new Set();
-    const shownZones = new Set();
-    let questDialogueShown = false;
-    let zoneDialogueShown = false;
-
-    const isMobile = mount.clientWidth < 768;
-    const rules = config.performanceSettings || {};
-    const templateLimit = template?.recommendedObjectLimit || 80;
-    const objectLimit = isMobile ? Math.min(Number(rules.maxObjectsMobile) || 40, templateLimit) : Math.max(Number(rules.maxObjectsDesktop) || 80, templateLimit);
-
-    // Atmosphere particles — deterministic per-room seed, reduced on mobile, skipped in reduced-motion mode.
-    let atmosphere = null;
-    if (config.atmosphereEffect && config.atmosphereEffect !== "none" && !reduceFx) {
-      atmosphere = buildAtmosphere(config.atmosphereEffect, dims, mood.accentColor, { seed: seedFromString(room.id || "world"), count: isMobile ? 40 : 130 });
-      if (atmosphere) scene.add(atmosphere.points);
-    }
-
-    // -- Player avatar rig -------------------------------------------------------
-    // Only built once the avatar profile has loaded, and only for free-movement
-    // modes (tour/fixed-view modes don't have a walking player).
-    let avatarRig = null;
-    if (isGroundMode && !avatarProfile.isLoading) {
-      const built = buildAvatarGroup(avatarProfile.config);
-      built.group.visible = avatarProfile.config.view_mode === "third_person";
-      scene.add(built.group);
-      built.mediaRequests.forEach((request) => {
-        const safeUrl = getSafeMediaUrl(request.url);
-        if (!safeUrl) return;
-        new THREE.TextureLoader().load(safeUrl, (texture) => {
-          applyAvatarCutoutTexture(request.mesh, texture);
-          textureResources.push(texture);
-        });
-      });
-      avatarRig = { group: built.group, viewMode: avatarProfile.config.view_mode };
-    }
-
-    const placeObject = (object) => {
-      const result = buildObjectGroup(object);
-      if (!result) return null;
-      const { group } = result;
-      const position = object.position || {};
-      const rotation = object.rotation || {};
-      const scale = object.scale || {};
-      group.position.set(Number(position.x) || 0, Number(position.y) || 0, Number(position.z) || 0);
-      group.rotation.set(
-        THREE.MathUtils.degToRad(Number(rotation.x) || 0),
-        THREE.MathUtils.degToRad(Number(rotation.y) || 0),
-        THREE.MathUtils.degToRad(Number(rotation.z) || 0)
-      );
-      group.scale.set(Number(scale.x) || 1, Number(scale.y) || 1, Number(scale.z) || 1);
-      group.userData.baseScale = group.scale.clone();
-      scene.add(group);
-      objectGroups.set(object.id, group);
-      if (result.interactive && INTERACTIVE_TYPES.has(object.type)) interactiveGroups.push(group);
-      result.animated.forEach((entry) => animatedEntries.push({ ...entry, group, baseY: entry.mesh.position.y }));
-      result.billboard.forEach((mesh) => billboardEntries.push({ mesh, group }));
-
-      result.mediaRequests.forEach((request) => {
-        if (request.kind === "image") {
-          const safeUrl = getSafeMediaUrl(request.url);
-          if (!safeUrl) return;
-          new THREE.TextureLoader().load(safeUrl, (texture) => {
-            texture.colorSpace = THREE.SRGBColorSpace;
-            request.mesh.material.map = texture;
-            request.mesh.material.color.set(0xffffff);
-            request.mesh.material.needsUpdate = true;
-            const baseHeight = request.mesh.userData.spriteBaseHeight;
-            if (baseHeight && texture.image?.width && texture.image?.height) {
-              const aspect = texture.image.width / texture.image.height;
-              request.mesh.scale.set(baseHeight * aspect, baseHeight, 1);
-            }
-            textureResources.push(texture);
-          });
-        }
-        if (request.kind === "video") {
-          const safeUrl = getSafeMediaUrl(request.object.videoUrl);
-          if (!safeUrl) return;
-          const video = document.createElement("video");
-          video.crossOrigin = "anonymous";
-          video.src = safeUrl;
-          video.loop = request.object.loop !== false;
-          video.muted = request.object.mute !== false;
-          video.playsInline = true;
-          if (request.object.autoplay !== false) video.play().catch(() => {});
-          const videoTexture = new THREE.VideoTexture(video);
-          videoTexture.colorSpace = THREE.SRGBColorSpace;
-          request.mesh.material.map = videoTexture;
-          request.mesh.material.color.set(0xffffff);
-          request.mesh.material.needsUpdate = true;
-          textureResources.push(videoTexture);
-          videoResources.push(video);
-        }
-      });
-
-      if (object.type === "audio_point" && object.audioUrl) {
-        const safeUrl = getSafeMediaUrl(object.audioUrl);
-        if (safeUrl) {
-          const sound = new THREE.PositionalAudio(listener);
-          sound.setRefDistance(Math.max(1, Number(object.triggerRadius) || 2));
-          sound.setLoop(object.loop !== false);
-          sound.setVolume(0.5);
-          group.add(sound);
-          audioLoader.load(safeUrl, (buffer) => sound.setBuffer(buffer));
-          positionalSounds.push({ sound, group, radius: Math.max(1, Number(object.triggerRadius) || 2) });
-        }
-      }
-
-      return group;
-    };
-
-    const allObjects = (config.objects || []).filter((object) => object.visible !== false);
-    const lockedObjects = [];
-    let placedCount = 0;
-    allObjects.forEach((object) => {
-      if (placedCount >= objectLimit) return;
-      if (!isObjectUnlocked(object, collectedIds, collectibles)) {
-        lockedObjects.push(object);
-        return;
-      }
-      if (placeObject(object)) placedCount += 1;
+  // Tokens earned from collected objects, used to satisfy door unlock
+  // conditions and gamification collectible "unlocks" lists.
+  const { collectedTokens, unlockedDoorIds } = useMemo(() => {
+    const tokens = new Set();
+    objects.filter((object) => collected.has(object.id)).forEach((object) => {
+      tokens.add(normalizeToken(object.id));
+      tokens.add(normalizeToken(object.title || object.name));
     });
-
-    // -- Gamification HUD setup -----------------------------------------------
-    const refreshGamificationHud = () => {
-      const allCollected = collectibles.length > 0 && collectedIds.size >= collectibles.length;
-      setHud({
-        score: hudScore,
-        collectedCount: collectedIds.size,
-        totalCollectibles: collectibles.length,
-        questSteps: gamification.questSteps || [],
-        badges: allCollected ? (gamification.badges || []) : [],
-        completionReward: allCollected ? gamification.completionReward || "" : "",
-        allCollected,
-      });
-    };
-    let hudScore = 0;
-    if (gamification.enabled) refreshGamificationHud();
-
-    // -- Door / portal lock visuals --------------------------------------------
-    const refreshLockVisuals = (group) => {
-      const object = group.userData.threeDObject;
-      if (!object || (object.type !== "door" && object.type !== "portal")) return;
-      const unlocked = isDoorUnlocked(object, collectedIds, collectibles);
-      const colorKey = object.type === "door"
-        ? (unlocked ? resolveColor(object.color, 0x4a3826) : 0x5c2222)
-        : (unlocked ? resolveColor(object.color, 0x67e8f9) : 0xef4444);
-      if (group.userData.panelMesh) {
-        group.userData.panelMesh.material.color.setHex(colorKey);
-        group.userData.panelMesh.material.emissive.setHex(colorKey);
+    const doorIds = new Set();
+    (gamification.collectibles || []).forEach((entry) => {
+      if (tokens.has(normalizeToken(entry.id)) || tokens.has(normalizeToken(entry.name))) {
+        tokens.add(normalizeToken(entry.id));
+        tokens.add(normalizeToken(entry.name));
+        (entry.unlocks || []).forEach((doorId) => doorIds.add(doorId));
       }
-      if (group.userData.torusMesh) {
-        group.userData.torusMesh.material.color.setHex(colorKey);
-        group.userData.torusMesh.material.emissive.setHex(colorKey);
-      }
-      if (group.userData.discMesh) group.userData.discMesh.material.color.setHex(colorKey);
-      if (group.userData.labelMesh) {
-        const icon = unlocked ? OBJECT_ICONS[object.type] : "🔒";
-        const oldMap = group.userData.labelMesh.material.map;
-        const texture = createCanvasTexture(`${icon} ${objectLabelText(object) || titleCase(object.type)}`, {});
-        group.userData.labelMesh.material.map = texture;
-        group.userData.labelMesh.material.needsUpdate = true;
-        oldMap?.dispose();
-      }
-    };
+    });
+    return { collectedTokens: tokens, unlockedDoorIds: doorIds };
+  }, [objects, collected, gamification.collectibles]);
 
-    // -- NPC dialogue ------------------------------------------------------------
-    const npcConfig = config.npcGuide || {};
-    const dialogueLines = (npcConfig.dialogueSteps?.length
-      ? npcConfig.dialogueSteps.map((step) => (typeof step === "string" ? step : step.text || step.line || ""))
-      : [npcConfig.openingLine, npcConfig.script].filter(Boolean)
-    ).filter(Boolean);
-
-    const openDialogue = () => {
-      if (!npcConfig.enabled || !dialogueLines.length) return;
-      setDialogue({ step: 0, lines: dialogueLines, name: npcConfig.npcType ? titleCase(npcConfig.npcType) : "Guide" });
-    };
-
-    if (npcConfig.triggerType === "on_room_start") {
-      setTimeout(() => { if (!cancelled) openDialogue(); }, 900);
-    }
-
-    const checkQuestComplete = () => {
-      if (questDialogueShown || npcConfig.triggerType !== "on_quest_complete") return;
-      const totalQuiz = allObjects.filter((object) => object.type === "quiz_station").length;
-      let complete = false;
-      if (collectibles.length > 0) complete = collectedIds.size >= collectibles.length;
-      else if (totalQuiz > 0) complete = quizCorrect.size >= totalQuiz;
-      if (complete) {
-        questDialogueShown = true;
-        openDialogue();
-      }
-    };
-
-    // -- Collecting items --------------------------------------------------------
-    const collectItem = (object, group) => {
-      if (collectedIds.has(object.id)) return;
-      collectedIds.add(object.id);
-      const matched = collectibles.find((entry) => entry.id === object.id || entry.name === object.title || entry.name === object.name);
-      const points = Number(matched?.rewardPoints ?? object.rewardPoints) || 0;
-      hudScore += points;
-      if (group) {
-        scene.remove(group);
-        const index = interactiveGroups.indexOf(group);
-        if (index >= 0) interactiveGroups.splice(index, 1);
-      }
-      setToast(`${OBJECT_ICONS.collectible} ${objectLabelText(object) || "Item"} collected${points ? ` (+${points} pts)` : ""}`);
-      if (gamification.enabled) refreshGamificationHud();
-
-      objectGroups.forEach((doorGroup) => refreshLockVisuals(doorGroup));
-
-      lockedObjects.slice().forEach((pending) => {
-        if (placedCount >= objectLimit) return;
-        if (isObjectUnlocked(pending, collectedIds, collectibles)) {
-          if (placeObject(pending)) {
-            placedCount += 1;
-            const removeIndex = lockedObjects.indexOf(pending);
-            if (removeIndex >= 0) lockedObjects.splice(removeIndex, 1);
-          }
-        }
-      });
-
-      checkQuestComplete();
-      context.track?.("three_d_world_collectible_collected", { room_id: room.id, object_id: object.id, points });
-    };
-
-    // -- Navigation -----------------------------------------------------------
-    let cancelled = false;
-    const navigateTo = (destinationRoomId) => {
-      if (!destinationRoomId) return;
-      setTransitioning(true);
-      context.track?.("three_d_world_navigation", { room_id: room.id, destination: destinationRoomId });
-      setTimeout(() => { if (!cancelled) context.goToRoom?.(destinationRoomId); }, 420);
-    };
-
-    const tryNavigation = (object, group) => {
-      const unlocked = isDoorUnlocked(object, collectedIds, collectibles);
-      if (!unlocked) {
-        setToast(`${OBJECT_ICONS.door} ${unlockHint(object.unlockCondition)}`);
-        refreshLockVisuals(group);
-        return;
-      }
-      navigateTo(object.destinationRoomId);
-    };
-
-    // -- Click action dispatch -----------------------------------------------
-    const runClickAction = (object, group, action) => {
-      switch (action) {
-        case "go_to_room":
-          navigateTo(object.destinationRoomId);
-          return;
-        case "open_external_link": {
-          const url = getSafeNavigationUrl(object.linkUrl || object.targetUrl || object.mediaUrl);
-          if (url) window.open(url, "_blank", "noopener,noreferrer");
-          return;
-        }
-        case "play_audio":
-          setPanel({ type: "audio", object });
-          return;
-        case "play_video":
-          setPanel({ type: "video", object });
-          return;
-        case "collect_item":
-          collectItem(object, group);
-          return;
-        case "start_quiz":
-          if (object.question) setPanel({ type: "quiz", object });
-          return;
-        case "unlock_door":
-          setToast("Conditions met — connected doors will unlock as you progress.");
-          return;
-        case "trigger_animation":
-          pulseQueue.push({ group, start: clock.getElapsedTime(), duration: 0.6 });
-          return;
-        case "show_story":
-          setPanel({ type: "story", object });
-          return;
-        case "open_popup":
-        default:
-          setPanel({ type: "info", object });
-      }
-    };
-
-    const handleInteraction = (group) => {
-      const object = group.userData.threeDObject || {};
-      switch (object.type) {
-        case "door":
-        case "portal":
-          tryNavigation(object, group);
-          return;
-        case "collectible":
-          collectItem(object, group);
-          return;
-        case "quiz_station":
-          if (object.question) setPanel({ type: "quiz", object });
-          return;
-        case "npc_guide":
-          if (npcConfig.enabled && dialogueLines.length) openDialogue();
-          else setPanel({ type: "info", object });
-          return;
-        case "product_booth":
-          setPanel({ type: "product", object });
-          return;
-        case "floating_button":
-          runClickAction(object, group, object.actionType || object.clickAction);
-          return;
-        default:
-          runClickAction(object, group, object.clickAction);
-      }
-    };
-
-    // -- Movement & camera ------------------------------------------------------
-    let yaw = spawn.yaw || 0;
-    let pitch = 0;
-    camera.rotation.set(pitch, yaw, 0);
-
-    const keys = new Set();
-    const moveVector = { x: 0, y: 0 };
-    let moveTarget = null;
-    let pointerDown = false;
-    let moved = false;
-    let lastX = 0;
-    let lastY = 0;
-
-    let tourIndex = 0;
-    let tourPlaying = movementMode === "auto_walkthrough" && !reduceFx;
-    let tourActive = isTourMode;
-    let dwellTimer = 0;
-    const lookTarget = stations.length
-      ? new THREE.Vector3(stations[0].lookAt.x, stations[0].lookAt.y, stations[0].lookAt.z)
-      : new THREE.Vector3(0, EYE_HEIGHT, -dims.depth / 2);
-
-    if (isTourMode && stations.length) {
-      camera.position.set(stations[0].position.x, stations[0].position.y, stations[0].position.z);
-      setTour({ active: true, index: 0, playing: tourPlaying, stations: stations.map((s) => s.name), label: stations[0].name });
-    }
-
-    const setTourIndex = (index) => {
-      tourIndex = Math.max(0, Math.min(stations.length - 1, index));
-      dwellTimer = 0;
-      setTour((prev) => ({ ...prev, index: tourIndex, label: stations[tourIndex]?.name || "" }));
-    };
-    const toggleTourPlaying = () => {
-      tourPlaying = !tourPlaying;
-      setTour((prev) => ({ ...prev, playing: tourPlaying }));
-    };
-    const toggleAutoTour = () => {
-      tourActive = !tourActive;
-      if (tourActive) {
-        tourIndex = 0;
-        dwellTimer = 0;
-        tourPlaying = true;
-        setTour({ active: true, index: 0, playing: true, stations: stations.map((s) => s.name), label: stations[0]?.name || "" });
-      } else {
-        setTour({ active: false, index: 0, playing: false, stations: [], label: "" });
-      }
-    };
-    engineRef.current = {
-      setTourIndex, toggleTourPlaying, toggleAutoTour,
-      runObjectAction: (object) => {
-        const group = objectGroups.get(object.id) || { userData: { threeDObject: object } };
-        handleInteraction(group);
-      },
-    };
-
-    const raycaster = new THREE.Raycaster();
-    const pointer = new THREE.Vector2();
-
-    const setPointer = (event) => {
-      const rect = renderer.domElement.getBoundingClientRect();
-      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-    };
-
-    const onPointerDown = (event) => {
-      pointerDown = true;
-      moved = false;
-      lastX = event.clientX;
-      lastY = event.clientY;
-      listener.context.resume?.();
-      musicRef.current?.play().catch(() => {});
-    };
-
-    const onPointerMove = (event) => {
-      if (!pointerDown || !isGroundMode) return;
-      const deltaX = event.clientX - lastX;
-      const deltaY = event.clientY - lastY;
-      if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) moved = true;
-      yaw -= deltaX * 0.0035;
-      pitch = Math.max(-1.0, Math.min(1.0, pitch - deltaY * 0.0035));
-      lastX = event.clientX;
-      lastY = event.clientY;
-    };
-
-    const onPointerUp = (event) => {
-      if (!pointerDown) return;
-      pointerDown = false;
-      if (moved) return;
-      setPointer(event);
-      raycaster.setFromCamera(pointer, camera);
-      const hits = raycaster.intersectObjects(interactiveGroups, true);
-      if (hits.length) {
-        let target = hits[0].object;
-        while (target && !target.userData?.interactive) target = target.parent;
-        if (target) {
-          handleInteraction(target);
-          return;
-        }
-      }
-      if (isGroundMode && (movementMode === "click_to_move" || movementMode === "click_to_move_guided")) {
-        const floorHit = raycaster.intersectObject(shell.floorMesh, false)[0];
-        if (floorHit) {
-          const clamped = clampToRoom(floorHit.point.x, floorHit.point.z, dims, 0.5);
-          moveTarget = clamped;
-        }
-      }
-    };
-
-    const onKeyDown = (event) => keys.add(event.key.toLowerCase());
-    const onKeyUp = (event) => keys.delete(event.key.toLowerCase());
-
-    renderer.domElement.addEventListener("pointerdown", onPointerDown);
-    window.addEventListener("pointermove", onPointerMove);
-    window.addEventListener("pointerup", onPointerUp);
-    window.addEventListener("keydown", onKeyDown);
-    window.addEventListener("keyup", onKeyUp);
-
-    // -- Joystick (mobile free movement) -----------------------------------------
-    const isMobileControls = isGroundMode && config.mobileControls !== false && isMobile;
-    setJoystickActive(isMobileControls);
-    const onJoystickMove = (event) => { moveVector.x = event.detail?.x || 0; moveVector.y = event.detail?.y || 0; };
-    window.addEventListener("three-d-world-joystick", onJoystickMove);
-
-    // -- Resize -----------------------------------------------------------------
-    const onResize = () => {
-      camera.aspect = mount.clientWidth / mount.clientHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(mount.clientWidth, mount.clientHeight);
-    };
-    window.addEventListener("resize", onResize);
-
-    // -- Animation loop -----------------------------------------------------------
-    const clock = new THREE.Clock();
-    let animationFrame;
-    const animate = () => {
-      const delta = Math.min(0.05, clock.getDelta());
-      const elapsed = clock.getElapsedTime();
-
-      if (!reduceFx) {
-        animatedEntries.forEach((entry) => {
-          const { mesh, type, baseY, group } = entry;
-          switch (type) {
-            case "spin": mesh.rotation.y += delta * 0.6; break;
-            case "rotate": mesh.rotation.y += delta * 0.35; break;
-            case "bob": mesh.position.y = baseY + Math.sin(elapsed * 1.6 + group.id) * 0.08; break;
-            case "pulse": {
-              const scale = 1 + Math.sin(elapsed * 2.4 + group.id) * 0.12;
-              mesh.scale.setScalar(scale);
-              break;
-            }
-            case "sway": mesh.rotation.z = Math.sin(elapsed * 1.1 + group.id) * 0.06; break;
-            default: break;
-          }
-        });
-      }
-
-      if (atmosphere) atmosphere.update(elapsed, delta);
-
-      billboardEntries.forEach(({ mesh, group }) => {
-        const worldPos = group.position;
-        const dx = camera.position.x - worldPos.x;
-        const dz = camera.position.z - worldPos.z;
-        mesh.rotation.y = Math.atan2(dx, dz) - group.rotation.y;
-      });
-
-      for (let i = pulseQueue.length - 1; i >= 0; i -= 1) {
-        const entry = pulseQueue[i];
-        const t = (elapsed - entry.start) / entry.duration;
-        if (t >= 1) {
-          entry.group.scale.copy(entry.group.userData.baseScale);
-          pulseQueue.splice(i, 1);
-        } else {
-          const factor = 1 + Math.sin(t * Math.PI) * 0.18;
-          entry.group.scale.copy(entry.group.userData.baseScale).multiplyScalar(factor);
-        }
-      }
-
-      positionalSounds.forEach(({ sound, group, radius }) => {
-        if (!sound.buffer) return;
-        const distance = camera.position.distanceTo(group.position);
-        if (distance < radius && !sound.isPlaying) sound.play();
-        else if (distance >= radius * 1.4 && sound.isPlaying) sound.stop();
-      });
-
-      if (isTourMode || tourActive) {
-        const station = stations[tourIndex];
-        if (station) {
-          camera.position.lerp(new THREE.Vector3(station.position.x, station.position.y, station.position.z), 0.04);
-          lookTarget.lerp(new THREE.Vector3(station.lookAt.x, station.lookAt.y, station.lookAt.z), 0.04);
-          const direction = lookTarget.clone().sub(camera.position);
-          if (direction.lengthSq() > 0.0001) {
-            yaw = Math.atan2(-direction.x, -direction.z);
-            pitch = Math.max(-1, Math.min(1, Math.atan2(direction.y, Math.hypot(direction.x, direction.z))));
-          }
-          if (tourPlaying && (movementMode === "auto_walkthrough" || tourActive) && stations.length > 1) {
-            dwellTimer += delta;
-            if (dwellTimer >= STATION_DWELL_SECONDS) {
-              dwellTimer = 0;
-              setTourIndex((tourIndex + 1) % stations.length);
-            }
-          }
-        }
-      } else if (isGroundMode) {
-        const forward = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
-        const right = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
-        let move = new THREE.Vector3();
-        if (keys.has("w") || keys.has("arrowup")) move.add(forward);
-        if (keys.has("s") || keys.has("arrowdown")) move.sub(forward);
-        if (keys.has("a") || keys.has("arrowleft")) move.sub(right);
-        if (keys.has("d") || keys.has("arrowright")) move.add(right);
-        if (moveVector.x || moveVector.y) {
-          move.add(forward.clone().multiplyScalar(-moveVector.y));
-          move.add(right.clone().multiplyScalar(moveVector.x));
-        }
-        if (move.lengthSq() > 0) {
-          move.normalize().multiplyScalar(MOVE_SPEED * delta);
-          moveTarget = null;
-          const next = clampToRoom(camera.position.x + move.x, camera.position.z + move.z, dims, 0.5);
-          camera.position.x = next.x;
-          camera.position.z = next.z;
-        } else if (moveTarget) {
-          const dx = moveTarget.x - camera.position.x;
-          const dz = moveTarget.z - camera.position.z;
-          const distance = Math.hypot(dx, dz);
-          if (distance < 0.08) {
-            moveTarget = null;
-          } else {
-            const step = Math.min(MOVE_SPEED * delta, distance);
-            camera.position.x += (dx / distance) * step;
-            camera.position.z += (dz / distance) * step;
-          }
-        }
-        camera.position.y = EYE_HEIGHT;
-        camera.rotation.set(pitch, yaw, 0);
-
-        if (npcConfig.triggerType === "on_zone_enter" && !zoneDialogueShown) {
-          stations.forEach((station, index) => {
-            const distance = Math.hypot(camera.position.x - station.position.x, camera.position.z - station.position.z);
-            if (distance < 1.6 && !shownZones.has(station.id)) {
-              shownZones.add(station.id);
-              if (index === 0 || shownZones.size === stations.length) return;
-              zoneDialogueShown = true;
-              openDialogue();
-            }
-          });
-        }
-      } else {
-        camera.rotation.set(pitch, yaw, 0);
-      }
-
-      if (playerDotRef.current) {
-        const px = Math.max(0, Math.min(100, ((camera.position.x + dims.width / 2) / dims.width) * 100));
-        const pz = Math.max(0, Math.min(100, ((camera.position.z + dims.depth / 2) / dims.depth) * 100));
-        playerDotRef.current.style.left = `${px}%`;
-        playerDotRef.current.style.top = `${pz}%`;
-        playerDotRef.current.style.transform = `translate(-50%, -50%) rotate(${yaw}rad)`;
-      }
-
-      if (avatarRig) {
-        avatarRig.group.position.set(camera.position.x, 0, camera.position.z);
-        avatarRig.group.rotation.y = yaw + Math.PI;
-      }
-
-      if (avatarRig && avatarRig.viewMode === "third_person") {
-        const pivot = camera.position.clone();
-        const offset = getThirdPersonOffset(yaw, pitch);
-        const target = clampToRoom(pivot.x + offset.x, pivot.z + offset.z, dims, 0.3);
-        camera.position.set(target.x, Math.max(0.4, Math.min(dims.height - 0.2, pivot.y + offset.y)), target.z);
-        renderer.render(scene, camera);
-        camera.position.copy(pivot);
-      } else {
-        renderer.render(scene, camera);
-      }
-      animationFrame = requestAnimationFrame(animate);
-    };
-    animate();
-
-    return () => {
-      cancelled = true;
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("pointermove", onPointerMove);
-      window.removeEventListener("pointerup", onPointerUp);
-      window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("keyup", onKeyUp);
-      window.removeEventListener("three-d-world-joystick", onJoystickMove);
-      renderer.domElement.removeEventListener("pointerdown", onPointerDown);
-      if (animationFrame) cancelAnimationFrame(animationFrame);
-      videoResources.forEach((video) => { video.pause(); video.src = ""; });
-      textureResources.forEach((texture) => texture.dispose());
-      positionalSounds.forEach(({ sound }) => { if (sound.isPlaying) sound.stop(); });
-      if (atmosphere) { atmosphere.points.geometry.dispose(); atmosphere.points.material.dispose(); }
-      if (musicRef.current) { musicRef.current.pause(); musicRef.current.src = ""; musicRef.current = null; }
-      renderer.dispose();
-      scene.traverse((object) => {
-        if (object.geometry) object.geometry.dispose();
-        if (object.material) {
-          const materials = Array.isArray(object.material) ? object.material : [object.material];
-          materials.forEach((material) => {
-            if (material.map && !textureResources.includes(material.map)) material.map.dispose?.();
-            material.dispose?.();
-          });
-        }
-      });
-      if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement);
-    };
-  }, [room?.id, avatarConfigKey]);
-
-  if (!config) return <FallbackWorld room={room} />;
-
-  const gamification = config.gamification || {};
-  const template = getWorldTemplate(config.selectedTemplate);
-  const mood = getMoodPreset(config.moodPreset);
-  const movementMode = config.movementMode || "click_to_move";
-  const isGroundMode = GROUND_MODES.has(movementMode);
-  const showAutoTourToggle = isGroundMode && config.autoWalkthroughEnabled;
-  const dims = getRoomDimensions(config);
-  const hasMusic = !!getSafeMediaUrl(config.backgroundMusicUrl);
-  const miniMapEnabled = accessibility.miniMapEnabled !== false && isGroundMode;
-  const miniMapMarkers = miniMapEnabled
-    ? (config.objects || []).filter((object) => object.visible !== false && ["door", "portal", "npc_guide", "collectible", "quiz_station"].includes(object.type)).map((object) => ({
-        id: object.id,
-        type: object.type,
-        x: Math.max(0, Math.min(100, ((Number(object.position?.x || 0) + dims.width / 2) / dims.width) * 100)),
-        z: Math.max(0, Math.min(100, ((Number(object.position?.z || 0) + dims.depth / 2) / dims.depth) * 100)),
-      }))
-    : [];
-
-  const closePanel = () => setPanel(null);
-  const closeDialogue = () => setDialogue(null);
-  const advanceDialogue = () => {
-    if (!dialogue) return;
-    if (dialogue.step + 1 >= dialogue.lines.length) { setDialogue(null); return; }
-    setDialogue({ ...dialogue, step: dialogue.step + 1 });
-  };
-
-  return (
-    <div className="relative min-h-screen overflow-hidden">
-      <div ref={mountRef} className="absolute inset-0 touch-none" />
-
-      <div className={`pointer-events-none fixed inset-0 z-30 bg-black transition-opacity duration-500 ${transitioning ? "opacity-100" : "opacity-0"}`} />
-
-      <div className="pointer-events-none absolute left-4 top-4 z-10 flex flex-col gap-2 sm:left-6 sm:top-6">
-        <div className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-white/15 bg-background/60 px-3 py-1.5 text-xs backdrop-blur-xl">
-          <Box className="h-3.5 w-3.5 text-primary" />
-          <span className="font-semibold">{room.title || template?.name || "3D World"}</span>
-          {mood && <span className="text-muted-foreground">· {mood.name}</span>}
-          {hasMusic && (
-            <button
-              onClick={() => setMusicMuted((current) => { const next = !current; if (musicRef.current) musicRef.current.muted = next; return next; })}
-              className="rounded-full p-1 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-primary"
-              title={musicMuted ? "Unmute music" : "Mute music"}
-            >
-              <Music className={`h-3.5 w-3.5 ${musicMuted ? "text-muted-foreground" : "text-primary"}`} />
-            </button>
-          )}
+  if (!config) {
+    return (
+      <div className="relative min-h-screen">
+        <ThreeDWorldCanvas config={null} room={room} className="h-[70vh] w-full" />
+        <div className="relative z-10 mx-auto max-w-3xl px-4 py-10 text-center">
+          <p className="text-xs uppercase tracking-[0.28em] text-primary">3D World</p>
+          <h1 className="mt-3 font-display text-4xl font-bold text-foreground">{room.title || "3D World"}</h1>
+          <p className="mt-4 text-sm leading-7 text-muted-foreground">This world is still being put together — explore the empty gallery space above. Drag to look around and scroll to zoom.</p>
         </div>
-        {room.narration && (
-          <div className="pointer-events-auto max-w-xs rounded-2xl border border-white/10 bg-background/50 p-3 text-xs leading-6 text-foreground/80 backdrop-blur-xl">
-            {room.narration}
-          </div>
-        )}
-      </div>
-
-      {gamification.enabled && (
-        <div className="pointer-events-auto absolute right-4 top-4 z-10 w-56 rounded-2xl border border-white/15 bg-background/65 p-3 text-xs backdrop-blur-xl sm:right-6 sm:top-6">
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-1.5 font-semibold"><Trophy className="h-3.5 w-3.5 text-amber-300" /> Score</span>
-            <span className="font-bold text-foreground">{hud.score}</span>
-          </div>
-          {hud.totalCollectibles > 0 && (
-            <div className="mt-2 flex items-center justify-between text-muted-foreground">
-              <span>{OBJECT_ICONS.collectible} Collectibles</span>
-              <span>{hud.collectedCount} / {hud.totalCollectibles}</span>
-            </div>
-          )}
-          {hud.questSteps.length > 0 && (
-            <ul className="mt-2 space-y-1 text-muted-foreground">
-              {hud.questSteps.map((step, index) => (
-                <li key={step.id || index} className="flex items-start gap-1.5"><span className="mt-0.5">{hud.allCollected ? "✅" : "•"}</span><span>{step.label || step.title || step}</span></li>
-              ))}
-            </ul>
-          )}
-          {hud.allCollected && (
-            <div className="mt-2 rounded-xl border border-emerald-400/25 bg-emerald-400/10 p-2 text-emerald-200">
-              <p className="flex items-center gap-1.5 font-semibold"><Gift className="h-3.5 w-3.5" /> Quest complete!</p>
-              {hud.completionReward && <p className="mt-1">{hud.completionReward}</p>}
-              {hud.badges.map((badge, index) => <p key={index} className="mt-1">{badge.name || badge}</p>)}
-            </div>
-          )}
-        </div>
-      )}
-
-      {toast && (
-        <div className="pointer-events-none absolute left-1/2 top-20 z-20 max-w-sm -translate-x-1/2 rounded-full border border-white/15 bg-background/80 px-4 py-2 text-center text-xs font-medium text-foreground shadow-xl backdrop-blur-xl">
-          {toast}
-        </div>
-      )}
-
-      {tour.active && tour.stations.length > 0 && (
-        <div className="pointer-events-auto absolute bottom-24 left-1/2 z-10 -translate-x-1/2 rounded-full border border-white/15 bg-background/70 px-3 py-2 backdrop-blur-xl sm:bottom-28">
-          <div className="flex items-center gap-2 text-xs">
-            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => engineRef.current.setTourIndex?.(tour.index - 1)} disabled={tour.index === 0}><ChevronLeft className="h-3.5 w-3.5" /></Button>
-            <span className="min-w-24 text-center font-semibold">{tour.label}</span>
-            {movementMode === "auto_walkthrough" ? (
-              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => engineRef.current.toggleTourPlaying?.()}>{tour.playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}</Button>
-            ) : (
-              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => engineRef.current.setTourIndex?.(tour.index + 1)} disabled={tour.index >= tour.stations.length - 1}><ChevronRight className="h-3.5 w-3.5" /></Button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {showAutoTourToggle && (
-        <div className="pointer-events-auto absolute bottom-24 right-4 z-10 sm:bottom-28 sm:right-6">
-          <Button size="sm" variant="outline" className="bg-background/70 backdrop-blur-xl" onClick={() => engineRef.current.toggleAutoTour?.()}>
-            <Compass className="h-4 w-4" /> {tour.active ? "Exit Tour" : "Auto Tour"}
-          </Button>
-        </div>
-      )}
-
-      {joystickActive && <Joystick />}
-
-      {miniMapEnabled && (
-        <div className="pointer-events-none absolute bottom-4 right-4 z-10 h-24 w-24 overflow-hidden rounded-xl border border-white/15 bg-background/60 backdrop-blur-xl sm:bottom-6 sm:right-6">
-          <div className="relative h-full w-full">
-            {miniMapMarkers.map((marker) => (
-              <span key={marker.id} title={titleCase(marker.type)} className="absolute h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary" style={{ left: `${marker.x}%`, top: `${marker.z}%` }} />
-            ))}
-            <div ref={playerDotRef} className="absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2" style={{ left: "50%", top: "50%" }}>
-              <div className="h-full w-full rounded-full border border-background bg-emerald-400" />
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="pointer-events-auto absolute bottom-4 left-4 z-10 flex flex-wrap gap-2 sm:bottom-6 sm:left-6">
-        {accessibility.twoDFallbackEnabled !== false && (
-          <Button size="sm" variant="outline" className="bg-background/70 backdrop-blur-xl" onClick={() => setView2D((v) => !v)}>
-            <List className="h-4 w-4" /> Text View
-          </Button>
-        )}
-        {/* Always reachable — visitors can create/edit their platform-wide
-            avatar from inside any 3D world, even tour/fixed-view modes where
-            there's no walking avatar rig. */}
-        <Button size="sm" variant="outline" className="bg-background/70 backdrop-blur-xl" onClick={() => setAvatarOverlayOpen(true)}>
-          <UserCircle2 className="h-4 w-4" /> {avatarProfile.hasAvatar ? "Avatar" : "Create avatar"}
-        </Button>
-      </div>
-
-      {sensoryWarningVisible && accessibility.sensoryWarning && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/70 p-4">
-          <div className="max-w-sm rounded-2xl border border-amber-400/30 bg-background/95 p-5 text-center shadow-2xl">
-            <AlertTriangle className="mx-auto h-8 w-8 text-amber-300" />
-            <p className="mt-3 text-sm leading-7 text-foreground/90">{accessibility.sensoryWarning}</p>
-            <Button className="mt-4" onClick={() => setSensoryWarningVisible(false)}>Continue</Button>
-          </div>
-        </div>
-      )}
-
-      {view2D && (
-        <div className="absolute inset-0 z-20 overflow-y-auto bg-background/95 p-4 sm:p-8">
-          <div className="mx-auto max-w-2xl space-y-3 pb-12">
-            <div className="flex items-center justify-between gap-3">
-              <h1 className="font-display text-xl font-bold">{room.title || template?.name || "3D World"} — Text View</h1>
-              <Button size="sm" variant="outline" onClick={() => setView2D(false)}><X className="h-4 w-4" /> Close</Button>
-            </div>
-            {room.narration && <p className="text-sm leading-7 text-muted-foreground">{room.narration}</p>}
-            {accessibility.sensoryWarning && <p className="rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-200">{accessibility.sensoryWarning}</p>}
-            <ul className="space-y-2">
-              {(config.objects || []).filter((object) => object.visible !== false).map((object) => (
-                <li key={object.id} className="rounded-xl border border-white/10 bg-background/60 p-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold">{OBJECT_ICONS[object.type] || "•"} {objectLabelText(object) || titleCase(object.type)}</span>
-                    <Button size="sm" onClick={() => engineRef.current.runObjectAction?.(object)}>Open</Button>
-                  </div>
-                  {(object.description || object.body || object.story) && <p className="mt-1 text-sm leading-6 text-muted-foreground">{object.description || object.body || object.story}</p>}
-                  {object.altText && <p className="mt-1 text-xs text-muted-foreground">Image: {object.altText}</p>}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
-
-      {dialogue && (
-        <div className="pointer-events-auto absolute inset-x-4 bottom-24 z-20 mx-auto max-w-md rounded-2xl border border-white/15 bg-background/90 p-4 shadow-2xl backdrop-blur-xl sm:bottom-28">
-          <div className="flex items-start justify-between gap-3">
-            <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-primary"><MessageCircle className="h-3.5 w-3.5" /> {dialogue.name}</p>
-            <button onClick={closeDialogue} className="rounded-full p-1 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-primary"><X className="h-3.5 w-3.5" /></button>
-          </div>
-          <p className="mt-2 text-sm leading-7 text-foreground/85">{dialogue.lines[dialogue.step]}</p>
-          <div className="mt-3 flex justify-end">
-            <Button size="sm" onClick={advanceDialogue}>{dialogue.step + 1 >= dialogue.lines.length ? "Got it" : "Next"}</Button>
-          </div>
-        </div>
-      )}
-
-      {panel && <ObjectPanel panel={panel} accessibility={accessibility} onClose={closePanel} onSubmitQuiz={(object, correct, reward) => {
-        if (correct) setToast(`✅ Correct!${reward ? ` +${reward} pts` : ""}`);
-        else setToast("❌ Not quite — try again.");
-      }} />}
-
-      <AvatarCreatorOverlay
-        open={avatarOverlayOpen}
-        onClose={closeAvatarOverlay}
-        initialConfig={avatarProfile.config}
-        hasAvatar={avatarProfile.hasAvatar}
-        onSave={async (cfg) => { await avatarProfile.saveAvatar(cfg); closeAvatarOverlay(); }}
-        onDelete={avatarProfile.deleteAvatar}
-        ownerKey={avatarProfile.ownerKey}
-      />
-    </div>
-  );
-}
-
-function Joystick() {
-  const baseRef = useRef(null);
-  const activeRef = useRef(false);
-  const originRef = useRef({ x: 0, y: 0 });
-
-  const emit = (x, y) => window.dispatchEvent(new CustomEvent("three-d-world-joystick", { detail: { x, y } }));
-
-  const onPointerDown = () => {
-    activeRef.current = true;
-    const rect = baseRef.current.getBoundingClientRect();
-    originRef.current = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-  };
-  const onPointerMove = (event) => {
-    if (!activeRef.current) return;
-    const dx = event.clientX - originRef.current.x;
-    const dy = event.clientY - originRef.current.y;
-    const max = 36;
-    const clampedX = Math.max(-max, Math.min(max, dx));
-    const clampedY = Math.max(-max, Math.min(max, dy));
-    emit(clampedX / max, clampedY / max);
-  };
-  const onPointerUp = () => {
-    activeRef.current = false;
-    emit(0, 0);
-  };
-
-  return (
-    <div
-      ref={baseRef}
-      className="pointer-events-auto absolute bottom-24 left-4 z-10 flex h-24 w-24 items-center justify-center rounded-full border border-white/20 bg-background/40 backdrop-blur-xl sm:bottom-28 sm:left-6"
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerLeave={onPointerUp}
-    >
-      <div className="h-10 w-10 rounded-full border border-white/30 bg-white/15" />
-    </div>
-  );
-}
-
-function ObjectPanel({ panel, accessibility = {}, onClose, onSubmitQuiz }) {
-  const { type, object } = panel;
-  const [selected, setSelected] = useState(null);
-  const title = objectLabelText(object) || titleCase(object.type || "Details");
-  const textSize = accessibility.textScale === "large" ? "text-base leading-8" : "text-sm leading-7";
-  const hasMetadata = !!(object.creator || object.period || object.culture || object.material || object.provenance || object.sourceCitation || object.curatorialStatus || (object.sensitivity && object.sensitivity !== "none"));
-
-  const submitQuiz = () => {
-    const correctIndex = typeof object.correctAnswer === "number" ? object.correctAnswer : null;
-    const isCorrect = correctIndex != null
-      ? selected === correctIndex
-      : String(selected) === String(object.correctAnswer);
-    onSubmitQuiz(object, isCorrect, isCorrect ? Number(object.reward) || 0 : 0);
-    if (isCorrect) onClose();
-  };
-
-  let body = null;
-  if (type === "quiz") {
-    body = (
-      <div className="space-y-2">
-        <p className="text-sm leading-6 text-foreground/85">{object.question}</p>
-        <div className="space-y-1.5">
-          {(object.answers || []).map((answer, index) => (
-            <button
-              key={index}
-              onClick={() => setSelected(index)}
-              className={`block w-full rounded-lg border px-3 py-2 text-left text-xs transition ${selected === index ? "border-primary bg-primary/15 text-primary" : "border-white/10 bg-white/5 hover:border-primary/40"}`}
-            >
-              {answer}
-            </button>
-          ))}
-        </div>
-        <Button size="sm" disabled={selected == null} onClick={submitQuiz}>Submit</Button>
-      </div>
-    );
-  } else if (type === "product") {
-    const linkUrl = getSafeNavigationUrl(object.linkUrl);
-    body = (
-      <div className="space-y-3">
-        {object.imageUrl && <ResolvedMedia url={object.imageUrl} mediaType="image" alt={object.altText || object.productName || "Product"} className="h-40 w-full rounded-xl object-cover" fallbackVisual fallbackCompact />}
-        <p className="text-xs uppercase tracking-widest text-primary">{object.brandName}</p>
-        <p className="text-sm font-semibold">{object.productName}</p>
-        {object.price && <p className="text-sm text-foreground/80">{object.price}</p>}
-        {linkUrl && <a href={linkUrl} target="_blank" rel="noreferrer"><Button size="sm"><ShoppingBag className="h-3.5 w-3.5" /> {object.ctaText || "View"}</Button></a>}
-      </div>
-    );
-  } else if (type === "audio") {
-    body = (
-      <div className="space-y-2">
-        <ResolvedMedia url={object.audioUrl} mediaType="audio" alt={title} className="w-full" controls />
-        {object.transcript && <p className="text-xs leading-6 text-muted-foreground">{object.transcript}</p>}
-      </div>
-    );
-  } else if (type === "video") {
-    body = <ResolvedMedia url={object.videoUrl} mediaType="video" alt={title} className="aspect-video w-full rounded-xl" controls fallbackVisual fallbackCompact />;
-  } else if (type === "story") {
-    body = <p className={`${textSize} text-foreground/85`}>{object.story || object.body || object.description || "No story configured for this item yet."}</p>;
-  } else {
-    const mediaUrl = object.imageUrl || object.videoUrl || object.mediaUrl || object.modelUrl;
-    body = (
-      <div className="space-y-3">
-        {mediaUrl && <ResolvedMedia url={mediaUrl} mediaType={object.videoUrl ? "video" : "image"} alt={object.altText || title} className="max-h-56 w-full rounded-xl object-cover" controls fallbackVisual fallbackCompact />}
-        <p className={`${textSize} text-foreground/85`}>{object.description || object.body || object.story || "No details configured for this item yet."}</p>
       </div>
     );
   }
 
-  const highContrastClass = accessibility.highContrast ? "border-white/40 bg-black/95" : "border-white/15 bg-background/90";
+  const isDoorUnlocked = (door) => {
+    if (!door.locked) return true;
+    if (unlockedDoorIds.has(door.id)) return true;
+    const condition = normalizeToken(String(door.unlockCondition || "").replace(/^visitor_collects_/i, ""));
+    if (!condition) return false;
+    return [...collectedTokens].some((token) => token && (token === condition || token.includes(condition) || condition.includes(token)));
+  };
+
+  const collect = (object) => {
+    setCollected((prev) => new Set(prev).add(object.id));
+    context.track?.("three_d_world_item_collected", { object_id: object.id, title: object.title || object.name });
+  };
+
+  const openObject = (object) => {
+    context.track?.("three_d_world_object_opened", { object_id: object.id, object_type: object.type });
+    if (COLLECTIBLE_TYPES.includes(object.type) || object.clickAction === "collect_item") collect(object);
+    if (object.clickAction === "start_quiz" || object.type === "quiz_station") { setOpenQuiz(openQuiz === object.id ? null : object.id); return; }
+    if (object.clickAction === "go_to_room" && object.destinationRoomId) { context.goToRoom?.(object.destinationRoomId); return; }
+    if (object.type === "floating_button") {
+      if (object.actionType === "go_to_room" && object.destinationRoomId) { context.goToRoom?.(object.destinationRoomId); return; }
+      context.hotspotOpen?.(toHotspot(object));
+      return;
+    }
+    context.hotspotOpen?.(toHotspot(object));
+  };
+
+  const enterDoor = (door) => {
+    if (!isDoorUnlocked(door)) return;
+    context.track?.("three_d_world_door_used", { object_id: door.id, destination: door.destinationRoomId });
+    context.goToRoom?.(door.destinationRoomId);
+  };
+
+  // Clicking a piece in the 3D canvas should do the same thing as tapping its
+  // card below — open the popup, start the quiz, collect it, or walk through
+  // the door — so the 3D view and the accessible card grid stay equivalent.
+  const handleCanvasSelect = (object) => {
+    if (object.type === "door" || object.type === "portal") { enterDoor(object); return; }
+    if (object.type === "light_source" || object.type === "direction_sign") return;
+    openObject(object);
+  };
+
+  const dialogueSteps = npcGuide.dialogueSteps || [];
+  const collectibleObjects = objects.filter((object) => COLLECTIBLE_TYPES.includes(object.type));
+  const collectedCount = collectibleObjects.filter((object) => collected.has(object.id)).length;
 
   return (
-    <div className={`pointer-events-auto fixed inset-x-4 bottom-24 z-30 mx-auto max-w-md rounded-3xl border p-5 shadow-2xl backdrop-blur-xl sm:bottom-28 ${highContrastClass}`}>
-      <div className="flex items-start justify-between gap-4">
-        <h2 className="font-heading text-lg font-semibold tracking-tight">{title}</h2>
-        <button onClick={onClose} className="rounded-full p-1 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-primary"><X className="h-4 w-4" /></button>
-      </div>
-      <div className="mt-3">{body}</div>
-      {type !== "audio" && object.transcript && (
-        <details className="mt-3 rounded-lg border border-white/10 bg-background/40 p-2 text-xs">
-          <summary className="cursor-pointer font-semibold text-muted-foreground">Transcript</summary>
-          <p className="mt-1 leading-6 text-foreground/80">{object.transcript}</p>
-        </details>
-      )}
-      {hasMetadata && (
-        <div className="mt-3 grid grid-cols-2 gap-1 rounded-lg border border-white/10 bg-background/40 p-2 text-[11px] text-muted-foreground">
-          {object.creator && <span><strong className="text-foreground">Creator:</strong> {object.creator}</span>}
-          {object.period && <span><strong className="text-foreground">Period:</strong> {object.period}</span>}
-          {object.culture && <span><strong className="text-foreground">Culture:</strong> {object.culture}</span>}
-          {object.material && <span><strong className="text-foreground">Material:</strong> {object.material}</span>}
-          {object.provenance && <span className="col-span-2"><strong className="text-foreground">Provenance:</strong> {object.provenance}</span>}
-          {object.sourceCitation && <span className="col-span-2"><strong className="text-foreground">Source:</strong> {object.sourceCitation}</span>}
-          {object.curatorialStatus && <span className="col-span-2"><strong className="text-foreground">Status:</strong> {titleCase(object.curatorialStatus)}</span>}
-          {object.sensitivity && object.sensitivity !== "none" && <span className="col-span-2 text-amber-300"><strong>Note:</strong> {titleCase(object.sensitivity)} — please be respectful.</span>}
+    <div className="relative min-h-screen px-4 py-24">
+      <div aria-hidden className={`pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b ${overlay}`} />
+
+      <div className="relative z-10 mx-auto max-w-5xl">
+        <ThreeDWorldCanvas config={config} room={room} onSelectObject={handleCanvasSelect} className="mb-8 h-[60vh] min-h-[360px] w-full overflow-hidden rounded-2xl border border-white/10" />
+
+        <p className="text-xs uppercase tracking-[0.28em] text-primary">{template?.name || "3D World"}{mood ? ` · ${mood.name}` : ""}</p>
+        <h1 className="mt-3 max-w-3xl font-display text-5xl font-bold text-foreground">{room.title || template?.name || "3D World"}</h1>
+        {room.narration || room.description ? <p className="mt-5 max-w-2xl text-sm leading-7 text-foreground/75">{room.narration || room.description}</p> : null}
+
+        {(config.zones || []).length > 0 && (
+          <div className="mt-6 flex flex-wrap gap-2">
+            {config.zones.map((zone) => (
+              <span key={zone.id} className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-foreground/80" title={zone.description}>{zone.name}</span>
+            ))}
+          </div>
+        )}
+
+        {npcGuide.enabled && (npcGuide.openingLine || npcGuide.script || dialogueSteps.length > 0) && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-8 flex items-start gap-4 rounded-2xl border border-primary/25 bg-primary/10 p-5 backdrop-blur">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20"><UserRound className="h-5 w-5 text-primary" /></span>
+            <div className="min-w-0">
+              <p className="text-xs uppercase tracking-widest text-primary">Your guide</p>
+              <p className="mt-1 text-sm leading-6 text-foreground">{dialogueSteps.length > 0 ? dialogueSteps[Math.min(dialogueIndex, dialogueSteps.length - 1)] : npcGuide.openingLine || npcGuide.script}</p>
+              {dialogueSteps.length > 1 && dialogueIndex < dialogueSteps.length - 1 && (
+                <Button size="sm" variant="outline" className="mt-3" onClick={() => setDialogueIndex(dialogueIndex + 1)}>Continue</Button>
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        {signs.length > 0 && (
+          <div className="mt-6 flex flex-wrap gap-2">
+            {signs.map((sign) => {
+              const Arrow = ARROW_ICONS[String(sign.arrowDirection || "").toLowerCase()] || ArrowRight;
+              return <span key={sign.id} className="flex items-center gap-1.5 rounded-full border border-white/15 bg-background/50 px-3 py-1 text-xs text-foreground/80"><Arrow className="h-3.5 w-3.5 text-primary" /> {sign.label || sign.title}</span>;
+            })}
+          </div>
+        )}
+
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {contentObjects.map((object, index) => {
+            const Icon = OBJECT_ICONS[object.type] || Sparkles;
+            const isCollected = collected.has(object.id);
+            const thumbnail = object.imageUrl || object.thumbnailUrl || object.iconUrl || "";
+            return (
+              <motion.div key={object.id || index} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }} className="rounded-2xl border border-white/10 bg-background/55 p-4 backdrop-blur">
+                <button type="button" onClick={() => openObject(object)} className="w-full text-left focus:outline-none focus:ring-2 focus:ring-primary rounded-xl">
+                  {thumbnail && <ResolvedMedia url={thumbnail} mediaType="image" alt={object.title || object.name || "Object"} className="mb-3 h-32 w-full rounded-xl object-cover" fallbackVisual fallbackCompact />}
+                  <span className="flex items-center gap-2">
+                    <Icon className={`h-4 w-4 ${isCollected ? "text-emerald-300" : "text-primary"}`} />
+                    <span className="truncate text-sm font-semibold">{object.title || object.name || object.label || "Untitled"}</span>
+                    {isCollected && <Star className="h-3.5 w-3.5 shrink-0 text-emerald-300" />}
+                  </span>
+                  {objectDescription(object) && <span className="mt-1.5 block text-xs leading-5 text-muted-foreground line-clamp-3">{objectDescription(object)}</span>}
+                  {object.type === "product_booth" && (object.productName || object.price) && (
+                    <span className="mt-2 block text-xs text-foreground/80">{[object.brandName, object.productName].filter(Boolean).join(" · ")}{object.price ? ` — ${object.price}` : ""}</span>
+                  )}
+                </button>
+                {(object.type === "quiz_station" || object.clickAction === "start_quiz") && openQuiz === object.id && <QuizStation object={object} track={context.track} />}
+              </motion.div>
+            );
+          })}
         </div>
-      )}
+
+        {navObjects.length > 0 && (
+          <div className="mt-10">
+            <p className="text-xs uppercase tracking-[0.28em] text-primary">Doors & Portals</p>
+            <div className="mt-3 flex flex-wrap gap-3">
+              {navObjects.map((door) => {
+                const unlocked = isDoorUnlocked(door);
+                const Icon = door.type === "portal" ? Sparkles : DoorOpen;
+                return (
+                  <button
+                    key={door.id}
+                    type="button"
+                    onClick={() => enterDoor(door)}
+                    disabled={!unlocked}
+                    title={unlocked ? `Go to ${door.title || door.destinationRoomId || "next room"}` : "Locked — explore the room to unlock this door."}
+                    className={`flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm backdrop-blur transition focus:outline-none focus:ring-2 focus:ring-primary ${unlocked ? "border-primary/40 bg-primary/15 text-primary hover:bg-primary/25" : "cursor-not-allowed border-white/15 bg-white/5 text-muted-foreground"}`}
+                  >
+                    {unlocked ? <Icon className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                    {door.title || "Door"}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {(gamification.enabled && (collectibleObjects.length > 0 || (gamification.questSteps || []).length > 0)) && (
+          <div className="mt-10 rounded-2xl border border-white/10 bg-background/50 p-5 backdrop-blur">
+            {collectibleObjects.length > 0 && <p className="text-sm font-semibold">Collected {collectedCount} of {collectibleObjects.length}</p>}
+            {(gamification.questSteps || []).length > 0 && (
+              <ul className="mt-3 space-y-1.5 text-xs text-muted-foreground">
+                {gamification.questSteps.map((step) => <li key={step} className="flex items-center gap-2"><Star className="h-3 w-3 text-primary" /> {step}</li>)}
+              </ul>
+            )}
+            {gamification.completionReward && collectibleObjects.length > 0 && collectedCount === collectibleObjects.length && (
+              <p className="mt-3 text-xs text-emerald-300">Reward unlocked: {gamification.completionReward}</p>
+            )}
+          </div>
+        )}
+
+        {lights.length > 0 && (
+          <p className="mt-8 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+            <Lightbulb className="h-3 w-3" /> Lighting: {lights.map((light) => light.title || light.lightType || "light").join(", ")}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

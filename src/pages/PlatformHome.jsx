@@ -4,10 +4,11 @@ import { Sparkles } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import PlatformGatewayBackground from "@/components/platform/PlatformGatewayBackground";
 import PlatformGatewayBadge from "@/components/platform/PlatformGatewayBadge";
+import GatewaySessionTile from "@/components/platform/GatewaySessionTile";
 import HomepageOnboardingOverlay from "@/components/onboarding/HomepageOnboardingOverlay";
 import { PublicHeaderLogo } from "@/components/layout/PublicHeaderShell";
 import useFirstVisit from "@/hooks/useFirstVisit";
-import { SCOVERS_INTRO_STORAGE_KEY } from "@/lib/scovers-onboarding-content";
+import { SCAVERSE_INTRO_STORAGE_KEY } from "@/lib/scaverse-onboarding-content";
 import { DEFAULT_MUSEUM_SLUG, museumPath } from "@/lib/domain-registry";
 
 const CANONICAL_BADGES = [
@@ -61,7 +62,7 @@ function resolveGateway(config, mediaRecords = []) {
 }
 
 export default function PlatformHome() {
-  const { isOpen: onboardingOpen, closeOnboarding, markSeen } = useFirstVisit(SCOVERS_INTRO_STORAGE_KEY);
+  const { isOpen: onboardingOpen, closeOnboarding, markSeen } = useFirstVisit(SCAVERSE_INTRO_STORAGE_KEY);
 
   useEffect(() => {
     document.title = "SCAVerse";
@@ -107,7 +108,11 @@ export default function PlatformHome() {
           </p>
 
           <div className="mt-11 grid w-full max-w-3xl gap-5">
-            {gateway.badges.map((badge) => <PlatformGatewayBadge key={badge.key} badge={badge} variant="primary" />)}
+            {gateway.badges.map((badge) =>
+              badge.key === "login"
+                ? <GatewaySessionTile key={badge.key} badge={badge} />
+                : <PlatformGatewayBadge key={badge.key} badge={badge} variant="primary" />
+            )}
           </div>
         </div>
       </section>

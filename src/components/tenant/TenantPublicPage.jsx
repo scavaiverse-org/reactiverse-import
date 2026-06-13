@@ -10,6 +10,7 @@ import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { museumPath } from "@/lib/domain-registry";
 import { fetchPublishedManifest } from "@/lib/manifest-public";
 import TenantNavbar from "./TenantNavbar";
+import MuseumOpenGate from "./MuseumOpenGate";
 import TenantOverlay from "./TenantOverlay";
 import TenantVideoHero from "./TenantVideoHero";
 import TenantCTA from "./TenantCTA";
@@ -171,7 +172,20 @@ function FeaturedExhibits({ slug, exhibits }) {
   return <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6"><div className="mb-8 flex flex-wrap items-center justify-between gap-4"><div><p className="font-display text-[10px] font-medium uppercase tracking-[0.5em] text-primary/70">Featured exhibits</p><h2 className="mt-3 font-heading text-4xl font-bold text-foreground">Museum highlights.</h2></div><Button asChild variant="outline" className="border-white/15 bg-white/10"><Link to={museumPath(slug, "museum")}>View Exhibits</Link></Button></div><div className="grid gap-5 md:grid-cols-3">{items.map((item, index) => <div key={item.id || item.title} className="min-h-56 rounded-[2rem] border border-white/10 bg-gradient-to-br from-card/70 to-card/30 p-6 backdrop-blur-xl"><Star className="mb-5 h-5 w-5 text-primary" /><h3 className="font-heading text-2xl font-bold text-foreground">{item.title || item.name}</h3><p className="mt-4 text-sm leading-7 text-muted-foreground">{item.description || item.body || "A tenant-owned exhibit preview."}</p></div>)}</div></section>;
 }
 
-export default function TenantPublicPage({ pageType = "home", variant = 1 }) {
+// Gate first: unpublished museums show "not open yet" to outside visitors
+// (master admins and the museum's own team pass through). Tickets + about are
+// presale pages — they stay reachable before publish so visitors can buy
+// ahead of launch and read what they're buying; home/tour stay gated.
+export default function TenantPublicPage(props) {
+  const presale = props.pageType === "about" || props.pageType === "tickets";
+  return (
+    <MuseumOpenGate allow={presale}>
+      <TenantPublicPageInner {...props} />
+    </MuseumOpenGate>
+  );
+}
+
+function TenantPublicPageInner({ pageType = "home", variant = 1 }) {
   const navigate = useNavigate();
   const { tenant, isLoading } = useActiveTenant();
   const slug = tenant?.slug;

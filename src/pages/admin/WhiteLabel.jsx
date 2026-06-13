@@ -63,7 +63,7 @@ export default function WhiteLabel() {
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div>
                   <p className="text-sm font-semibold text-foreground">{tenant.name}</p>
-                  <p className="text-[10px] text-muted-foreground">{tenant.custom_domain || `${tenant.slug}.scavai.io`}</p>
+                  <p className="text-[10px] text-muted-foreground">{tenant.custom_domain || `${tenant.slug}.scaverse.io`}</p>
                 </div>
                 <StatusBadge status={tenant.status} />
               </div>

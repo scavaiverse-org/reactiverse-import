@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { uploadFile } from "@/lib/upload";
-import { Upload } from "lucide-react";
+import { Upload, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,6 +27,7 @@ import MediaUploadStatus from "./MediaUploadStatus";
 import ScrollableImageControls from "./ScrollableImageControls";
 import MuseumModeEditor from "./MuseumModeEditor";
 import { ensureTypeConfigs, PAGE_TYPES } from "@/lib/walkthrough-room-types";
+import { buildAutofillWorldConfig } from "@/lib/three-d-world-validation";
 import { scoreWalkthroughQuality } from "@/lib/walkthrough-quality-scoring";
 import { detectMediaTypeFromFile, detectMediaTypeFromUrl, ensureMediaTypes } from "@/lib/walkthrough-media-bindings";
 
@@ -113,6 +114,14 @@ export default function WalkthroughRoomEditor({ room, onChange, hasError = false
 
   const TypeEditor = typeEditors[room.page_type || "walkthrough_exhibition"] || ExhibitionRoomEditor;
 
+  const autofill3DWorld = () => {
+    setRoom({
+      ...room,
+      page_type: "three_d_world",
+      threeDWorldConfig: buildAutofillWorldConfig(room.threeDWorldConfig?.autofillLayoutId),
+    });
+  };
+
   return (
     <div className={`overflow-hidden rounded-3xl border bg-white/[0.035] shadow-2xl shadow-black/10 ${hasError ? "animate-error-glow border-destructive" : "border-white/10"}`}>
       <div className="flex flex-col gap-4 border-b border-white/10 bg-gradient-to-r from-primary/10 to-transparent p-5 lg:flex-row lg:items-start lg:justify-between">
@@ -130,12 +139,23 @@ export default function WalkthroughRoomEditor({ room, onChange, hasError = false
           </div>
           <p className="mt-2 text-xs text-muted-foreground">Changing room type preserves shared fields and keeps old type-specific config hidden, not deleted.</p>
         </div>
-        <div className="flex items-center gap-1.5">
-          <PageTypeSelector value={room.page_type} onChange={(pageType) => setRoom({ ...room, page_type: pageType })} />
-          <HelpHint title="Room type">
-            Controls which type-specific layout editor appears below (e.g. Exhibition, Artifact, Gamification).
-            Switching types is safe — fields from the previous type are kept in storage, just hidden.
-          </HelpHint>
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-1.5">
+            <PageTypeSelector value={room.page_type} onChange={(pageType) => setRoom({ ...room, page_type: pageType })} />
+            <HelpHint title="Room type">
+              Controls which type-specific layout editor appears below (e.g. Exhibition, Artifact, Gamification).
+              Switching types is safe — fields from the previous type are kept in storage, just hidden.
+            </HelpHint>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Button size="sm" variant="outline" className="w-full" onClick={autofill3DWorld}>
+              <Wand2 className="h-4 w-4" /> Autofill 3D
+            </Button>
+            <HelpHint title="Autofill 3D">
+              Instantly sets this room to a 3D World and fills in a complete, ready-to-publish world
+              (template, mood, layout, objects, and exits). Just click Publish after.
+            </HelpHint>
+          </div>
         </div>
       </div>
 

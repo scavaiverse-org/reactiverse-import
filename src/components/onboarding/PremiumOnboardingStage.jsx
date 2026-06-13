@@ -21,7 +21,7 @@ export default function PremiumOnboardingStage({ stage, currentStage, totalStage
         <div className="mx-auto mb-5 h-20 w-20 rounded-full border border-primary/25 bg-primary/10 shadow-[0_0_80px_rgba(245,174,56,0.18)] flex items-center justify-center">
           <span className="text-5xl text-primary/40 font-mono">{stage.visual}</span>
         </div>
-        <p className="mb-3 font-display text-[10px] font-medium uppercase tracking-[0.5em] text-primary/70">SCAVers · Step {currentStage + 1} of {totalStages}</p>
+        <p className="mb-3 font-display text-[10px] font-medium uppercase tracking-[0.5em] text-primary/70">SCAVerse · Step {currentStage + 1} of {totalStages}</p>
         <h1 className="mb-4 font-heading text-4xl font-semibold leading-[0.95] tracking-tight text-foreground sm:text-5xl">{stage.title}</h1>
         <p className="mx-auto max-w-md font-body text-sm font-light leading-relaxed text-muted-foreground">{stage.subtitle}</p>
         <div className="mt-4 flex flex-wrap justify-center gap-2 text-[10px] text-muted-foreground">

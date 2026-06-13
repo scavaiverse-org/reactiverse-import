@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import AdminArchitectureBlueprint from "@/components/admin/AdminArchitectureBlueprint";
+import SetupChecklist from "@/components/tenant-admin/SetupChecklist";
 import { useActiveTenant } from "@/hooks/useActiveTenant";
 
 function StatCard({ label, value, sub, icon: Icon, color, bg, trend, to }) {
@@ -36,7 +37,7 @@ function StatCard({ label, value, sub, icon: Icon, color, bg, trend, to }) {
 }
 
 export default function Dashboard() {
-  const { tenant } = useActiveTenant();
+  const { tenant, enabledModules } = useActiveTenant();
   const tenantSlug = tenant?.slug || "asian-operatic-museum";
   const adminBase = `/museum/${tenantSlug}/admin`;
   const { data: tickets = [] } = useQuery({
@@ -94,7 +95,7 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.25em] text-primary font-medium mb-1">AOM Museum Admin</p>
+          <p className="text-[10px] uppercase tracking-[0.25em] text-primary font-medium mb-1">{tenant?.name || "Museum"} Admin</p>
           <h1 className="text-2xl font-display font-bold text-foreground">Operations Overview</h1>
           <p className="text-xs text-muted-foreground mt-0.5">Real-time ecosystem intelligence</p>
         </div>
@@ -111,6 +112,8 @@ export default function Dashboard() {
         <StatCard label="Vendor Partners" value={vendors.length} sub={`${pendingVendors} pending · ${activeVendors} active`} icon={Store} color="text-blue-400" bg="bg-blue-500/10" to={`${adminBase}/vendors`} />
         <StatCard label="Exhibits Live" value={exhibits.length} sub={`${publishedExhibits} published`} icon={BookOpen} color="text-violet-400" bg="bg-violet-500/10" to={`${adminBase}/exhibits`} />
       </div>
+
+      <SetupChecklist tenant={tenant} adminBase={adminBase} tenantSlug={tenantSlug} enabledModules={enabledModules} exhibitsCount={exhibits.length} ticketsCount={tickets.length} />
 
       <AdminArchitectureBlueprint />
 

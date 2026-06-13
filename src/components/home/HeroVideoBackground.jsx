@@ -6,7 +6,7 @@ function useReducedMotion() {
 
   useEffect(() => {
     const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const update = () => setReduced(query.matches || document.documentElement.classList.contains("scavai-reduced-motion"));
+    const update = () => setReduced(query.matches || document.documentElement.classList.contains("scaverse-reduced-motion"));
     update();
     query.addEventListener("change", update);
     return () => query.removeEventListener("change", update);

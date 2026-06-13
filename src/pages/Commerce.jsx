@@ -22,7 +22,7 @@ const FALLBACK_FEATURED_PRODUCTS = [
   { name: "Handcrafted Opera Mask", vendor: "Heritage Artisans", price: "SGD 89", image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=300&fit=crop", rating: 4.8 },
   { name: "Silk Fan Collection", vendor: "Royal Silk House", price: "SGD 45", image: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=300&h=300&fit=crop", rating: 4.9 },
   { name: "Tea Ceremony Kit", vendor: "Dragon Well Tea", price: "SGD 120", image: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=300&h=300&fit=crop", rating: 5.0 },
-  { name: "Virtual Gallery Pass", vendor: "SCAVAI Digital", price: "SGD 25", image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=300&h=300&fit=crop", rating: 4.7 },
+  { name: "Virtual Gallery Pass", vendor: "SCAVerse Digital", price: "SGD 25", image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=300&h=300&fit=crop", rating: 4.7 },
 ];
 
 function getSection(config, keys = []) {

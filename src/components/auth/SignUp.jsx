@@ -1,14 +1,12 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { UserPlus, Eye, EyeOff, MailCheck } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { fetchAuthProfile, resolvePostLoginDestination, shouldPromptFranchiseIntent } from "@/lib/post-login";
+import { fetchAuthProfile, resolvePostLoginDestination } from "@/lib/post-login";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import FranchiseIntentModal from "@/components/auth/FranchiseIntentModal";
-import TurnstileWidget from "@/components/auth/TurnstileWidget";
+import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
 
 export default function SignUp() {
   const navigate = useNavigate();
@@ -18,13 +16,9 @@ export default function SignUp() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [franchiseIntent, setFranchiseIntent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
-  const [showFranchisePrompt, setShowFranchisePrompt] = useState(false);
-  const [captchaToken, setCaptchaToken] = useState("");
-  const turnstileRef = useRef(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,23 +29,14 @@ export default function SignUp() {
       return;
     }
 
-    if (!captchaToken) {
-      setError("Please complete the verification challenge.");
-      return;
-    }
-
     setLoading(true);
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { full_name: fullName, franchise_intent: franchiseIntent },
-        captchaToken,
+        data: { full_name: fullName },
       },
     });
-
-    turnstileRef.current?.reset();
-    setCaptchaToken("");
 
     if (signUpError) {
       setLoading(false);
@@ -74,11 +59,7 @@ export default function SignUp() {
 
     setLoading(false);
 
-    if (shouldPromptFranchiseIntent(profile)) {
-      setShowFranchisePrompt(true);
-      return;
-    }
-
+    // New public users land on "/" where AccountTypeGate asks consumer vs franchisee.
     const destination = await resolvePostLoginDestination(profile).catch(() => "/");
     navigate(destination, { replace: true });
   };
@@ -108,7 +89,15 @@ export default function SignUp() {
         <div className="mb-6 text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-primary">SCAVerse</p>
           <h1 className="mt-3 font-display text-2xl font-bold text-foreground">Create your account</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Sign up to start exploring SCAVers.</p>
+          <p className="mt-2 text-sm text-muted-foreground">Sign up to start exploring SCAVerse.</p>
+        </div>
+
+        <GoogleAuthButton />
+
+        <div className="my-5 flex items-center gap-3">
+          <span className="h-px flex-1 bg-border/60" />
+          <span className="text-xs uppercase tracking-wider text-muted-foreground">or sign up with email</span>
+          <span className="h-px flex-1 bg-border/60" />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -177,29 +166,13 @@ export default function SignUp() {
             />
           </div>
 
-          <label className="flex items-start gap-2.5 rounded-xl border border-border/50 bg-background/40 px-4 py-3 text-sm text-muted-foreground">
-            <Checkbox
-              checked={franchiseIntent}
-              onCheckedChange={(checked) => setFranchiseIntent(checked === true)}
-              className="mt-0.5"
-            />
-            <span>I&apos;m interested in opening a franchise / tenant space on SCAVers.</span>
-          </label>
-
-          <TurnstileWidget
-            ref={turnstileRef}
-            onVerify={setCaptchaToken}
-            onExpire={() => setCaptchaToken("")}
-            className="flex justify-center"
-          />
-
           {error && (
             <p className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">
               {error}
             </p>
           )}
 
-          <Button type="submit" disabled={loading || !captchaToken} className="w-full bg-primary text-primary-foreground">
+          <Button type="submit" disabled={loading} className="w-full bg-primary text-primary-foreground">
             {loading ? (
               <span className="flex items-center gap-2">
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
@@ -218,12 +191,6 @@ export default function SignUp() {
           </Link>
         </p>
       </div>
-
-      <FranchiseIntentModal
-        open={showFranchisePrompt}
-        onApply={() => navigate("/become-a-tenant", { replace: true })}
-        onSkip={() => navigate("/", { replace: true })}
-      />
     </main>
   );
 }

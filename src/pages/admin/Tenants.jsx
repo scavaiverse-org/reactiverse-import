@@ -3,13 +3,22 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Building2, Plus, Eye, Palette, LayoutDashboard, Trash2 } from "lucide-react";
+import { Building2, Plus, Eye, Inbox, Palette, LayoutDashboard, Trash2 } from "lucide-react";
 import AdminBreadcrumb from "@/components/admin/AdminBreadcrumb";
 import StatusBadge from "@/components/admin/StatusBadge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
 const MODULES_ALL = ["onboarding", "ticketing", "ai_guide", "walkthrough", "vendors", "commerce", "analytics", "gamification"];
+
+const INQUIRY_STATUSES = ["new", "contacted", "qualified", "closed"];
+
+const INQUIRY_STATUS_COLORS = {
+  new: "text-amber-400 bg-amber-400/10 border-amber-400/30",
+  contacted: "text-blue-400 bg-blue-400/10 border-blue-400/30",
+  qualified: "text-emerald-400 bg-emerald-400/10 border-emerald-400/30",
+  closed: "text-muted-foreground bg-white/5 border-white/10",
+};
 
 export default function Tenants() {
   const qc = useQueryClient();
@@ -21,6 +30,7 @@ export default function Tenants() {
   const [newName, setNewName] = useState("");
   const [newRegion, setNewRegion] = useState("");
   const [tenantToDelete, setTenantToDelete] = useState(null);
+  const [inquiryToDelete, setInquiryToDelete] = useState(null);
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
@@ -45,6 +55,22 @@ export default function Tenants() {
       setTenantToDelete(null);
       toast.success("Museum deleted");
     }
+  });
+
+  // Franchise applications submitted via the public Become-a-Tenant form.
+  const { data: inquiries = [] } = useQuery({
+    queryKey: ["tenant-inquiries"],
+    queryFn: () => base44.entities.TenantInquiry.list("-created_at", 200),
+  });
+
+  const inquiryStatusMutation = useMutation({
+    mutationFn: ({ id, status }) => base44.entities.TenantInquiry.update(id, { status }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["tenant-inquiries"] }); toast.success("Application updated"); },
+  });
+
+  const deleteInquiryMutation = useMutation({
+    mutationFn: (inquiry) => base44.entities.TenantInquiry.delete(inquiry.id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["tenant-inquiries"] }); setInquiryToDelete(null); toast.success("Application deleted"); },
   });
 
   const handleCreate = () => {
@@ -119,6 +145,64 @@ export default function Tenants() {
         </motion.div>
       )}
 
+      {/* Franchise Applications */}
+      <div className="bg-white/[0.03] border border-amber-400/15 rounded-xl p-5 mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Inbox className="w-4 h-4 text-amber-400" />
+          <p className="text-xs font-semibold text-foreground">Franchise Applications</p>
+          <span className="text-[10px] text-muted-foreground">({inquiries.length})</span>
+        </div>
+        <div className="space-y-3">
+          {inquiries.map((inquiry) => (
+            <div key={inquiry.id} className="rounded-lg border border-white/6 bg-white/[0.02] p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-foreground">{inquiry.organization}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {inquiry.contact_name} · {inquiry.email}
+                    {inquiry.museum_type ? ` · ${inquiry.museum_type}` : ""}
+                  </p>
+                  {inquiry.message && <p className="mt-2 text-xs leading-5 text-foreground/70">{inquiry.message}</p>}
+                  <p className="mt-1 text-[10px] text-muted-foreground/70">
+                    Applied {new Date(inquiry.submitted_at || inquiry.created_at).toLocaleString()}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={inquiry.status || "new"}
+                    onChange={(e) => inquiryStatusMutation.mutate({ id: inquiry.id, status: e.target.value })}
+                    disabled={inquiryStatusMutation.isPending}
+                    className={`rounded-lg border px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider focus:outline-none ${INQUIRY_STATUS_COLORS[inquiry.status] || INQUIRY_STATUS_COLORS.new} bg-[#060c18]`}
+                  >
+                    {INQUIRY_STATUSES.map((status) => (
+                      <option key={status} value={status}>{status}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => { setNewName(inquiry.organization); setShowNew(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                    className="rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-[10px] font-medium text-primary transition-colors hover:bg-primary/20"
+                  >
+                    Create Museum
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setInquiryToDelete(inquiry)}
+                    title="Permanently delete this application"
+                    className="flex items-center gap-1 rounded-lg border border-destructive/25 px-2 py-1.5 text-[10px] font-medium text-destructive transition-colors hover:bg-destructive/10"
+                  >
+                    <Trash2 className="w-3 h-3" />Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+          {inquiries.length === 0 && (
+            <p className="py-4 text-center text-xs text-muted-foreground">No franchise applications yet</p>
+          )}
+        </div>
+      </div>
+
       {/* Tenants Grid */}
       <div className="grid lg:grid-cols-2 gap-4">
         {displayedTenants.map((t, i) => {
@@ -134,7 +218,7 @@ export default function Tenants() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-foreground">{t.name}</p>
-                  <p className="text-[10px] text-muted-foreground">{t.region} · {t.custom_domain || `${t.slug}.scavai.io`}</p>
+                  <p className="text-[10px] text-muted-foreground">{t.region} · {t.custom_domain || `${t.slug}.scaverse.io`}</p>
                 </div>
               </div>
               <div className="flex flex-col items-end gap-1">
@@ -152,14 +236,30 @@ export default function Tenants() {
               </div>
             )}
 
-            {/* Module Pills */}
+            {/* Module Pills — click to enable/disable per museum (writes enabled_modules) */}
             <div className="flex flex-wrap gap-1 mb-3">
               {MODULES_ALL.map(m => {
                 const en = t.enabled_modules?.includes(m);
+                const label = m.replace(/_/g, " ");
+                const toggleModule = () => {
+                  // Disabling hides a module's public routes immediately, so confirm first.
+                  if (en && !window.confirm(`Disable "${label}" for ${t.name}? Its public pages stop working right away.`)) return;
+                  const next = en
+                    ? (t.enabled_modules || []).filter(x => x !== m)
+                    : [...(t.enabled_modules || []), m];
+                  updateMutation.mutate({ id: t.id, data: { enabled_modules: next } });
+                };
                 return (
-                  <span key={m} className={`text-[9px] px-2 py-0.5 rounded-full border font-medium capitalize ${en ? "text-emerald-400 border-emerald-400/30 bg-emerald-400/5" : "text-slate-600 border-slate-600/20"}`}>
-                    {m.replace(/_/g, " ")}
-                  </span>
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={toggleModule}
+                    disabled={updateMutation.isPending}
+                    title={en ? `Enabled — click to disable for ${t.name}` : `Disabled — click to enable for ${t.name}`}
+                    className={`text-[9px] px-2 py-0.5 rounded-full border font-medium capitalize transition-colors disabled:opacity-50 ${en ? "text-emerald-400 border-emerald-400/30 bg-emerald-400/5 hover:bg-emerald-400/10" : "text-slate-500 border-slate-600/20 hover:border-slate-400/40 hover:text-slate-300"}`}
+                  >
+                    {label}
+                  </button>
                 );
               })}
             </div>
@@ -176,29 +276,31 @@ export default function Tenants() {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-2">
+            <div className="space-y-2">
               <select
                 value={t.status}
                 onChange={e => updateMutation.mutate({ id: t.id, data: { status: e.target.value } })}
-                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary/40"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary/40"
               >
                 <option value="draft">Draft</option>
                 <option value="staging">Staging</option>
                 <option value="live">Live</option>
                 <option value="archived">Archived</option>
               </select>
-              <Link to={`/museum/${t.slug}/admin`} className="px-3 py-1.5 border border-primary/25 rounded-lg text-xs text-primary hover:text-primary/80 transition-colors flex items-center gap-1">
-                <LayoutDashboard className="w-3 h-3" />Open Tenant Console
-              </Link>
-              <Link to="/platform/admin/white-label" className="px-3 py-1.5 border border-white/10 rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-                <Palette className="w-3 h-3" />Brand
-              </Link>
-              <Link to={`/museum/${t.slug}/home`} className="px-3 py-1.5 border border-white/10 rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-                <Eye className="w-3 h-3" />View
-              </Link>
-              <button onClick={() => setTenantToDelete(t)} className="px-3 py-1.5 border border-destructive/25 rounded-lg text-xs text-destructive hover:bg-destructive/10 transition-colors flex items-center gap-1">
-                <Trash2 className="w-3 h-3" />Delete
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <Link to={`/museum/${t.slug}/admin`} className="px-3 py-1.5 border border-primary/25 rounded-lg text-xs text-primary hover:text-primary/80 transition-colors flex items-center gap-1">
+                  <LayoutDashboard className="w-3 h-3" />Console
+                </Link>
+                <Link to="/platform/admin/white-label" className="px-3 py-1.5 border border-white/10 rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                  <Palette className="w-3 h-3" />Brand
+                </Link>
+                <Link to={`/museum/${t.slug}/home`} className="px-3 py-1.5 border border-white/10 rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                  <Eye className="w-3 h-3" />View
+                </Link>
+                <button onClick={() => setTenantToDelete(t)} className="px-3 py-1.5 border border-destructive/25 rounded-lg text-xs text-destructive hover:bg-destructive/10 transition-colors flex items-center gap-1">
+                  <Trash2 className="w-3 h-3" />Delete
+                </button>
+              </div>
             </div>
           </motion.div>
           );
@@ -217,6 +319,23 @@ export default function Tenants() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteMutation.mutate(tenantToDelete)}>
               Delete Museum
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!inquiryToDelete} onOpenChange={(open) => !open && setInquiryToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete franchise application?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the application from {inquiryToDelete?.organization || 'this applicant'} ({inquiryToDelete?.email || 'no email'}). This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteInquiryMutation.mutate(inquiryToDelete)}>
+              Delete Application
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
