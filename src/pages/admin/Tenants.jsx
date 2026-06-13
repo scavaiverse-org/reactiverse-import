@@ -30,6 +30,7 @@ export default function Tenants() {
   const [newName, setNewName] = useState("");
   const [newRegion, setNewRegion] = useState("");
   const [tenantToDelete, setTenantToDelete] = useState(null);
+  const [inquiryToDelete, setInquiryToDelete] = useState(null);
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
@@ -65,6 +66,11 @@ export default function Tenants() {
   const inquiryStatusMutation = useMutation({
     mutationFn: ({ id, status }) => base44.entities.TenantInquiry.update(id, { status }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["tenant-inquiries"] }); toast.success("Application updated"); },
+  });
+
+  const deleteInquiryMutation = useMutation({
+    mutationFn: (inquiry) => base44.entities.TenantInquiry.delete(inquiry.id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["tenant-inquiries"] }); setInquiryToDelete(null); toast.success("Application deleted"); },
   });
 
   const handleCreate = () => {
@@ -179,6 +185,14 @@ export default function Tenants() {
                   >
                     Create Museum
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setInquiryToDelete(inquiry)}
+                    title="Permanently delete this application"
+                    className="flex items-center gap-1 rounded-lg border border-destructive/25 px-2 py-1.5 text-[10px] font-medium text-destructive transition-colors hover:bg-destructive/10"
+                  >
+                    <Trash2 className="w-3 h-3" />Delete
+                  </button>
                 </div>
               </div>
             </div>
@@ -222,14 +236,30 @@ export default function Tenants() {
               </div>
             )}
 
-            {/* Module Pills */}
+            {/* Module Pills — click to enable/disable per museum (writes enabled_modules) */}
             <div className="flex flex-wrap gap-1 mb-3">
               {MODULES_ALL.map(m => {
                 const en = t.enabled_modules?.includes(m);
+                const label = m.replace(/_/g, " ");
+                const toggleModule = () => {
+                  // Disabling hides a module's public routes immediately, so confirm first.
+                  if (en && !window.confirm(`Disable "${label}" for ${t.name}? Its public pages stop working right away.`)) return;
+                  const next = en
+                    ? (t.enabled_modules || []).filter(x => x !== m)
+                    : [...(t.enabled_modules || []), m];
+                  updateMutation.mutate({ id: t.id, data: { enabled_modules: next } });
+                };
                 return (
-                  <span key={m} className={`text-[9px] px-2 py-0.5 rounded-full border font-medium capitalize ${en ? "text-emerald-400 border-emerald-400/30 bg-emerald-400/5" : "text-slate-600 border-slate-600/20"}`}>
-                    {m.replace(/_/g, " ")}
-                  </span>
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={toggleModule}
+                    disabled={updateMutation.isPending}
+                    title={en ? `Enabled — click to disable for ${t.name}` : `Disabled — click to enable for ${t.name}`}
+                    className={`text-[9px] px-2 py-0.5 rounded-full border font-medium capitalize transition-colors disabled:opacity-50 ${en ? "text-emerald-400 border-emerald-400/30 bg-emerald-400/5 hover:bg-emerald-400/10" : "text-slate-500 border-slate-600/20 hover:border-slate-400/40 hover:text-slate-300"}`}
+                  >
+                    {label}
+                  </button>
                 );
               })}
             </div>
@@ -246,29 +276,31 @@ export default function Tenants() {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-2">
+            <div className="space-y-2">
               <select
                 value={t.status}
                 onChange={e => updateMutation.mutate({ id: t.id, data: { status: e.target.value } })}
-                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary/40"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary/40"
               >
                 <option value="draft">Draft</option>
                 <option value="staging">Staging</option>
                 <option value="live">Live</option>
                 <option value="archived">Archived</option>
               </select>
-              <Link to={`/museum/${t.slug}/admin`} className="px-3 py-1.5 border border-primary/25 rounded-lg text-xs text-primary hover:text-primary/80 transition-colors flex items-center gap-1">
-                <LayoutDashboard className="w-3 h-3" />Open Tenant Console
-              </Link>
-              <Link to="/platform/admin/white-label" className="px-3 py-1.5 border border-white/10 rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-                <Palette className="w-3 h-3" />Brand
-              </Link>
-              <Link to={`/museum/${t.slug}/home`} className="px-3 py-1.5 border border-white/10 rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-                <Eye className="w-3 h-3" />View
-              </Link>
-              <button onClick={() => setTenantToDelete(t)} className="px-3 py-1.5 border border-destructive/25 rounded-lg text-xs text-destructive hover:bg-destructive/10 transition-colors flex items-center gap-1">
-                <Trash2 className="w-3 h-3" />Delete
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <Link to={`/museum/${t.slug}/admin`} className="px-3 py-1.5 border border-primary/25 rounded-lg text-xs text-primary hover:text-primary/80 transition-colors flex items-center gap-1">
+                  <LayoutDashboard className="w-3 h-3" />Console
+                </Link>
+                <Link to="/platform/admin/white-label" className="px-3 py-1.5 border border-white/10 rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                  <Palette className="w-3 h-3" />Brand
+                </Link>
+                <Link to={`/museum/${t.slug}/home`} className="px-3 py-1.5 border border-white/10 rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                  <Eye className="w-3 h-3" />View
+                </Link>
+                <button onClick={() => setTenantToDelete(t)} className="px-3 py-1.5 border border-destructive/25 rounded-lg text-xs text-destructive hover:bg-destructive/10 transition-colors flex items-center gap-1">
+                  <Trash2 className="w-3 h-3" />Delete
+                </button>
+              </div>
             </div>
           </motion.div>
           );
@@ -287,6 +319,23 @@ export default function Tenants() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteMutation.mutate(tenantToDelete)}>
               Delete Museum
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!inquiryToDelete} onOpenChange={(open) => !open && setInquiryToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete franchise application?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the application from {inquiryToDelete?.organization || 'this applicant'} ({inquiryToDelete?.email || 'no email'}). This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteInquiryMutation.mutate(inquiryToDelete)}>
+              Delete Application
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
