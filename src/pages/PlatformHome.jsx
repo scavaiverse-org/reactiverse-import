@@ -9,16 +9,15 @@ import HomepageOnboardingOverlay from "@/components/onboarding/HomepageOnboardin
 import { PublicHeaderLogo } from "@/components/layout/PublicHeaderShell";
 import useFirstVisit from "@/hooks/useFirstVisit";
 import { SCAVERSE_INTRO_STORAGE_KEY } from "@/lib/scaverse-onboarding-content";
-import { DEFAULT_MUSEUM_SLUG, museumPath } from "@/lib/domain-registry";
 
 const CANONICAL_BADGES = [
   {
     key: "consumer_platform",
     userType: "Consumer Platform",
     title: "Consumer Platform",
-    description: "Reserve e-tickets for the pre-launch museum and explore what's coming to SCAVerse.",
+    description: "Discover immersive museums and experiences — and pre-book the launch of the Asian Operatic Museum.",
     label: "Enter Consumer Platform",
-    route: museumPath(DEFAULT_MUSEUM_SLUG, "tickets"),
+    route: "/discover",
     visibility: true,
     sortOrder: 1,
   },
