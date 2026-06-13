@@ -20,7 +20,7 @@ export const THREE_D_WORLD_EDITOR_SEED = {
     { id: "cinematic_walkthrough", name: "Cinematic Walkthrough Exhibition", category: "Walkthrough", description: "A guided cinematic path where visitors move through stations in order.", bestFor: ["storytelling", "onboarding", "brand journey", "tenant showcase"], defaultMood: "cinematic_dark", defaultMovement: "auto_walkthrough", recommendedObjectLimit: 30 },
     { id: "portal_room", name: "Portal Room", category: "Navigation", description: "A central hub with doors and portals linking to other rooms.", bestFor: ["room navigation", "world map", "multi-room museum", "tenant lobby"], defaultMood: "futuristic_glow", defaultMovement: "click_to_move", recommendedObjectLimit: 25 },
     { id: "marketplace_street", name: "Marketplace Street", category: "Commerce", description: "A virtual street with booths, product displays, tenant stalls, and interactive purchase links.", bestFor: ["tenant marketplace", "shops", "products", "brand booths"], defaultMood: "lively_public", defaultMovement: "free_walk", recommendedObjectLimit: 60 },
-    { id: "futuristic_room", name: "Futuristic Room", category: "Innovation", description: "A sleek sci-fi room for innovation showcases, AI explainers, and premium demos.", bestFor: ["tech", "AI", "innovation", "premium brand room"], defaultMood: "futuristic_blue", defaultMovement: "click_to_move_guided", recommendedObjectLimit: 35 },
+    { id: "futuristic_room", name: "Futuristic Room", category: "Innovation", description: "A sleek sci-fi room for innovation showcases, AI explainers, and premium demos.", bestFor: ["tech", "AI", "innovation", "premium brand room"], defaultMood: "futuristic_glow", defaultMovement: "click_to_move_guided", recommendedObjectLimit: 35 },
     { id: "theatre_hall", name: "Theatre Hall", category: "Presentation", description: "A stage-based room for videos, talks, performances, ceremonies, and guided presentations.", bestFor: ["video showcase", "launch event", "performance", "presentation"], defaultMood: "stage_spotlight", defaultMovement: "fixed_view_guided", recommendedObjectLimit: 20 },
     { id: "empty_3d_space", name: "Empty 3D Space", category: "Custom", description: "Blank world for advanced admins who want full control.", bestFor: ["custom builds", "advanced creators", "experimental rooms"], defaultMood: "neutral_clean", defaultMovement: "free_walk", recommendedObjectLimit: 80 },
   ],
@@ -30,11 +30,50 @@ export const THREE_D_WORLD_EDITOR_SEED = {
     { id: "nostalgic_warm", name: "Nostalgic Warm", lighting: "warm_memory_lights", backgroundMusic: "gentle_piano", colorTone: "sepia_gold", fog: "light", glow: "soft", emotionalTone: "personal, reflective, emotional" },
     { id: "cinematic_dark", name: "Cinematic Dark", lighting: "spotlight_path", backgroundMusic: "cinematic_low", colorTone: "black_blue_gold", fog: "medium", glow: "medium", emotionalTone: "dramatic, immersive, serious" },
     { id: "futuristic_glow", name: "Futuristic Glow", lighting: "neon_edge_lights", backgroundMusic: "soft_sci_fi", colorTone: "blue_purple_cyan", fog: "light", glow: "strong", emotionalTone: "modern, advanced, digital" },
-    { id: "futuristic_blue", name: "Futuristic Blue", lighting: "neon_edge_lights", backgroundMusic: "soft_sci_fi", colorTone: "blue_purple_cyan", fog: "light", glow: "strong", emotionalTone: "modern, advanced, digital" },
     { id: "lively_public", name: "Lively Public", lighting: "bright_daylight", backgroundMusic: "light_public_ambient", colorTone: "bright_multicolor", fog: false, glow: "none", emotionalTone: "open, social, energetic" },
     { id: "stage_spotlight", name: "Stage Spotlight", lighting: "stage_lights", backgroundMusic: "pre_show_ambient", colorTone: "black_red_gold", fog: "light", glow: "spotlight", emotionalTone: "performance, attention, ceremony" },
     { id: "neutral_clean", name: "Neutral Clean", lighting: "balanced_soft", backgroundMusic: "none", colorTone: "white_gray", fog: false, glow: "none", emotionalTone: "simple, clear, flexible" },
   ],
+
+  atmosphereEffects: [
+    { id: "none", name: "None", description: "Clean air. Best for readability and low-end devices." },
+    { id: "dust_motes", name: "Dust Motes", description: "Soft archival dust drifting in the light." },
+    { id: "floating_lights", name: "Floating Lights", description: "Gentle glowing particles in the room's accent colour." },
+    { id: "gentle_snow", name: "Gentle Snow", description: "Slow falling snow for seasonal or memory scenes." },
+    { id: "warm_embers", name: "Warm Embers", description: "Rising ember sparks for heritage and fireside moods." },
+  ],
+
+  accessibilitySeed: {
+    textScales: [
+      { id: "normal", name: "Normal" },
+      { id: "large", name: "Large" },
+    ],
+    rules: [
+      "Every image should have alt text for screen-reader visitors.",
+      "Audio and video points should include a transcript.",
+      "Keep the 2D accessible view enabled unless this room has a dedicated alternative.",
+      "Use the sensory warning when a room contains loud audio, intense themes, or strong motion.",
+    ],
+  },
+
+  curatorialSeed: {
+    statuses: [
+      { id: "", name: "Not set" },
+      { id: "curator_verified", name: "Curator Verified", description: "Checked against sources by the museum team." },
+      { id: "curator_interpretation", name: "Curator Interpretation", description: "Informed interpretation, not a verified fact." },
+      { id: "community_voice", name: "Community Voice", description: "Story or memory contributed by the community." },
+      { id: "disputed", name: "Disputed", description: "Historians or communities disagree about this claim." },
+      { id: "ai_draft", name: "AI Draft", description: "Drafted with AI assistance — needs curator review." },
+    ],
+    sensitivityFlags: [
+      { id: "none", name: "None" },
+      { id: "sacred", name: "Sacred / Religious" },
+      { id: "human_remains", name: "Human Remains" },
+      { id: "traumatic_history", name: "Traumatic History" },
+      { id: "disputed_history", name: "Disputed History" },
+      { id: "indigenous_knowledge", name: "Indigenous Knowledge" },
+    ],
+  },
 
   roomLayoutOptions: {
     roomSizes: [
@@ -151,6 +190,10 @@ export const THREE_D_WORLD_EDITOR_SEED = {
       { id: "no_exit", message: "This world has no exit door or portal." },
       { id: "broken_door_link", message: "A door or portal is linked to a missing or unpublished room." },
       { id: "unlabelled_object", message: "One or more objects have no title. Add labels for clarity." },
+      { id: "missing_alt_text", message: "Add alt text so screen-reader visitors know what this shows." },
+      { id: "missing_transcript", message: "Add a transcript so deaf and hard-of-hearing visitors can follow along." },
+      { id: "uncited_claim", message: "Marked as Curator Verified but has no source citation. Add a source or change the claim status." },
+      { id: "sensitive_gamification", message: "This object is flagged as culturally sensitive — avoid turning it into a game or collectible." },
     ],
     optimisationActions: ["compress_media", "reduce_object_count", "disable_realtime_shadows", "use_static_lighting", "lazy_load_far_objects", "replace_heavy_model_with_image", "limit_particle_effects"],
   },
@@ -171,6 +214,9 @@ export const THREE_D_WORLD_EDITOR_SEED = {
     { id: "objects_have_titles", label: "Important objects have titles", severity: "recommended" },
     { id: "media_loaded", label: "Media files are valid", severity: "required" },
     { id: "mobile_safe", label: "World is safe for mobile visitors", severity: "recommended" },
+    { id: "accessibility_ready", label: "Accessibility content is complete (alt text & transcripts)", severity: "recommended" },
+    { id: "sources_cited", label: "Verified claims have source citations", severity: "recommended" },
+    { id: "respectful_gamification", label: "Culturally sensitive objects are not gamified", severity: "recommended" },
     { id: "preview_checked", label: "Visitor preview has been checked", severity: "required" },
     { id: "performance_checked", label: "Performance warnings reviewed", severity: "recommended" },
   ],

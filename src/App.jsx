@@ -34,6 +34,7 @@ const VendorRegister = lazy(() => import('./pages/VendorRegister'));
 const Commerce = lazy(() => import('./pages/Commerce'));
 const AIGuide = lazy(() => import('./pages/AIGuide'));
 const VirtualExperience = lazy(() => import('./pages/VirtualExperience'));
+const PresaleTickets = lazy(() => import('./pages/PresaleTickets'));
 const TenantHome1 = lazy(() => import('./pages/tenant/TenantHome1'));
 const TenantHome2 = lazy(() => import('./pages/tenant/TenantHome2'));
 const TenantHome3 = lazy(() => import('./pages/tenant/TenantHome3'));
@@ -84,6 +85,7 @@ const PlatformPages = lazy(() => import('./pages/admin/PlatformPages'));
 const Music = lazy(() => import('./pages/admin/Music'));
 const OnboardingSong = lazy(() => import('./pages/admin/OnboardingSong'));
 const QASentinel = lazy(() => import('./pages/admin/QASentinel'));
+const UENProofs = lazy(() => import('./pages/admin/UENProofs'));
 const TenantMusic = lazy(() => import('./pages/tenant-admin/TenantMusic.jsx'));
 const TenantHomeEditor = lazy(() => import('./pages/tenant-admin/TenantHomeEditor.jsx'));
 
@@ -147,6 +149,7 @@ const AuthenticatedApp = () => {
       <Suspense fallback={<RouteLoadingFallback />}>
       <Routes>
       <Route path="/" element={<PlatformHome />} />
+      <Route path="/presale" element={<PresaleTickets />} />
       <Route path="/become-a-tenant" element={<BecomeTenant />} />
       <Route path="/virtual-experience" element={<VirtualExperience />} />
       <Route path="/tenant-login" element={<TenantLogin />} />
@@ -326,6 +329,7 @@ const AuthenticatedApp = () => {
         <Route path="content/:contentKey" element={<ContentSubPage />} />
         <Route path="infrastructure" element={<Infrastructure />} />
         <Route path="qa-sentinel" element={<QASentinel />} />
+        <Route path="uen" element={<UENProofs />} />
         <Route path="testers-feedback" element={<TestersFeedback />} />
         <Route path="public-content" element={<PublicContent />} />
         <Route path="media" element={<Navigate to="public-content" replace />} />

@@ -25,6 +25,8 @@ const entityTableMap = {
   TenantPresetData: 'tenant_preset_data',
   Ticket: 'tickets',
   Vendor: 'vendors',
+  PaymentProof: 'payment_proofs',
+  AdminNotification: 'admin_notifications',
 
   // Added in 0005_missing_entities.sql
   AIGuideConfig: 'ai_guide_configs',
@@ -76,6 +78,9 @@ const entityTableMap = {
   // Auth-linked RBAC profile — the role source of truth used by login,
   // edge functions, and the tour gate (NOT the legacy user_profiles table).
   Profile: 'profiles',
+
+  // Added in 0018_avatar_creator.sql
+  Avatar: 'avatars',
 };
 
 // All 65 Base44 entities now map to a real Supabase table. The catch-all

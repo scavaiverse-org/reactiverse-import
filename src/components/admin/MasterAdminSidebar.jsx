@@ -1,11 +1,14 @@
 import { Link, useLocation } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
+import NotificationBell from "@/components/admin/NotificationBell";
 import {
   LayoutDashboard, Users, Layers, Package, Server, Database,
   Activity, Building2, Palette, BarChart3, Rocket,
   ChevronRight, Globe, Brain, Ticket, Store, ShoppingBag,
   Gamepad2, Map, FileText, Image, User, Milestone,
   Tag, GitBranch, CreditCard, Bell, Search, Puzzle, Zap,
-  ClipboardCheck, Music, LayoutGrid
+  ClipboardCheck, Music, LayoutGrid, Receipt
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DEFAULT_MUSEUM_SLUG } from "@/lib/domain-registry";
@@ -38,6 +41,7 @@ const NAV = [
       { label: "Walkthrough Policy", path: "/platform/admin/modules/walkthrough", icon: Map },
       { label: "Onboarding", path: "/platform/admin/modules/onboarding", icon: Rocket },
       { label: "Ticketing", path: "/platform/admin/modules/ticketing", icon: Ticket },
+      { label: "UEN — Payment Proofs", path: "/platform/admin/uen", icon: Receipt },
       { label: "AI Guide", path: "/platform/admin/modules/ai-guide", icon: Brain },
       { label: "Vendors", path: "/platform/admin/modules/vendors", icon: Store },
       { label: "Commerce", path: "/platform/admin/modules/commerce", icon: ShoppingBag },
@@ -92,12 +96,27 @@ const NAV = [
   }
 ];
 
+const UEN_PATH = "/platform/admin/uen";
+
 export default function MasterAdminSidebar() {
   const { pathname } = useLocation();
 
+  // Live count of payment proofs awaiting review — surfaces as a badge on the
+  // UEN nav item so admins notice new pre-sale submissions. Refetches on focus
+  // and every minute.
+  const { data: pendingProofs = 0 } = useQuery({
+    queryKey: ["uen-pending-count"],
+    queryFn: async () => {
+      const rows = await base44.entities.PaymentProof.filter({ status: "pending" }, "-created_at", 200);
+      return rows.length;
+    },
+    initialData: 0,
+    refetchInterval: 60000,
+  });
+
   return (
     <aside className="w-64 min-h-screen bg-[#070d1a] border-r border-white/5 flex flex-col flex-shrink-0">
-      <div className="px-5 py-4 border-b border-white/5">
+      <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between gap-2">
         <Link to="/platform/admin" className="flex items-center gap-2">
           <div className="w-7 h-7 rounded bg-primary/20 border border-primary/40 flex items-center justify-center">
             <Globe className="w-4 h-4 text-primary" />
@@ -107,6 +126,7 @@ export default function MasterAdminSidebar() {
             <p className="text-[9px] text-muted-foreground tracking-widest">MASTER CONTROL</p>
           </div>
         </Link>
+        <NotificationBell />
       </div>
 
       <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-4">
@@ -131,7 +151,10 @@ export default function MasterAdminSidebar() {
                 >
                   <Icon className="w-3.5 h-3.5 flex-shrink-0" />
                   <span className="truncate">{item.label}</span>
-                  {active && <ChevronRight className="w-3 h-3 ml-auto text-primary/60" />}
+                  {item.path === UEN_PATH && pendingProofs > 0 && (
+                    <span className="ml-auto flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500/90 px-1 text-[9px] font-bold text-black">{pendingProofs}</span>
+                  )}
+                  {active && !(item.path === UEN_PATH && pendingProofs > 0) && <ChevronRight className="w-3 h-3 ml-auto text-primary/60" />}
                 </Link>
               );
             })}

@@ -6,7 +6,7 @@ import {
   Building2, Users, Package, Server, Database, Activity, Palette,
   Ticket, Store, Brain, Map, BarChart3, Gamepad2, ShoppingBag,
   Rocket, AlertTriangle, CheckCircle2, Globe,
-  ArrowRight, Layers, Zap
+  ArrowRight, Layers, Zap, Receipt
 } from "lucide-react";
 import StatusBadge from "@/components/admin/StatusBadge";
 import LaunchReadinessPanel from "@/components/admin/LaunchReadinessPanel";
@@ -44,7 +44,9 @@ export default function MasterDashboard() {
   const { data: experienceConfigs = [] } = useQuery({ queryKey: ["master-experience-configs"], queryFn: () => base44.entities.ExperienceConfig.list() });
   const { data: assets = [] } = useQuery({ queryKey: ["master-assets"], queryFn: () => base44.entities.ContentAsset.list() });
   const { data: events = [] } = useQuery({ queryKey: ["master-events"], queryFn: () => base44.entities.AnalyticsEvent.list() });
+  const { data: paymentProofs = [] } = useQuery({ queryKey: ["master-payment-proofs"], queryFn: () => base44.entities.PaymentProof.list("-created_at", 500), initialData: [] });
 
+  const pendingProofs = paymentProofs.filter(p => p.status === "pending").length;
   const liveTenants = tenants.filter(t => t.status === "live").length;
   const stagingTenants = tenants.filter(t => t.status === "staging").length;
   const revenue = tickets.reduce((s, t) => s + (t.total_price || 0), 0);
@@ -84,7 +86,7 @@ export default function MasterDashboard() {
       </div>
 
       {/* KPI Strip */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 mb-8">
         {[
           { label: "Live Museums", value: liveTenants, sub: `${stagingTenants} staging`, color: "text-emerald-400", icon: Globe },
           { label: "Total Tenants", value: tenants.length, sub: "Across all regions", color: "text-primary", icon: Building2 },
@@ -99,6 +101,13 @@ export default function MasterDashboard() {
             <p className="text-[10px] text-muted-foreground">{k.sub}</p>
           </div>
         ))}
+        {/* Pre-sale (UEN) — stat + shortcut to the payment proofs tab */}
+        <Link to="/platform/admin/uen" className="group bg-white/[0.03] border border-white/8 rounded-xl p-4 transition-all hover:border-amber-400/40 hover:bg-amber-400/[0.04]">
+          <Receipt className={`w-4 h-4 mb-2 ${pendingProofs > 0 ? "text-amber-400" : "text-primary"}`} />
+          <p className={`text-2xl font-display font-bold ${pendingProofs > 0 ? "text-amber-400" : "text-primary"}`}>{paymentProofs.length}</p>
+          <p className="text-xs text-foreground/80 mt-0.5">Pre-sale (UEN)</p>
+          <p className="text-[10px] text-muted-foreground">{pendingProofs > 0 ? `${pendingProofs} pending review` : "All reviewed"}</p>
+        </Link>
       </div>
 
       {/* Architecture Layers Grid */}
