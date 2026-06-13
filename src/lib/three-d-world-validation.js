@@ -263,13 +263,7 @@ export const AUTOFILL_WORLD_LAYOUTS = [
   },
 ];
 
-// Builds a complete, publish-ready config for the "Autofill 3D" button.
-// Picks a layout different from `previousLayoutId` so repeated clicks cycle
-// through distinct, fully-furnished room styles.
-export function buildAutofillWorldConfig(previousLayoutId) {
-  const pool = AUTOFILL_WORLD_LAYOUTS.filter((layout) => layout.id !== previousLayoutId);
-  const candidates = pool.length ? pool : AUTOFILL_WORLD_LAYOUTS;
-  const layout = candidates[Math.floor(Math.random() * candidates.length)];
+function buildConfigFromAutofillLayout(layout) {
   return createThreeDWorldConfig({
     selectedTemplate: layout.selectedTemplate,
     moodPreset: layout.moodPreset,
@@ -288,6 +282,25 @@ export function buildAutofillWorldConfig(previousLayoutId) {
     publishStatus: "draft",
     autofillLayoutId: layout.id,
   });
+}
+
+// Builds a complete, publish-ready config for the "Autofill 3D" button.
+// Picks a layout different from `previousLayoutId` so repeated clicks cycle
+// through distinct, fully-furnished room styles.
+export function buildAutofillWorldConfig(previousLayoutId) {
+  const pool = AUTOFILL_WORLD_LAYOUTS.filter((layout) => layout.id !== previousLayoutId);
+  const candidates = pool.length ? pool : AUTOFILL_WORLD_LAYOUTS;
+  const layout = candidates[Math.floor(Math.random() * candidates.length)];
+  return buildConfigFromAutofillLayout(layout);
+}
+
+// Builds a complete, publish-ready config for one room of the "Generate
+// Multiple 3D Worlds" flow. Cycles deterministically through
+// AUTOFILL_WORLD_LAYOUTS by index so every generated world gets distinct,
+// fully-furnished content instead of repeated copies of the sample world.
+export function buildAutofillWorldConfigByIndex(index = 0) {
+  const layout = AUTOFILL_WORLD_LAYOUTS[index % AUTOFILL_WORLD_LAYOUTS.length];
+  return buildConfigFromAutofillLayout(layout);
 }
 
 const NAVIGATION_TYPES = ["door", "portal"];

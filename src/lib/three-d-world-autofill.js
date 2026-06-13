@@ -1,35 +1,24 @@
-import { buildSampleWorldConfig } from "@/lib/three-d-world-validation";
-import { THREE_D_WORLD_EDITOR_SEED } from "@/lib/three-d-world-seed";
+import { AUTOFILL_WORLD_LAYOUTS, buildAutofillWorldConfigByIndex } from "@/lib/three-d-world-validation";
+import { getWorldTemplate } from "@/lib/three-d-world-seed";
 import { createRoomByType } from "@/lib/walkthrough-admin";
 
 // How many ready-built 3D worlds the "Autofill 3D Worlds…" action can create
 // at once. Kept small on purpose — each world is a full, mobile-rendered scene.
 export const MAX_AUTOFILL_3D_WORLDS = 8;
 
-const TEMPLATES = THREE_D_WORLD_EDITOR_SEED.worldTemplates;
-
 function clampWorldCount(count) {
   return Math.max(1, Math.min(MAX_AUTOFILL_3D_WORLDS, Math.floor(Number(count) || 0)));
 }
 
 /**
- * A complete, walkable 3D world config built from the proven AOM sample world,
- * but re-skinned per index so each generated world looks distinct (its own
- * template, mood, and movement style). The sample's objects, zones, NPC guide,
- * and doors come along so every world has content and a working exit out of the
- * box — and renders deterministically (the renderer seeds purely off room id).
+ * A complete, walkable, publish-ready 3D world config, cycling deterministically
+ * through AUTOFILL_WORLD_LAYOUTS by index so each generated world has its own
+ * distinct zones, objects, NPC, and exits (the same fully-furnished layouts used
+ * by the single-room "Autofill 3D" button) instead of repeated copies of the
+ * sample world.
  */
 export function buildThreeDWorldConfig(index = 0) {
-  const template = TEMPLATES[index % TEMPLATES.length];
-  const base = buildSampleWorldConfig();
-  return {
-    ...base,
-    selectedTemplate: template.id,
-    moodPreset: template.defaultMood || base.moodPreset,
-    movementMode: template.defaultMovement || base.movementMode,
-    previewChecked: false,
-    publishStatus: "draft",
-  };
+  return buildAutofillWorldConfigByIndex(index);
 }
 
 /**
@@ -41,13 +30,14 @@ export function buildThreeDWorldConfig(index = 0) {
 export function buildThreeDWorldRooms({ count = 1, startIndex = 0, walkthroughKey = "walkthrough1" }) {
   const total = clampWorldCount(count);
   return Array.from({ length: total }, (_, i) => {
-    const template = TEMPLATES[i % TEMPLATES.length];
+    const layout = AUTOFILL_WORLD_LAYOUTS[i % AUTOFILL_WORLD_LAYOUTS.length];
+    const template = getWorldTemplate(layout.selectedTemplate);
     const room = createRoomByType(startIndex + i, walkthroughKey, "three_d_world");
     return {
       ...room,
-      title: `3D World ${i + 1} — ${template.name}`,
-      subtitle: template.category,
-      description: template.description,
+      title: `3D World ${i + 1} — ${layout.label}`,
+      subtitle: template?.category || "",
+      description: template?.description || "",
       threeDWorldConfig: buildThreeDWorldConfig(i),
     };
   });
