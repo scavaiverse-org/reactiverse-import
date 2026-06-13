@@ -6,6 +6,8 @@ import { getServiceRoleClient } from '../_shared/supabase-client.ts';
 // the client-supplied total on the reservation row is never trusted.
 
 const ALLOWED_ORIGINS = [
+  'https://scaverse.org',
+  'https://www.scaverse.org',
   'https://scaverse.pages.dev',
   'http://localhost:5173',
   'http://localhost:4173',
