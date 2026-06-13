@@ -90,6 +90,7 @@ import PlatformOverview from './pages/PlatformOverview';
 import LegalUtility from './pages/LegalUtility';
 import PlatformHome from './pages/PlatformHome';
 import BecomeTenant from './pages/BecomeTenant';
+import PresaleTickets from './pages/PresaleTickets';
 import VirtualExperience from './pages/VirtualExperience';
 import TenantLogin from './pages/TenantLogin';
 import LoginRedirect from './components/auth/LoginRedirect';
@@ -139,6 +140,7 @@ const AuthenticatedApp = () => {
         <div className="min-h-screen pt-16 sm:pt-20">
       <Routes>
       <Route path="/" element={<PlatformHome />} />
+      <Route path="/presale" element={<PresaleTickets />} />
       <Route path="/become-a-tenant" element={<BecomeTenant />} />
       <Route path="/virtual-experience" element={<VirtualExperience />} />
       <Route path="/tenant-login" element={<TenantLogin />} />
