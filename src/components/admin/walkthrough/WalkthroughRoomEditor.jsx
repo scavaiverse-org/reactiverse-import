@@ -27,7 +27,7 @@ import MediaUploadStatus from "./MediaUploadStatus";
 import ScrollableImageControls from "./ScrollableImageControls";
 import MuseumModeEditor from "./MuseumModeEditor";
 import { ensureTypeConfigs, PAGE_TYPES } from "@/lib/walkthrough-room-types";
-import { buildSampleWorldConfig } from "@/lib/three-d-world-validation";
+import { buildAutofillWorldConfig } from "@/lib/three-d-world-validation";
 import { scoreWalkthroughQuality } from "@/lib/walkthrough-quality-scoring";
 import { detectMediaTypeFromFile, detectMediaTypeFromUrl, ensureMediaTypes } from "@/lib/walkthrough-media-bindings";
 
@@ -118,7 +118,7 @@ export default function WalkthroughRoomEditor({ room, onChange, hasError = false
     setRoom({
       ...room,
       page_type: "three_d_world",
-      threeDWorldConfig: { ...buildSampleWorldConfig(), previewChecked: true, recommendedWarningsConfirmed: true },
+      threeDWorldConfig: buildAutofillWorldConfig(room.threeDWorldConfig?.autofillLayoutId),
     });
   };
 
