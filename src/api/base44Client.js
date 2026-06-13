@@ -26,6 +26,7 @@ const entityTableMap = {
   Ticket: 'tickets',
   Vendor: 'vendors',
   PaymentProof: 'payment_proofs',
+  AdminNotification: 'admin_notifications',
 
   // Added in 0005_missing_entities.sql
   AIGuideConfig: 'ai_guide_configs',

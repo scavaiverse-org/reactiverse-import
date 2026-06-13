@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import NotificationBell from "@/components/admin/NotificationBell";
 import {
   LayoutDashboard, Users, Layers, Package, Server, Database,
   Activity, Building2, Palette, BarChart3, Rocket,
@@ -115,7 +116,7 @@ export default function MasterAdminSidebar() {
 
   return (
     <aside className="w-64 min-h-screen bg-[#070d1a] border-r border-white/5 flex flex-col flex-shrink-0">
-      <div className="px-5 py-4 border-b border-white/5">
+      <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between gap-2">
         <Link to="/platform/admin" className="flex items-center gap-2">
           <div className="w-7 h-7 rounded bg-primary/20 border border-primary/40 flex items-center justify-center">
             <Globe className="w-4 h-4 text-primary" />
@@ -125,6 +126,7 @@ export default function MasterAdminSidebar() {
             <p className="text-[9px] text-muted-foreground tracking-widest">MASTER CONTROL</p>
           </div>
         </Link>
+        <NotificationBell />
       </div>
 
       <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-4">
