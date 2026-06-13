@@ -28,7 +28,7 @@ const CANONICAL_BADGES = [
     title: "Become a Tenant / Franchise",
     description: "Claim your free 1-week tenant trial — build your own museum, attraction, or cultural experience on SCAVerse.",
     label: "Apply as a Franchise",
-    route: museumPath(DEFAULT_MUSEUM_SLUG, "tickets"),
+    route: "/become-a-tenant",
     visibility: true,
     sortOrder: 2,
   },
