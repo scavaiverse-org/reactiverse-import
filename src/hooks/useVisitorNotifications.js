@@ -39,11 +39,15 @@ export default function useVisitorNotifications(tenantId) {
     queryKey: ["visitor-notifications", ownerKey, tenantId || null],
   }), [queryClient, ownerKey, tenantId]);
 
+  // Only act on notifications the visitor actually owns (i.e. present in their
+  // loaded, owner-filtered list). For authenticated users RLS enforces this on
+  // the server; the check keeps the client from acting on unowned/stale ids.
   const markAsRead = useCallback(async (id) => {
+    if (!notifications.some((item) => item.id === id)) return null;
     const result = await base44.entities.VisitorNotification.update(id, { is_read: true });
     await invalidate();
     return result;
-  }, [invalidate]);
+  }, [notifications, invalidate]);
 
   const markAllAsRead = useCallback(async () => {
     const unread = notifications.filter((item) => !item.isRead);
@@ -53,9 +57,10 @@ export default function useVisitorNotifications(tenantId) {
   }, [notifications, invalidate]);
 
   const dismiss = useCallback(async (id) => {
+    if (!notifications.some((item) => item.id === id)) return;
     await base44.entities.VisitorNotification.delete(id);
     await invalidate();
-  }, [invalidate]);
+  }, [notifications, invalidate]);
 
   return {
     notifications,

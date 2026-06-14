@@ -92,7 +92,7 @@ const entityTableMap = {
   TenantEvent: 'tenant_events',
 };
 
-// All 65 Base44 entities now map to a real Supabase table. The catch-all
+// All 77 Base44 entities now map to a real Supabase table. The catch-all
 // Proxy in buildEntities() still returns a safe stub for any unknown entity
 // name so accidental access never throws.
 const UNMIGRATED_ENTITIES = new Set();

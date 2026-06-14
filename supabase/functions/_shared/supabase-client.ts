@@ -48,6 +48,16 @@ export async function getAuthUser(req: Request) {
   const { data: { user }, error } = await userClient.auth.getUser();
   if (error || !user) return null;
   const service = getServiceRoleClient();
-  const { data: profile } = await service.from('profiles').select('role').eq('id', user.id).maybeSingle();
-  return { ...user, role: normalizeRole(profile?.role) };
+  const { data: profile } = await service
+    .from('profiles')
+    .select('role, tenant_id, tenant_ids')
+    .eq('id', user.id)
+    .maybeSingle();
+  // Merge the singular tenant_id and the tenant_ids array — either may be set
+  // depending on how the member was provisioned (mirrors AuthContext).
+  const tenantIds = Array.from(new Set([
+    ...(profile?.tenant_ids ?? []),
+    ...(profile?.tenant_id ? [profile.tenant_id] : []),
+  ]));
+  return { ...user, role: normalizeRole(profile?.role), tenantIds };
 }

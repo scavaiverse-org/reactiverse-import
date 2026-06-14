@@ -1,6 +1,6 @@
 import { corsHeaders } from '../_shared/cors.ts';
 import { getAuthUser, getServiceRoleClient } from '../_shared/supabase-client.ts';
-import { TENANT_ADMIN_ROLES } from '../_shared/rbac.ts';
+import { TENANT_ADMIN_ROLES, MASTER_ROLES } from '../_shared/rbac.ts';
 import { sendEmail, emailShell, escapeHtml } from '../_shared/email.ts';
 
 // Emails confirmed pre-bookers that their museum is now live. Called
@@ -19,6 +19,13 @@ Deno.serve(async (req) => {
 
     const user = await getAuthUser(req);
     if (!user || !TENANT_ADMIN_ROLES.includes(user.role)) {
+      return Response.json({ error: 'forbidden' }, { status: 403, headers: corsHeaders });
+    }
+    // Platform admins may notify any tenant; a franchise owner may only notify
+    // a tenant they belong to. Without this, an owner of Tenant A could email
+    // Tenant B's buyers.
+    const isPlatformAdmin = MASTER_ROLES.includes(user.role);
+    if (!isPlatformAdmin && !user.tenantIds.includes(tenant_id)) {
       return Response.json({ error: 'forbidden' }, { status: 403, headers: corsHeaders });
     }
 

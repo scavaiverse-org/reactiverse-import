@@ -74,7 +74,10 @@ export default function Passport() {
 
   const tenantsById = useMemo(() => new Map(tenants.map((tenant) => [tenant.id, tenant])), [tenants]);
   const tenantLabel = (tenantId) => tenantsById.get(tenantId)?.name || "A SCAVerse museum";
-  const tenantSlug = (tenantId) => tenantsById.get(tenantId)?.slug;
+  // Fall back to the tenant id when the slug isn't in the loaded tenants list
+  // (e.g. limited list for anonymous visitors) so links never become
+  // "/museum/undefined/...". A non-matching id 404s gracefully instead.
+  const tenantSlug = (tenantId) => tenantsById.get(tenantId)?.slug || tenantId;
 
   const inProgress = journeys.filter((journey) => journey.status === "in_progress");
   const completedJourneys = journeys.filter((journey) => journey.status === "completed");

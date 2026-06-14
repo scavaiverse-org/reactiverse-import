@@ -12,7 +12,7 @@ export function emailConfigured(): boolean {
 
 export function escapeHtml(value: unknown): string {
   return String(value ?? '')
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 type SendArgs = { to: string | string[]; subject: string; html: string; replyTo?: string };

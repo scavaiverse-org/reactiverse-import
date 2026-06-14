@@ -99,10 +99,13 @@ export default function useVisitorJourney(tenantId, walkthroughKey) {
     return result;
   }, [journey?.id, userId, visitorId, tenantId, walkthroughKey, isAuthenticated, invalidate]);
 
-  const awardNewBadges = useCallback(async (updatedJourney) => {
+  // collectiblesOverride lets a caller pass the just-updated collectibles list
+  // when the query cache hasn't refreshed yet (e.g. right after collecting an
+  // artifact), so count-based badges are evaluated against current data.
+  const awardNewBadges = useCallback(async (updatedJourney, collectiblesOverride) => {
     const newBadges = evaluateNewBadges({
       journey: updatedJourney,
-      collectibles,
+      collectibles: collectiblesOverride ?? collectibles,
       totalArtifacts: 0,
       earnedBadgeKeys: badges.map((badge) => badge.badge_key || badge.badgeKey),
     });
@@ -169,7 +172,11 @@ export default function useVisitorJourney(tenantId, walkthroughKey) {
       });
     }
     await invalidate();
-    await awardNewBadges(journey || defaultJourney(tenantId, walkthroughKey));
+    // Evaluate badges against the collectibles list including the one just
+    // collected — the query cache hasn't refreshed yet, so the closure's
+    // `collectibles` is still pre-insert and would miss count-based badges.
+    const updatedCollectibles = [...collectibles, { artifact_key: artifactKey, room_key: roomKey }];
+    await awardNewBadges(journey || defaultJourney(tenantId, walkthroughKey), updatedCollectibles);
     return result;
   }, [enabled, collectibles, ownerFilter, visitorId, tenantId, walkthroughKey, isAuthenticated, invalidate, awardNewBadges, journey]);
 

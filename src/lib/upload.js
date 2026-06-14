@@ -22,6 +22,7 @@ const UNSAFE_SVG_PATTERNS = [
   /<use\s[^>]*(?:xlink:)?href\s*=\s*["'][^#]/i, // <use href/xlink:href> pointing to external resource (fragment refs allowed)
   /<!ENTITY/i,                  // XXE in SVG
   /data:text\/html/i,
+  /<foreignObject[\s>]/i,       // can embed arbitrary HTML inside the SVG
 ];
 
 async function rejectUnsafeSvg(file) {
@@ -42,8 +43,9 @@ function validateMediaFile(file) {
     throw new Error(`File is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum is 100 MB.`);
   }
   const mime = file.type || '';
-  if (mime && !ALLOWED_MEDIA_TYPES.has(mime)) {
-    throw new Error(`File type "${mime}" is not allowed. Allowed types: image, video, audio, PDF, and 3D model files.`);
+  // Require an explicit, allowlisted MIME type — an empty type must not pass.
+  if (!ALLOWED_MEDIA_TYPES.has(mime)) {
+    throw new Error(`File type "${mime || 'unknown'}" is not allowed. Allowed types: image, video, audio, PDF, and 3D model files.`);
   }
 }
 

@@ -4,9 +4,14 @@ import { getServiceRoleClient } from './supabase-client.ts';
 // Best-effort client identifier for rate limiting (Cloudflare/most proxies
 // set one of these; falls back to a shared bucket if neither is present).
 function clientIp(req: Request): string {
+  // Prefer cf-connecting-ip: Cloudflare sets it to the verified client IP and
+  // clients cannot spoof it. x-forwarded-for is client-controllable and could
+  // be rotated to evade per-IP rate limiting, so only use it as a fallback.
+  const cfIp = req.headers.get('cf-connecting-ip');
+  if (cfIp) return cfIp;
   const forwarded = req.headers.get('x-forwarded-for');
   if (forwarded) return forwarded.split(',')[0].trim();
-  return req.headers.get('cf-connecting-ip') || 'unknown';
+  return 'unknown';
 }
 
 // Checks and atomically increments a rate limit bucket for this request's

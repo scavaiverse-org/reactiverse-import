@@ -12,17 +12,31 @@ import { base44 } from "@/api/base44Client";
 
 // Builds the row payload for base44.entities.GuestbookEntry.create.
 export function buildGuestbookEntryRow({ userId, visitorId, tenantId, displayName, message }) {
+  if (!userId && !visitorId) {
+    throw new Error("Either userId or visitorId must be provided");
+  }
+  const trimmedMessage = String(message || "").trim();
+  if (!trimmedMessage) {
+    throw new Error("Message cannot be empty");
+  }
   return {
     user_id: userId || null,
     visitor_id: userId ? null : visitorId,
     tenant_id: tenantId,
     display_name: displayName || "Explorer",
-    message: String(message || "").trim(),
+    message: trimmedMessage,
   };
 }
 
 // Builds the row payload for base44.entities.RoomComment.create.
 export function buildRoomCommentRow({ userId, visitorId, tenantId, walkthroughKey, roomKey, displayName, message }) {
+  if (!userId && !visitorId) {
+    throw new Error("Either userId or visitorId must be provided");
+  }
+  const trimmedMessage = String(message || "").trim();
+  if (!trimmedMessage) {
+    throw new Error("Message cannot be empty");
+  }
   return {
     user_id: userId || null,
     visitor_id: userId ? null : visitorId,
@@ -30,7 +44,7 @@ export function buildRoomCommentRow({ userId, visitorId, tenantId, walkthroughKe
     walkthrough_key: walkthroughKey,
     room_key: roomKey,
     display_name: displayName || "Explorer",
-    message: String(message || "").trim(),
+    message: trimmedMessage,
   };
 }
 
