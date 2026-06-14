@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Outlet, useLocation, useParams } from "react-router-dom";
 import { ChevronRight, ShieldCheck } from "lucide-react";
 import DomainAccessGate from "@/components/access/DomainAccessGate";
@@ -5,6 +6,7 @@ import { useActiveTenant } from "@/hooks/useActiveTenant";
 import TenantAdminSidebar from "./TenantAdminSidebar.jsx";
 
 export default function TenantAdminLayout() {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const location = useLocation();
   const { tenantSlug = "" } = useParams();
   const { tenant } = useActiveTenant();
@@ -14,7 +16,7 @@ export default function TenantAdminLayout() {
   return (
     <DomainAccessGate domain="museum">
       <div className="min-h-screen bg-background flex">
-        <TenantAdminSidebar />
+        <TenantAdminSidebar open={sidebarOpen} onToggle={() => setSidebarOpen((v) => !v)} />
 
         <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
           <header className="border-b border-border/50 bg-card/10 px-6 py-3 flex items-center justify-between flex-shrink-0">
