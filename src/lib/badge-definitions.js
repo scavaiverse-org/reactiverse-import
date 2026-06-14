@@ -52,6 +52,9 @@ export function evaluateNewBadges({ journey, collectibles = [], totalArtifacts =
   const earned = new Set(earnedBadgeKeys);
   return BADGE_DEFINITIONS
     .filter((badge) => !earned.has(badge.key))
+    // Tenant-scoped badges need a journey.tenant_id; without it we'd write an
+    // invalid visitor_badges row with tenant_id undefined.
+    .filter((badge) => badge.scope !== "tenant" || journey?.tenant_id)
     .filter((badge) => badge.isEarned({ journey, collectibles, totalArtifacts }))
     .map((badge) => ({ badge_key: badge.key, tenant_id: badge.scope === "platform" ? "platform" : journey?.tenant_id }));
 }

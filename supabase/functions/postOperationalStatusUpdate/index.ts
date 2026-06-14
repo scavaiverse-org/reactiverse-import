@@ -1,6 +1,7 @@
 import { corsHeaders } from '../_shared/cors.ts';
 import { getAuthUser, getServiceRoleClient } from '../_shared/supabase-client.ts';
 import { MASTER_ROLES } from '../_shared/rbac.ts';
+import { checkRateLimit, rateLimitResponse } from '../_shared/rate-limit.ts';
 
 async function resolveChannelId(accessToken: string, channelName: string): Promise<string> {
   let cursor = '';
@@ -22,6 +23,13 @@ async function resolveChannelId(accessToken: string, channelName: string): Promi
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  if (req.method !== 'POST') {
+    return Response.json({ error: 'Method not allowed' }, { status: 405, headers: corsHeaders });
+  }
+
+  if (!(await checkRateLimit(req, 'post-operational-status', 10, 60))) {
+    return rateLimitResponse();
+  }
 
   try {
     const user = await getAuthUser(req);

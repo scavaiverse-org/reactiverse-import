@@ -77,7 +77,7 @@ export default function Tenants() {
     if (!newName) return;
     createMutation.mutate({
       name: newName,
-      slug: newName.toLowerCase().replace(/\s+/g, "-"),
+      slug: newName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""),
       status: "draft",
       region: newRegion || "Global",
       enabled_modules: ["onboarding", "ticketing", "walkthrough"],

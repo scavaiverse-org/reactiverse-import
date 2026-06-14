@@ -1,7 +1,8 @@
 import { corsHeaders } from '../_shared/cors.ts';
 import { getAuthUser, getServiceRoleClient } from '../_shared/supabase-client.ts';
-import { TENANT_ADMIN_ROLES } from '../_shared/rbac.ts';
+import { TENANT_ADMIN_ROLES, MASTER_ROLES } from '../_shared/rbac.ts';
 import { sendEmail, emailShell, escapeHtml } from '../_shared/email.ts';
+import { checkRateLimit, rateLimitResponse } from '../_shared/rate-limit.ts';
 
 // Emails confirmed pre-bookers that their museum is now live. Called
 // (fire-and-forget) from PublishMuseumDialog after a museum is published.
@@ -11,6 +12,10 @@ import { sendEmail, emailShell, escapeHtml } from '../_shared/email.ts';
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
+  if (!(await checkRateLimit(req, 'notify-launch', 5, 60))) {
+    return rateLimitResponse();
+  }
+
   try {
     const { tenant_id } = await req.json().catch(() => ({}));
     if (!tenant_id) {
@@ -19,6 +24,13 @@ Deno.serve(async (req) => {
 
     const user = await getAuthUser(req);
     if (!user || !TENANT_ADMIN_ROLES.includes(user.role)) {
+      return Response.json({ error: 'forbidden' }, { status: 403, headers: corsHeaders });
+    }
+    // Platform admins may notify any tenant; a franchise owner may only notify
+    // a tenant they belong to. Without this, an owner of Tenant A could email
+    // Tenant B's buyers.
+    const isPlatformAdmin = MASTER_ROLES.includes(user.role);
+    if (!isPlatformAdmin && !user.tenantIds.includes(tenant_id)) {
       return Response.json({ error: 'forbidden' }, { status: 403, headers: corsHeaders });
     }
 
@@ -48,7 +60,14 @@ Deno.serve(async (req) => {
       );
       const result = await sendEmail({ to: ticket.visitor_email, subject: `${museumName} is now live`, html });
       if (result.sent) {
-        await service.from('tickets').update({ launch_email_sent_at: new Date().toISOString() }).eq('id', ticket.id);
+        const { error: stampErr } = await service.from('tickets')
+          .update({ launch_email_sent_at: new Date().toISOString() })
+          .eq('id', ticket.id);
+        if (stampErr) {
+          // Email already went out; log so a failed stamp (which risks a
+          // duplicate on the next run) can be investigated.
+          console.error(`[notify-launch] failed to stamp ticket ${ticket.id}:`, stampErr.message);
+        }
         sent += 1;
       }
     }

@@ -36,6 +36,12 @@ function crc16(payload) {
  * @param {boolean} [opts.editable] - Whether the payer can change the amount.
  */
 export function buildPayNowPayload({ uen, amount, reference = "", merchantName = "SCAVerse", editable = false }) {
+  if (!uen || typeof uen !== "string") {
+    throw new Error("A valid UEN is required to build a PayNow payload");
+  }
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new Error("PayNow amount must be a positive number");
+  }
   const merchantAccount = [
     field("00", "SG.PAYNOW"),
     field("01", "2"), // proxy type 2 = UEN

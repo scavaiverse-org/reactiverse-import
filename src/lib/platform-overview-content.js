@@ -112,7 +112,10 @@ const mergeCards = (defaults, cards = []) => defaults.map((fallback) => {
   const override = (cards || []).find((card) => card.key === fallback.key) || {};
   return { ...fallback, visibility: override.visibility ?? fallback.visibility };
 });
-const mergeCtas = () => overviewCtaSlots;
+const mergeCtas = (ctas = []) => overviewCtaSlots.map((fallback) => {
+  const override = (ctas || []).find((cta) => cta.ctaKey === fallback.ctaKey) || {};
+  return { ...fallback, ...override };
+});
 
 export function resolvePlatformOverviewContent(config = {}) {
   const sections = config.sections || [];

@@ -65,7 +65,7 @@ export default function MuseumOpenGate({ children, allow = false }) {
         <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.32em] text-primary shadow-lg shadow-primary/10 backdrop-blur">
           <Sparkles className="h-3.5 w-3.5 animate-pulse" /> Premiere · Opening Soon
         </div>
-        <p className="font-display text-[11px] uppercase tracking-[0.42em] text-muted-foreground">Now in pre-sale</p>
+        {hasPresale && <p className="font-display text-[11px] uppercase tracking-[0.42em] text-muted-foreground">Now in pre-sale</p>}
         <h1 className="mt-4 bg-gradient-to-br from-foreground via-foreground to-primary bg-clip-text font-heading text-5xl font-bold leading-[0.95] tracking-tight text-transparent drop-shadow-2xl sm:text-7xl">
           {tenant.name || "This museum"}
         </h1>

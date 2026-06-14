@@ -3,8 +3,9 @@ import { Activity, AlertTriangle, Bug, GitPullRequestArrow, Radio, Route, Shield
 const scoreLabel = (score) => score >= 90 ? "Healthy" : score >= 75 ? "Watch" : score >= 50 ? "Degraded" : "Critical";
 
 export default function QASentinelSeverityCards({ score, counts, latestRun, routeCount, ctaCount, formCount, livePulse }) {
+  const safeScore = typeof score === "number" && !Number.isNaN(score) ? score : 0;
   const cards = [
-    { label: "System QA Score", value: score, detail: scoreLabel(score), icon: ShieldCheck, tone: score >= 75 ? "text-emerald-400" : score >= 50 ? "text-amber-400" : "text-red-400" },
+    { label: "System QA Score", value: safeScore, detail: scoreLabel(safeScore), icon: ShieldCheck, tone: safeScore >= 75 ? "text-emerald-400" : safeScore >= 50 ? "text-amber-400" : "text-red-400" },
     { label: "Open Critical Issues", value: counts.critical, detail: "active blockers", icon: AlertTriangle, tone: "text-red-400" },
     { label: "Open Major Issues", value: counts.major, detail: "high-risk flows", icon: Bug, tone: "text-orange-400" },
     { label: "Regressions", value: counts.regressed, detail: "fixed then returned", icon: GitPullRequestArrow, tone: "text-fuchsia-400" },

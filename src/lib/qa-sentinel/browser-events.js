@@ -4,9 +4,19 @@ import { recordSentinelEvent, upsertIssueFromFailure } from "./issue-lifecycle";
 let installed = false;
 let internalCapture = false;
 const recent = new Map();
+let lastCleanup = Date.now();
 
 function shouldRecord(key, ttl = 3000) {
   const now = Date.now();
+  // Prevent the throttle map from growing unbounded in a long-running SPA:
+  // drop entries older than 5 minutes, at most once a minute.
+  if (now - lastCleanup > 60000) {
+    const cutoff = now - 300000;
+    for (const [k, ts] of recent.entries()) {
+      if (ts < cutoff) recent.delete(k);
+    }
+    lastCleanup = now;
+  }
   const last = recent.get(key) || 0;
   if (now - last < ttl) return false;
   recent.set(key, now);
@@ -15,9 +25,15 @@ function shouldRecord(key, ttl = 3000) {
 
 function safeAsync(task) {
   internalCapture = true;
-  task().catch(() => {}).finally(() => {
+  // Guard against task() throwing synchronously (before returning a Promise),
+  // which would otherwise leave internalCapture stuck true and disable capture.
+  try {
+    task().catch(() => {}).finally(() => {
+      internalCapture = false;
+    });
+  } catch {
     internalCapture = false;
-  });
+  }
 }
 
 function toSafeString(value) {

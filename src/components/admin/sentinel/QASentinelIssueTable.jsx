@@ -26,7 +26,7 @@ export default function QASentinelIssueTable({ issues = [], title = "Live Issue 
         <div className="max-h-[440px] overflow-y-auto">
           {visible.length === 0 && <p className="p-5 text-sm text-muted-foreground">No matching issues.</p>}
           {visible.map((issue) => (
-            <button key={issue.id} onClick={() => onSelectIssue(issue)} className="grid w-full grid-cols-12 gap-2 border-b border-white/5 px-3 py-3 text-left transition-colors hover:bg-white/[0.04]">
+            <button key={issue.id} onClick={() => onSelectIssue?.(issue)} className="grid w-full grid-cols-12 gap-2 border-b border-white/5 px-3 py-3 text-left transition-colors hover:bg-white/[0.04]">
               <span className="col-span-5 min-w-0">
                 <span className="flex items-center gap-2 text-sm font-medium text-foreground"><AlertTriangle className="h-3.5 w-3.5 text-primary" /> <span className="truncate">{issue.title}</span></span>
                 <span className="mt-1 block truncate text-[10px] text-muted-foreground">{issue.human_impact || issue.description}</span>

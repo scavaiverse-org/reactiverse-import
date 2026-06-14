@@ -52,13 +52,21 @@ export default function NotificationBell() {
   const markAllRead = async () => {
     const toMark = notifications.filter((n) => !n.isRead);
     if (!toMark.length) return;
-    await Promise.all(toMark.map((n) => base44.entities.AdminNotification.update(n.id, { is_read: true })));
-    queryClient.invalidateQueries({ queryKey: ["admin-notifications"] });
+    try {
+      await Promise.all(toMark.map((n) => base44.entities.AdminNotification.update(n.id, { is_read: true })));
+      queryClient.invalidateQueries({ queryKey: ["admin-notifications"] });
+    } catch (error) {
+      console.error("Failed to mark notifications as read:", error);
+    }
   };
 
   const markOne = async (id) => {
-    await base44.entities.AdminNotification.update(id, { is_read: true });
-    queryClient.invalidateQueries({ queryKey: ["admin-notifications"] });
+    try {
+      await base44.entities.AdminNotification.update(id, { is_read: true });
+      queryClient.invalidateQueries({ queryKey: ["admin-notifications"] });
+    } catch (error) {
+      console.error("Failed to mark notification as read:", error);
+    }
   };
 
   return (

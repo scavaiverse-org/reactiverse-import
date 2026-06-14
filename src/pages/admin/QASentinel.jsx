@@ -46,7 +46,7 @@ export default function QASentinel() {
   useEffect(() => {
     const missing = (issuesQuery.data || []).filter((issue) => !issue.root_cause_hypothesis || !(issue.regression_test_steps || []).length).slice(0, 50);
     if (!missing.length) return;
-    Promise.all(missing.map((issue) => base44.entities.QASentinelIssue.update(issue.id, buildFixIntelligence(issue)))).then(() => issuesQuery.refetch());
+    Promise.allSettled(missing.map((issue) => base44.entities.QASentinelIssue.update(issue.id, buildFixIntelligence(issue)))).then(() => issuesQuery.refetch());
   }, [issuesQuery.data]);
   useEffect(() => setRuns(runsQuery.data || []), [runsQuery.data]);
   useEffect(() => setEvents(eventsQuery.data || []), [eventsQuery.data]);
@@ -73,7 +73,8 @@ export default function QASentinel() {
         setEvents((current) => mergeRealtime(current, event, "timestamp", 100));
       }));
       setRealtime("live");
-    } catch {
+    } catch (err) {
+      console.error("QA Sentinel realtime subscription failed:", err);
       setRealtime("disconnected");
     }
     return () => unsubscribers.forEach((unsubscribe) => unsubscribe?.());

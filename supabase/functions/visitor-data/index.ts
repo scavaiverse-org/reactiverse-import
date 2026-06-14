@@ -160,12 +160,18 @@ Deno.serve(async (req) => {
         const { artifact_key } = payload as { artifact_key?: string };
         if (!artifact_key) return err('payload.artifact_key is required.');
 
+        const effectiveTenantId = tenant_id ?? (payload as Record<string, unknown>).tenant_id;
+        const effectiveWalkthroughKey = walkthrough_key ?? (payload as Record<string, unknown>).walkthrough_key;
+        if (!effectiveTenantId || !effectiveWalkthroughKey) {
+          return err('tenant_id and walkthrough_key are required.');
+        }
+
         const safe = {
           ...(payload as Record<string, unknown>),
           visitor_id,
           user_id: null,
-          tenant_id: tenant_id ?? (payload as Record<string, unknown>).tenant_id,
-          walkthrough_key: walkthrough_key ?? (payload as Record<string, unknown>).walkthrough_key,
+          tenant_id: effectiveTenantId,
+          walkthrough_key: effectiveWalkthroughKey,
         };
 
         // Idempotent — skip if already collected.
@@ -193,12 +199,14 @@ Deno.serve(async (req) => {
 
       // ── List badges ───────────────────────────────────────────────────────
       case 'get_badges': {
-        const q = db
+        let q = db
           .from('visitor_badges')
           .select('*')
           .eq('visitor_id', visitor_id)
           .is('user_id', null);
-        if (tenant_id) q.eq('tenant_id', tenant_id);
+        // The supabase-js query builder returns a new instance rather than
+        // mutating in place, so the filter must be reassigned to take effect.
+        if (tenant_id) q = q.eq('tenant_id', tenant_id);
         const { data, error } = await q;
         if (error) throw error;
         return Response.json({ data: data ?? [] }, { headers: corsHeaders });

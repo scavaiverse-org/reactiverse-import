@@ -37,7 +37,9 @@ function ProofThumb({ path }) {
     let active = true;
     if (!path) { setLoading(false); return undefined; }
     setLoading(true);
-    getPaymentProofSignedUrl(path).then((signed) => { if (active) { setUrl(signed); setLoading(false); } });
+    getPaymentProofSignedUrl(path)
+      .then((signed) => { if (active) { setUrl(signed); setLoading(false); } })
+      .catch(() => { if (active) { setUrl(null); setLoading(false); } });
     return () => { active = false; };
   }, [path]);
 

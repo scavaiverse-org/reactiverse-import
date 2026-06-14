@@ -92,12 +92,12 @@ const entityTableMap = {
   TenantEvent: 'tenant_events',
 };
 
-// All 65 Base44 entities now map to a real Supabase table. The catch-all
+// All 77 Base44 entities now map to a real Supabase table. The catch-all
 // Proxy in buildEntities() still returns a safe stub for any unknown entity
 // name so accidental access never throws.
 const UNMIGRATED_ENTITIES = new Set();
 
-const camelToSnake = (s) => s.replace(/[A-Z]/g, (c) => '_' + c.toLowerCase());
+const camelToSnake = (s) => s.replace(/[A-Z]/g, (c, i) => (i === 0 ? '' : '_') + c.toLowerCase());
 const snakeToCamel = (s) => s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
 
 function keysToSnake(obj) {
@@ -260,6 +260,7 @@ export const base44 = {
       return !!session;
     },
     redirectToLogin(redirectUrl) {
+      if (typeof window === 'undefined') return;
       window.location.href = '/login?redirect=' + encodeURIComponent(redirectUrl || '/');
     },
   },

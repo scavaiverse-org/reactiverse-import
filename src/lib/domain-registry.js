@@ -147,7 +147,7 @@ export function platformPath(page = "overview") {
 }
 
 export function isPlatformRoute(pathname = "") {
-  return pathname === "/platform" || pathname.startsWith("/platform/");
+  return PLATFORM_ROUTES.some((route) => route.path === pathname) || pathname.startsWith("/platform/");
 }
 
 export function isMuseumRoute(pathname = "") {

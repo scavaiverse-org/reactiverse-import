@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { getDeprecationStatus, LEGACY_WALKTHROUGH_FILES } from "@/lib/walkthrough-deprecation";
 import { scoreWalkthroughQuality } from "@/lib/walkthrough-quality-scoring";
 
-export default function MigrationReadinessPanel({ record, rooms, onSaveDraft }) {
+export default function MigrationReadinessPanel({ record = {}, rooms = [], onSaveDraft }) {
   const status = getDeprecationStatus(record);
   const quality = scoreWalkthroughQuality(rooms);
   const ready = status.isDynamicV3 && quality.errors.length === 0;

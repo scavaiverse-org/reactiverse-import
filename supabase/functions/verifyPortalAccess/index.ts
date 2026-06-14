@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto';
 import { corsHeaders } from '../_shared/cors.ts';
 import { checkRateLimit, rateLimitResponse } from '../_shared/rate-limit.ts';
 
@@ -23,7 +24,13 @@ Deno.serve(async (req) => {
   }
 
   const body = await req.json().catch(() => ({}));
-  if (body.code !== requiredCode) {
+  // Constant-time comparison so response timing can't be used to infer the
+  // access code character-by-character. timingSafeEqual requires equal-length
+  // buffers, so guard the length first (length is far less useful to leak).
+  const provided = new TextEncoder().encode(String(body.code ?? ''));
+  const expected = new TextEncoder().encode(requiredCode);
+  const codeValid = provided.length === expected.length && timingSafeEqual(provided, expected);
+  if (!codeValid) {
     return Response.json({ granted: false, reason: 'Invalid access code.' }, { status: 403, headers: corsHeaders });
   }
 

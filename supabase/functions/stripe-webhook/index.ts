@@ -38,20 +38,51 @@ Deno.serve(async (req) => {
       event.type === 'checkout.session.async_payment_succeeded'
     ) {
       const session = event.data.object as Stripe.Checkout.Session;
+
+      // Franchise subscription checkout (franchise-checkout) runs in subscription
+      // mode and carries inquiry_id. Trial subscriptions report payment_status
+      // 'no_payment_required', so don't gate on 'paid' — completion of the
+      // session is the signal. Mark the inquiry paid (checkout_status only allows
+      // checkout_started/paynow_pending/paid/cancelled). Handle this before the
+      // ticket branch so the inquiry id isn't misread as a ticket id.
+      const inquiryId = session.metadata?.inquiry_id;
+      if (session.mode === 'subscription' && inquiryId) {
+        const service = getServiceRoleClient();
+        const { error } = await service.from('tenant_inquiries')
+          .update({ checkout_status: 'paid', updated_at: new Date().toISOString() })
+          .eq('id', inquiryId)
+          .neq('checkout_status', 'paid');
+        if (error) {
+          console.error('[stripe-webhook] inquiry update failed:', error.message);
+          return Response.json({ error: 'Inquiry update failed.' }, { status: 500 });
+        }
+        console.log(`[stripe-webhook] inquiry ${inquiryId} marked paid (subscription, ${event.type})`);
+        return Response.json({ received: true });
+      }
+
       const ticketId = session.metadata?.ticket_id || session.client_reference_id;
       if (ticketId && session.payment_status === 'paid') {
         const service = getServiceRoleClient();
         // tickets_status_check allows pending/confirmed/used/expired/refunded —
         // 'confirmed' is the unlock status used by the tour gate + Confirmation page.
+        // The .neq('status', 'confirmed') guard makes this idempotent: Stripe may
+        // deliver the same event more than once (and completed + async_payment_
+        // succeeded can both fire), so only the first transition matches a row —
+        // preventing the buyer from receiving duplicate confirmation emails.
         const { data: ticket, error } = await service.from('tickets').update({
           status: 'confirmed',
           confirmation_stage: 'payment_confirmed',
           updated_at: new Date().toISOString(),
-        }).eq('id', ticketId).select('visitor_name, visitor_email, tenant_id').maybeSingle();
+        }).eq('id', ticketId).neq('status', 'confirmed').select('visitor_name, visitor_email, tenant_id').maybeSingle();
         if (error) {
           console.error('[stripe-webhook] ticket update failed:', error.message);
           // Non-200 so Stripe retries until the DB update succeeds.
           return Response.json({ error: 'Ticket update failed.' }, { status: 500 });
+        }
+        if (!ticket) {
+          // Already confirmed by an earlier delivery — nothing more to do.
+          console.log(`[stripe-webhook] ticket ${ticketId} already confirmed; skipping (${event.type})`);
+          return Response.json({ received: true });
         }
         console.log(`[stripe-webhook] ticket ${ticketId} marked confirmed (${event.type})`);
 

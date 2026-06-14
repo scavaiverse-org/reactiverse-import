@@ -15,8 +15,12 @@ export default function ExhibitionRoomEditor({ room, onChange }) {
   const updateCta = (index, patch) => setConfig({ cinematic_ctas: ctas.map((item, i) => i === index ? { ...item, ...patch } : item) });
   const upload = async (field, file) => {
     if (!file) return;
-    const result = await uploadFile(file);
-    setConfig({ [field]: result.file_url });
+    try {
+      const result = await uploadFile(file);
+      setConfig({ [field]: result.file_url });
+    } catch (error) {
+      console.error("Upload failed:", error);
+    }
   };
 
   return (

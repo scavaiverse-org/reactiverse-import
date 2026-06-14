@@ -13,8 +13,12 @@ export default function OnboardingGuideEditor({ room, onChange }) {
   const setConfig = (patch) => onChange({ ...room, onboarding_config: { ...config, ...patch } });
   const upload = async (field, file) => {
     if (!file) return;
-    const result = await uploadFile(file);
-    setConfig({ [field]: result.file_url });
+    try {
+      const result = await uploadFile(file);
+      setConfig({ [field]: result.file_url });
+    } catch (error) {
+      console.error("Upload failed:", error);
+    }
   };
 
   return (

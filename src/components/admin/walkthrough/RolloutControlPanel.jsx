@@ -9,16 +9,23 @@ import { scoreWalkthroughQuality } from "@/lib/walkthrough-quality-scoring";
 export default function RolloutControlPanel({ tenant, record, rooms, walkthroughKey, onComplete }) {
   const [result, setResult] = useState(null);
   const [running, setRunning] = useState(false);
+  const [error, setError] = useState(null);
   const quality = scoreWalkthroughQuality(rooms);
   const checklist = evaluateQAChecklist({ rooms, record, quality });
   const passed = checklist.filter((item) => item.passed).length;
 
   const runMigration = async (mode, apply = false) => {
     setRunning(true);
-    const response = await base44.functions.invoke("migrateWalkthroughV3", { mode, apply, tenant_id: tenant?.id, walkthrough_key: walkthroughKey });
-    setResult(response.data);
-    setRunning(false);
-    onComplete?.();
+    setError(null);
+    try {
+      const response = await base44.functions.invoke("migrateWalkthroughV3", { mode, apply, tenant_id: tenant?.id, walkthrough_key: walkthroughKey });
+      setResult(response.data);
+      onComplete?.();
+    } catch (err) {
+      setError(err?.message || "Migration failed.");
+    } finally {
+      setRunning(false);
+    }
   };
 
   return (
@@ -27,6 +34,9 @@ export default function RolloutControlPanel({ tenant, record, rooms, walkthrough
         <h2 className="flex items-center gap-2 font-display text-xl font-bold"><ShieldCheck className="h-5 w-5 text-primary" /> QA & Rollout</h2>
         <p className="text-xs text-muted-foreground">Deterministic dry-run, migration, rollback, and QA readiness.</p>
       </div>
+      {error && (
+        <div className="mb-4 rounded-2xl border border-rose-400/30 bg-rose-400/10 p-3 text-xs text-rose-100">{error}</div>
+      )}
 
       <div className="mb-4 flex items-center justify-between rounded-2xl border border-white/10 bg-background/40 p-3 text-xs">
         <span>Checklist</span>

@@ -157,7 +157,7 @@ export default function ModuleVendors() {
       </div>
 
       <div className="flex gap-3">
-        <Link to={`/museum/${selected?.slug}/vendors/register`} className="flex items-center gap-2 text-xs text-amber-400 border border-amber-400/30 px-4 py-2 rounded-lg hover:bg-amber-400/10 transition-colors">
+        <Link to={selected?.slug ? `/museum/${selected.slug}/vendors/register` : "#"} aria-disabled={!selected?.slug} className={`flex items-center gap-2 text-xs border px-4 py-2 rounded-lg transition-colors ${selected?.slug ? "text-amber-400 border-amber-400/30 hover:bg-amber-400/10" : "text-muted-foreground border-white/10 cursor-not-allowed pointer-events-none"}`}>
           <Store className="w-3.5 h-3.5" />Vendor Registration
         </Link>
         <Link to="/admin/modules/commerce" className="flex items-center gap-2 text-xs text-emerald-400 border border-emerald-400/30 px-4 py-2 rounded-lg hover:bg-emerald-400/10 transition-colors">

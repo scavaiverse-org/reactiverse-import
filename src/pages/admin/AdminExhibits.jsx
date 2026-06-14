@@ -20,7 +20,7 @@ export default function AdminExhibits() {
   const { tenant } = useActiveTenant();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [exhibitToDelete, setExhibitToDelete] = useState(null);
-  const [form, setForm] = useState({ title: '', description: '', category: '', station_number: '', is_featured: false, status: 'draft' });
+  const [form, setForm] = useState({ title: '', subtitle: '', description: '', category: '', station_number: '', is_featured: false, status: 'draft' });
 
   const { data: exhibits = [], isLoading } = useQuery({
     queryKey: ['tenant-admin-exhibits', tenant?.id],
@@ -35,7 +35,7 @@ export default function AdminExhibits() {
       queryClient.invalidateQueries({ queryKey: ['tenant-admin-exhibits', tenant?.id] });
       toast.success('Exhibit created');
       setDialogOpen(false);
-      setForm({ title: '', description: '', category: '', station_number: '', is_featured: false, status: 'draft' });
+      setForm({ title: '', subtitle: '', description: '', category: '', station_number: '', is_featured: false, status: 'draft' });
     },
   });
 
@@ -103,7 +103,7 @@ export default function AdminExhibits() {
                 </div>
                 <div>
                   <Label className="font-body text-sm">Station #</Label>
-                  <Input type="number" value={form.station_number} onChange={e => update('station_number', parseInt(e.target.value) || '')} className="mt-1 bg-background" />
+                  <Input type="number" value={form.station_number} onChange={e => update('station_number', e.target.value ? parseInt(e.target.value, 10) : null)} className="mt-1 bg-background" />
                 </div>
               </div>
               <Button onClick={() => createMutation.mutate(form)} disabled={!form.title} className="w-full bg-primary text-primary-foreground font-body">

@@ -8,7 +8,7 @@ const metricRows = [
   ["sensory_intensity", "Sensory"],
 ];
 
-export default function ExperienceTimeline({ rooms }) {
+export default function ExperienceTimeline({ rooms = [] }) {
   const warnings = getWalkthroughWarnings(rooms);
   const totalDuration = rooms.reduce((sum, room) => sum + Number(room.estimated_duration_seconds || 0), 0);
 
@@ -23,8 +23,8 @@ export default function ExperienceTimeline({ rooms }) {
       </div>
 
       <div className="space-y-4">
-        {rooms.map((room) => (
-          <div key={room.id || room.room_key} className="rounded-2xl border border-white/10 bg-background/40 p-3">
+        {rooms.map((room, idx) => (
+          <div key={room.id || room.room_key || `room-${idx}`} className="rounded-2xl border border-white/10 bg-background/40 p-3">
             <div className="mb-3 flex items-center justify-between gap-3"><p className="text-sm font-semibold">{room.order}. {room.title || room.room_key}</p><span className="text-[10px] text-muted-foreground">{room.estimated_duration_seconds || 60}s</span></div>
             <div className="grid gap-2 md:grid-cols-4">
               {metricRows.map(([key, label]) => {

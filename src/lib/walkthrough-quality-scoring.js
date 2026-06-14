@@ -24,7 +24,25 @@ export function scoreWalkthroughQuality(rooms = []) {
   const emotionalPacing = clamp(100 - Math.max(0, average(rooms.map((room) => room.sensory_intensity)) - 70) * 1.4 - Math.max(0, average(rooms.map((room) => room.emotional_intensity)) - 80));
   const completionReadiness = clamp(100 - errors.length * 12 - warnings.length * 4);
   const spatialRooms = rooms.filter((room) => room.museum_mode_enabled || room.artifact_placement_enabled);
-  const spatialReadiness = spatialRooms.length ? clamp(100 - spatialRooms.filter((room) => !room.room_semantic_layout?.floor_baseline_y).length * 25 - spatialRooms.flatMap((room) => room.artifact_sprites || []).filter((sprite) => sprite.floor_locked !== false && Math.abs((Number(sprite.y || 0) + Number(sprite.height || 0)) - Number(spatialRooms.find((room) => (room.artifact_sprites || []).some((item) => item.id === sprite.id))?.room_semantic_layout?.floor_baseline_y || 86)) > 4).length * 18) : 100;
+  // Evaluate each room against its OWN floor baseline. The previous one-liner
+  // re-searched all rooms per sprite (O(n²)) and could match a sprite to the
+  // wrong room's baseline when ids weren't unique.
+  const spatialReadiness = spatialRooms.length
+    ? (() => {
+        const roomsMissingBaseline = spatialRooms.filter((room) => !room.room_semantic_layout?.floor_baseline_y).length;
+        let misalignedSprites = 0;
+        spatialRooms.forEach((room) => {
+          const baseline = Number(room.room_semantic_layout?.floor_baseline_y || 86);
+          (room.artifact_sprites || []).forEach((sprite) => {
+            if (sprite.floor_locked !== false) {
+              const bottom = (Number(sprite.y) || 0) + (Number(sprite.height) || 0);
+              if (Math.abs(bottom - baseline) > 4) misalignedSprites += 1;
+            }
+          });
+        });
+        return clamp(100 - roomsMissingBaseline * 25 - misalignedSprites * 18);
+      })()
+    : 100;
   const publishSafety = clamp(100 - errors.length * 18 - brokenRoutes.length * 15);
 
   return {

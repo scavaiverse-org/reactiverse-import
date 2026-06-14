@@ -22,6 +22,7 @@ const UNSAFE_SVG_PATTERNS = [
   /<use\s[^>]*(?:xlink:)?href\s*=\s*["'][^#]/i, // <use href/xlink:href> pointing to external resource (fragment refs allowed)
   /<!ENTITY/i,                  // XXE in SVG
   /data:text\/html/i,
+  /<foreignObject[\s>]/i,       // can embed arbitrary HTML inside the SVG
 ];
 
 async function rejectUnsafeSvg(file) {
@@ -42,8 +43,9 @@ function validateMediaFile(file) {
     throw new Error(`File is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum is 100 MB.`);
   }
   const mime = file.type || '';
-  if (mime && !ALLOWED_MEDIA_TYPES.has(mime)) {
-    throw new Error(`File type "${mime}" is not allowed. Allowed types: image, video, audio, PDF, and 3D model files.`);
+  // Require an explicit, allowlisted MIME type — an empty type must not pass.
+  if (!ALLOWED_MEDIA_TYPES.has(mime)) {
+    throw new Error(`File type "${mime || 'unknown'}" is not allowed. Allowed types: image, video, audio, PDF, and 3D model files.`);
   }
 }
 
@@ -66,8 +68,13 @@ export async function uploadFile(file) {
 // Avatar cutout images (face/body cutouts only — never the original photo)
 // go to the avatar-media bucket, which any visitor (authenticated or
 // anonymous) is allowed to write to under the avatars/ prefix.
+const ALLOWED_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif']);
+
 export async function uploadAvatarMedia(file, ownerKey) {
   if (!file) throw new Error('No file provided');
+  if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+    throw new Error(`Avatar must be an image file. Received: ${file.type || 'unknown'}`);
+  }
   if (file.size > MAX_AVATAR_SIZE) {
     throw new Error(`Avatar image is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum is 10 MB.`);
   }
@@ -87,6 +94,9 @@ export async function uploadAvatarMedia(file, ownerKey) {
 // object path — there is no public URL for a private bucket.
 export async function uploadPaymentProof(file) {
   if (!file) throw new Error('No file provided');
+  if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+    throw new Error(`Payment proof must be an image file. Received: ${file.type || 'unknown'}`);
+  }
   if (file.size > MAX_PROOF_SIZE) {
     throw new Error(`Payment proof is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum is 20 MB.`);
   }

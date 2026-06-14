@@ -128,7 +128,7 @@ export default function ModuleWalkthrough() {
             <div className="space-y-2">
               {(draft.scenes || []).map((scene, index) => (
                 <div key={scene.id || index} className="grid grid-cols-[60px_1fr_90px_120px] gap-2">
-                  <input value={scene.id || index + 1} onChange={e => { const next = [...draft.scenes]; next[index] = { ...scene, id: e.target.value }; setDraft({ ...draft, scenes: next }); }} className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-foreground" />
+                  <input type="number" value={scene.id || index + 1} onChange={e => { const next = [...draft.scenes]; next[index] = { ...scene, id: Number(e.target.value) || index + 1 }; setDraft({ ...draft, scenes: next }); }} className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-foreground" />
                   <input value={scene.title || ""} onChange={e => { const next = [...draft.scenes]; next[index] = { ...scene, title: e.target.value }; setDraft({ ...draft, scenes: next }); }} className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-foreground" />
                   <input value={scene.hotspots || 0} onChange={e => { const next = [...draft.scenes]; next[index] = { ...scene, hotspots: Number(e.target.value) }; setDraft({ ...draft, scenes: next }); }} className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-foreground" />
                   <select value={scene.status || "draft"} onChange={e => { const next = [...draft.scenes]; next[index] = { ...scene, status: e.target.value }; setDraft({ ...draft, scenes: next }); }} className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-foreground">

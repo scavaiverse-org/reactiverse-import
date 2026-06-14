@@ -5,11 +5,13 @@ const MASKS = [
 ];
 
 export function sanitizeText(value = "") {
-  let safe = String(value).slice(0, 1200);
+  // Mask first, then truncate — otherwise sensitive data past 1200 chars would
+  // slip into the output unmasked.
+  let safe = String(value);
   MASKS.forEach(({ pattern, value }) => {
     safe = safe.replace(pattern, value);
   });
-  return safe;
+  return safe.slice(0, 1200);
 }
 
 export function sanitizeObject(value = {}) {

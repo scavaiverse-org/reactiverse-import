@@ -66,7 +66,7 @@ const SERVICE_CONFIGS = {
 
 export default function ServicePage() {
   const { pathname } = useLocation();
-  const serviceKey = pathname.split("/").pop();
+  const serviceKey = pathname.replace(/\/$/, "").split("/").pop();
   const config = SERVICE_CONFIGS[serviceKey];
   const { data: health = [] } = useQuery({ queryKey: ["svc-health"], queryFn: () => base44.entities.PlatformHealth.list() });
   const h = health.find(h => h.service_key === config?.key);

@@ -6,6 +6,7 @@ const COLORS = ["hsl(38,90%,55%)", "hsl(190,60%,50%)", "hsl(280,60%,55%)", "hsl(
 
 export default function AdminAnalytics({ events = [], tickets = [], vendors = [] }) {
   const eventTypeCounts = events.reduce((acc, e) => {
+    if (!e.event_type) return acc;
     acc[e.event_type] = (acc[e.event_type] || 0) + 1;
     return acc;
   }, {});
@@ -16,6 +17,7 @@ export default function AdminAnalytics({ events = [], tickets = [], vendors = []
   }));
 
   const ticketsByType = tickets.reduce((acc, t) => {
+    if (!t.ticket_type) return acc;
     acc[t.ticket_type] = (acc[t.ticket_type] || 0) + 1;
     return acc;
   }, {});
@@ -26,6 +28,7 @@ export default function AdminAnalytics({ events = [], tickets = [], vendors = []
   }));
 
   const vendorsByCategory = vendors.reduce((acc, v) => {
+    if (!v.category) return acc;
     acc[v.category] = (acc[v.category] || 0) + 1;
     return acc;
   }, {});

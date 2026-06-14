@@ -4,6 +4,14 @@ import { calculateTenantReadiness } from "@/lib/readiness";
 export default function LaunchReadinessPanel({ tenant, moduleConfigs = [], experienceConfig, assets = [], tickets = [], vendors = [], events = [], compact = false }) {
   const readiness = calculateTenantReadiness({ tenant, moduleConfigs, experienceConfig, assets, tickets, vendors, events });
 
+  if (!readiness || typeof readiness.percentage !== "number" || !Array.isArray(readiness.checks)) {
+    return (
+      <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-5 text-sm text-red-400">
+        Unable to calculate launch readiness. Please check tenant configuration.
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-xl border border-primary/15 bg-white/[0.03] p-5">
       <div className="flex items-start justify-between gap-4 mb-4">
