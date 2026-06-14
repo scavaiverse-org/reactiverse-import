@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Box, CheckCircle2, Copy, DoorOpen, Eye, Plus, Sparkles, Trash2, Upload, Wand2 } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Box, CheckCircle2, ChevronDown, ChevronUp, Copy, DoorOpen, Eye, Plus, Sparkles, Trash2, Upload, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,15 +43,20 @@ function prettify(value = "") {
   return String(value).replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function TabPanel({ index, title, hint, children }) {
+function TabPanel({ index, title, hint, open, onToggle, children }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-white/10 bg-background/30">
-      <div className="flex items-center gap-2.5 px-4 py-3">
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-[11px] font-bold text-primary">{index + 1}</span>
-        <span className="text-sm font-semibold">{title}</span>
-        {hint && <HelpHint title={title}>{hint}</HelpHint>}
-      </div>
-      <div className="space-y-4 border-t border-white/10 p-4">{children}</div>
+      <button type="button" onClick={onToggle} className="flex w-full items-center justify-between gap-2.5 px-4 py-3 transition-colors hover:bg-white/[0.03]">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-[11px] font-bold text-primary">{index + 1}</span>
+          <span className="text-sm font-semibold">{title}</span>
+          {hint && <HelpHint title={title}>{hint}</HelpHint>}
+        </div>
+        <span className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${open ? "text-muted-foreground" : "bg-primary/10 text-primary"}`}>
+          {open ? <>Hide <ChevronUp className="h-3.5 w-3.5" /></> : <>Show <ChevronDown className="h-3.5 w-3.5" /></>}
+        </span>
+      </button>
+      {open && <div className="space-y-4 border-t border-white/10 p-4">{children}</div>}
     </div>
   );
 }
@@ -235,6 +240,9 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
   const [addObjectType, setAddObjectType] = useState("image_frame");
   const [uploadingField, setUploadingField] = useState(null);
   const [activeTab, setActiveTab] = useState(0);
+  const [previewOpen, setPreviewOpen] = useState(true);
+  const [stepPanelOpen, setStepPanelOpen] = useState(true);
+  const [editingObjectId, setEditingObjectId] = useState(null);
   const config = getThreeDWorldConfig(room);
   const setConfig = (patch) => onChange({ ...room, threeDWorldConfig: { ...(config || createThreeDWorldConfig()), ...patch } });
 
@@ -320,7 +328,7 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
   const npcGuide = config.npcGuide || {};
   const previewMode = SEED.previewModes.find((mode) => mode.id === config.previewMode) || SEED.previewModes[0];
 
-  const goToTab = (index) => setActiveTab(Math.max(0, Math.min(BUILDER_TABS.length - 1, index)));
+  const goToTab = (index) => { setActiveTab(Math.max(0, Math.min(BUILDER_TABS.length - 1, index))); setEditingObjectId(null); };
 
   return (
     <section className="space-y-3 rounded-2xl border border-primary/15 bg-primary/5 p-4">
@@ -337,10 +345,21 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
         </div>
       </div>
 
-      <div className="space-y-2">
-        <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-primary"><Eye className="h-3.5 w-3.5" /> Live preview · updates as you edit</p>
-        <ThreeDWorldCanvas config={config} room={room} debounceMs={400} className="h-[420px] w-full overflow-hidden rounded-2xl border border-white/10" />
-        <p className="text-xs text-muted-foreground">Drag to look around, scroll to zoom, click an object to see how it appears to visitors. This is the same renderer used on the published page.</p>
+      <div className="overflow-hidden rounded-2xl border border-white/10 bg-background/20">
+        <button type="button" onClick={() => setPreviewOpen((v) => !v)} className="flex w-full items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-white/[0.03]">
+          <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-primary">
+            <Eye className="h-3.5 w-3.5" /> Live Preview · Updates as you edit
+          </span>
+          <span className={`flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${previewOpen ? "text-muted-foreground" : "bg-primary/10 text-primary"}`}>
+            {previewOpen ? <>Hide <ChevronUp className="h-3.5 w-3.5" /></> : <>Show <ChevronDown className="h-3.5 w-3.5" /></>}
+          </span>
+        </button>
+        {previewOpen && (
+          <div className="space-y-2 border-t border-white/10 p-4">
+            <ThreeDWorldCanvas config={config} room={room} debounceMs={400} className="h-[420px] w-full overflow-hidden rounded-2xl border border-white/10" />
+            <p className="text-xs text-muted-foreground">Drag to look around, scroll to zoom, click an object to see how it appears to visitors. This is the same renderer used on the published page.</p>
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
@@ -348,7 +367,7 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
           <button
             key={tab.title}
             type="button"
-            onClick={() => setActiveTab(index)}
+            onClick={() => { setActiveTab(index); setEditingObjectId(null); }}
             className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${activeTab === index ? "border-primary/40 bg-primary/15 text-primary" : "border-white/10 bg-background/30 text-muted-foreground hover:bg-white/[0.03]"}`}
           >
             <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${activeTab === index ? "bg-primary/25 text-primary" : "bg-white/10 text-muted-foreground"}`}>{index + 1}</span>
@@ -357,7 +376,7 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
         ))}
       </div>
 
-      <TabPanel index={activeTab} title={BUILDER_TABS[activeTab].title} hint={BUILDER_TABS[activeTab].hint}>
+      <TabPanel index={activeTab} title={BUILDER_TABS[activeTab].title} hint={BUILDER_TABS[activeTab].hint} open={stepPanelOpen} onToggle={() => setStepPanelOpen((v) => !v)}>
         {activeTab === 0 && (
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Template">
@@ -504,10 +523,18 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
                 const mediaField = MEDIA_FIELD_BY_TYPE[object.type];
                 const descriptionField = getDescriptionField(object);
                 const extraFields = TYPE_EXTRA_FIELDS[object.type] || [];
+                const isEditing = editingObjectId === object.id;
+                const openEdit = () => { setEditingObjectId(object.id); setPreviewOpen(false); setStepPanelOpen(true); };
+                const closeEdit = () => { setEditingObjectId(null); setPreviewOpen(true); };
                 return (
-                  <details key={object.id} className="rounded-xl border border-white/10 bg-background/40">
-                    <summary className="cursor-pointer px-4 py-2.5 text-sm font-semibold">{object.title || object.name || "Untitled"} <span className="ml-2 text-xs font-normal text-muted-foreground">{getObjectType(object.type)?.name || prettify(object.type)}</span></summary>
-                    <div className="space-y-3 border-t border-white/10 p-4">
+                  <div key={object.id} className="overflow-hidden rounded-xl border border-white/10 bg-background/40">
+                    <button type="button" onClick={isEditing ? closeEdit : openEdit} className="flex w-full items-center justify-between px-4 py-2.5 transition-colors hover:bg-white/[0.03]">
+                      <span className="text-sm font-semibold">{object.title || object.name || "Untitled"} <span className="ml-2 text-xs font-normal text-muted-foreground">{getObjectType(object.type)?.name || prettify(object.type)}</span></span>
+                      <span className={`flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${isEditing ? "text-muted-foreground" : "bg-primary/10 text-primary"}`}>
+                        {isEditing ? <>Close <ChevronUp className="h-3.5 w-3.5" /></> : <>Edit <ChevronDown className="h-3.5 w-3.5" /></>}
+                      </span>
+                    </button>
+                    {isEditing && <div className="space-y-3 border-t border-white/10 p-4">
                       <div className="grid gap-3 md:grid-cols-2">
                         <Field label="Title"><Input value={object.title || ""} onChange={(e) => updateObject(object.id, { title: e.target.value })} /></Field>
                         <Field label="Description"><Input value={object[descriptionField] || ""} onChange={(e) => updateObject(object.id, { [descriptionField]: e.target.value })} /></Field>
@@ -544,8 +571,8 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
                         <VectorInput label="Scale" value={object.scale} onChange={(value) => updateObject(object.id, { scale: value })} />
                       </div>
                       <Toggle label="Visible to visitors" checked={object.visible !== false} onChange={(value) => updateObject(object.id, { visible: value })} />
-                    </div>
-                  </details>
+                    </div>}
+                  </div>
                 );
               })}
             </div>
