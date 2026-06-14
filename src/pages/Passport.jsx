@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Award, Compass, ImageOff, Loader2, MapPin, Sparkles } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/AuthContext";
 import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { getOrCreateVisitorId } from "@/lib/avatar-config";
@@ -13,6 +14,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+
+async function anonVisitorData(action, visitor_id, params = {}) {
+  const { data: result, error } = await supabase.functions.invoke("visitor-data", {
+    body: { visitor_id, action, ...params },
+  });
+  if (error) throw error;
+  if (result?.error) throw new Error(result.error);
+  return result?.data ?? [];
+}
 
 // "My SCAVerse Passport" — a cross-museum record of a visitor's progress:
 // journeys in progress (continue-your-journey), completed tours, collected
@@ -33,21 +43,32 @@ export default function Passport() {
   const { data: journeys = [], isLoading: loadingJourneys } = useQuery({
     queryKey: ["passport-journeys", ownerKey],
     enabled,
-    queryFn: () => base44.entities.VisitorJourney.filter(ownerFilter, "-last_visited_at"),
+    queryFn: isAuthenticated
+      ? () => base44.entities.VisitorJourney.filter(ownerFilter, "-last_visited_at")
+      : () => anonVisitorData("get_all_journeys", visitorId),
     initialData: [],
   });
 
   const { data: collectibles = [], isLoading: loadingCollectibles } = useQuery({
     queryKey: ["passport-collectibles", ownerKey],
-    enabled,
-    queryFn: () => base44.entities.VisitorCollectible.filter(ownerFilter, "-collected_at"),
+    enabled: enabled && journeys.length > 0,
+    queryFn: isAuthenticated
+      ? () => base44.entities.VisitorCollectible.filter(ownerFilter, "-collected_at")
+      : async () => {
+          const allResults = await Promise.all(
+            journeys.map((j) => anonVisitorData("get_collectibles", visitorId, { tenant_id: j.tenant_id, walkthrough_key: j.walkthrough_key }))
+          );
+          return allResults.flat();
+        },
     initialData: [],
   });
 
   const { data: badges = [], isLoading: loadingBadges } = useQuery({
     queryKey: ["passport-badges", ownerKey],
     enabled,
-    queryFn: () => base44.entities.VisitorBadge.filter(ownerFilter),
+    queryFn: isAuthenticated
+      ? () => base44.entities.VisitorBadge.filter(ownerFilter)
+      : () => anonVisitorData("get_badges", visitorId),
     initialData: [],
   });
 

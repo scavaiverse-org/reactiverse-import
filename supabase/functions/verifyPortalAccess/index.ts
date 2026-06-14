@@ -1,8 +1,8 @@
 import { corsHeaders } from '../_shared/cors.ts';
 import { checkRateLimit, rateLimitResponse } from '../_shared/rate-limit.ts';
 
-// Verifies internal portal access. Checks INTERNAL_PORTAL_ACCESS_CODE if set;
-// otherwise grants access unconditionally (same behaviour as the Base44 original).
+// Verifies internal portal access against INTERNAL_PORTAL_ACCESS_CODE.
+// Returns 503 when the secret is not set (no fallback open access).
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
@@ -12,11 +12,19 @@ Deno.serve(async (req) => {
   }
 
   const requiredCode = Deno.env.get('INTERNAL_PORTAL_ACCESS_CODE');
-  if (requiredCode) {
-    const body = await req.json().catch(() => ({}));
-    if (body.code !== requiredCode) {
-      return Response.json({ granted: false, reason: 'Invalid access code.' }, { status: 403, headers: corsHeaders });
-    }
+  if (!requiredCode) {
+    // Deny all access when the env var is not configured. Granting unconditional
+    // access when the secret is missing would be a production security hole.
+    console.error('[verifyPortalAccess] INTERNAL_PORTAL_ACCESS_CODE is not set — denying all access.');
+    return Response.json(
+      { granted: false, reason: 'Portal access is not configured on this deployment.' },
+      { status: 503, headers: corsHeaders },
+    );
+  }
+
+  const body = await req.json().catch(() => ({}));
+  if (body.code !== requiredCode) {
+    return Response.json({ granted: false, reason: 'Invalid access code.' }, { status: 403, headers: corsHeaders });
   }
 
   return Response.json({ granted: true }, { headers: corsHeaders });
