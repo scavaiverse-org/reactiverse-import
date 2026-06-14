@@ -306,6 +306,7 @@ const AuthenticatedApp = () => {
         <Route path="analytics" element={gated("analytics", <AdminAnalytics />)} />
         <Route path="music" element={<TenantMusic />} />
         <Route path="home" element={<TenantHomeEditor />} />
+        <Route path="uen" element={<UENProofs />} />
       </Route>
 
       {/* Platform admin domain */}

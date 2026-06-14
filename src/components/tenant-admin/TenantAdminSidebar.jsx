@@ -11,6 +11,7 @@ import {
   Music,
   ChevronsLeft,
   ChevronsRight,
+  Receipt,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -27,6 +28,7 @@ const navItems = [
   { label: "Exhibits", page: "exhibits", icon: BookOpen },
   { label: "Music", page: "music", icon: Music },
   { label: "Analytics", page: "analytics", icon: BarChart3 },
+  { label: "Payment Proofs", page: "uen", icon: Receipt },
 ];
 
 export default function TenantAdminSidebar({ open = true, onToggle }) {
@@ -50,12 +52,24 @@ export default function TenantAdminSidebar({ open = true, onToggle }) {
     initialData: [],
   });
 
+  const { data: pendingProofsCount = 0 } = useQuery({
+    queryKey: ["tenant-admin-nav-uen-pending"],
+    enabled: canReadAdmin,
+    queryFn: async () => {
+      const rows = await base44.entities.PaymentProof.filter({ status: "pending" }, "-created_at", 200);
+      return rows.length;
+    },
+    initialData: 0,
+    refetchInterval: 60000,
+  });
+
   const pendingVendors = vendors.filter((vendor) => vendor.status === "pending").length;
   const pendingTickets = tickets.filter((ticket) => ticket.status === "pending").length;
 
   const badges = {
     [`${adminBase}/vendors`]: pendingVendors,
     [`${adminBase}/tickets`]: pendingTickets,
+    [`${adminBase}/uen`]: pendingProofsCount,
   };
 
   return (
