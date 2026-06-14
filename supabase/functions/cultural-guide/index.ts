@@ -1,5 +1,6 @@
 import { corsHeaders } from '../_shared/cors.ts';
 import { getServiceRoleClient } from '../_shared/supabase-client.ts';
+import { checkRateLimit, rateLimitResponse } from '../_shared/rate-limit.ts';
 
 // AI Cultural Guide for SCAVerse museum tenants.
 // Replaces Base44 agent `cultural_guide` and the InvokeLLM call in AIGuide.jsx.
@@ -127,6 +128,10 @@ function sanitizeHistory(history: unknown): Message[] {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
+  if (!(await checkRateLimit(req, 'cultural-guide', 20, 60))) {
+    return rateLimitResponse();
+  }
 
   try {
     const apiKey = Deno.env.get('ANTHROPIC_API_KEY');

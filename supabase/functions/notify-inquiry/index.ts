@@ -1,4 +1,5 @@
 import { corsHeaders } from '../_shared/cors.ts';
+import { checkRateLimit, rateLimitResponse } from '../_shared/rate-limit.ts';
 import { getServiceRoleClient } from '../_shared/supabase-client.ts';
 
 // Sends an email notification to the SCAVerse inbox whenever a visitor submits
@@ -77,6 +78,10 @@ function buildVendorEmail(record: Record<string, unknown>): EmailContent {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
+  if (!(await checkRateLimit(req, 'notify-inquiry', 10, 60))) {
+    return rateLimitResponse();
+  }
 
   try {
     const { kind, id } = await req.json().catch(() => ({}));
