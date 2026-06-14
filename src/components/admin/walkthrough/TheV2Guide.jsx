@@ -114,7 +114,7 @@ const SECTIONS = [
 ];
 
 export default function TheV2Guide() {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
 
   return (
     <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 sm:p-5">
@@ -124,8 +124,12 @@ export default function TheV2Guide() {
           <span className="text-sm font-semibold">TheV2 — Experience Builder Guide</span>
           <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">Reference</span>
         </div>
-        <span className="flex h-7 w-7 items-center justify-center rounded-md">
-          {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        <span className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${open ? "text-muted-foreground" : "bg-primary/10 text-primary"}`}>
+          {open ? (
+            <>Hide <ChevronUp className="h-3.5 w-3.5" /></>
+          ) : (
+            <>Show <ChevronDown className="h-3.5 w-3.5" /></>
+          )}
         </span>
       </button>
 
