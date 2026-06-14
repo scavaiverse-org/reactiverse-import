@@ -38,7 +38,7 @@ export default function QASentinelThinkingLayers({ realtime, issueCount = 0, eve
             <Radio className={`h-3 w-3 ${realtime === "live" ? "animate-pulse" : ""}`} /> {realtime === "live" ? "Live connection" : "Polling every 3 seconds"}
           </span>
           <span className="rounded-full border border-white/10 bg-black/20 px-2 py-1 text-muted-foreground">Last update: {updatedLabel}</span>
-          {loading && <span className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2 py-1 text-cyan-300">Refreshing now</span>}
+          <span className={`rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2 py-1 text-cyan-300 transition-opacity duration-300 ${loading ? "opacity-100" : "opacity-0 pointer-events-none"}`} aria-hidden={!loading}>Refreshing now</span>
         </div>
       </div>
       <div className="grid gap-3 md:grid-cols-3">
