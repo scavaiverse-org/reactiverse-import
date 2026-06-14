@@ -86,7 +86,7 @@ export function buildCanonicalIssueExport({ issues = [], events = [], filters = 
     payload: { export_metadata: { ...result.metadata, created_by: createdBy } },
     export_blob: exportBlob,
     byte_size: new Blob([exportBlob]).size,
-    max_size_bytes: 1000000
+    max_size_bytes: 900000
   };
 }
 
@@ -250,7 +250,9 @@ function maskSensitive(text) {
 }
 
 function maskEmail(email) {
-  const [name, domain] = email.split("@");
+  if (!email || !String(email).includes("@")) return "[MASKED_EMAIL]";
+  const [name, domain] = String(email).split("@");
+  if (!name || !domain) return "[MASKED_EMAIL]";
   return `${name.slice(0, 2)}***@${domain}`;
 }
 

@@ -22,7 +22,6 @@ export default function useAvatarProfile() {
     queryFn: () => (userId
       ? base44.entities.Avatar.filter({ user_id: userId }, null, 1)
       : base44.entities.Avatar.filter({ visitor_id: visitorId }, null, 1)),
-    initialData: [],
   });
 
   const avatar = rows[0] || null;

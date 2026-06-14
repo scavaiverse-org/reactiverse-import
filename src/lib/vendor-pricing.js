@@ -27,7 +27,8 @@ export function buildVendorPricing(vendorConfig = {}) {
   const onboardingFee = Number(vendorConfig.onboarding_fee_sgd);
   const commission = Number(vendorConfig.commission_percent);
   const featuredPrice = Number(vendorConfig.featured_placement_price_sgd);
-  const maxSlots = Number(vendorConfig.featured_placement_max_slots) || null;
+  const parsedMaxSlots = Number(vendorConfig.featured_placement_max_slots);
+  const maxSlots = Number.isFinite(parsedMaxSlots) ? parsedMaxSlots : null;
   const hasPricing = Number.isFinite(onboardingFee) && Number.isFinite(commission);
 
   if (!hasPricing) {

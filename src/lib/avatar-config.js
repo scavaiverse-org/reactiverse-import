@@ -12,9 +12,17 @@ export function getOrCreateVisitorId() {
   if (typeof window === "undefined" || !window.localStorage) return null;
   let id = window.localStorage.getItem(VISITOR_ID_KEY);
   if (!id) {
-    id = typeof crypto !== "undefined" && crypto.randomUUID
-      ? crypto.randomUUID()
-      : `visitor-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    // This id is a capability token used by RLS, so it must be unguessable.
+    if (typeof crypto !== "undefined" && crypto.randomUUID) {
+      id = crypto.randomUUID();
+    } else if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+      // Fallback for environments without randomUUID: still cryptographically
+      // secure (never Math.random, which is predictable).
+      const bytes = crypto.getRandomValues(new Uint8Array(16));
+      id = `visitor-${Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("")}`;
+    } else {
+      throw new Error("A secure crypto API is required to generate a visitor id");
+    }
     window.localStorage.setItem(VISITOR_ID_KEY, id);
   }
   return id;

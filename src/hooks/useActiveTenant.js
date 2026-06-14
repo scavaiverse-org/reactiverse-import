@@ -6,7 +6,7 @@ import { getStoredTenantId, resolveTenantContext, setStoredTenantId } from "@/li
 
 export function useActiveTenant() {
   const { tenantSlug } = useParams();
-  const { data: tenants = [], isLoading } = useQuery({
+  const { data: tenants = [], isLoading, error, isError } = useQuery({
     queryKey: ["active-tenant-source"],
     queryFn: () => base44.entities.MuseumTenant.list(),
   });
@@ -27,6 +27,8 @@ export function useActiveTenant() {
     tenant,
     tenants,
     isLoading,
+    isError,
+    error,
     enabledModules,
     theme,
     isolationKey,

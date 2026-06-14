@@ -23,7 +23,7 @@ export function buildAuditRecord({ user, tenantId, action, targetType, targetId,
     target_name: targetName || "",
     details: details || "",
     metadata: {
-      tenantId,
+      tenantId: tenantId || null,
       beforeState: beforeState || null,
       afterState: afterState || null,
     },

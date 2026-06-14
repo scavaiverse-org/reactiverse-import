@@ -22,7 +22,7 @@ export function hasGlobalIssue(messages = [], rooms = []) {
   return messages.some((message) => !labels.has(String(message).split(":")[0].trim()));
 }
 function museumModeActive(room = {}) { return !!(room.museum_mode_enabled || room.artifact_placement_enabled); }
-function spriteBottom(sprite = {}) { return Number(sprite.y || 0) + Number(sprite.height || 0); }
+function spriteBottom(sprite = {}) { return (Number(sprite.y) || 0) + (Number(sprite.height) || 0); }
 function spriteHasMedia(sprite = {}) { return hasText(sprite.media_url) || hasText(sprite.processed_sprite_url) || hasText(sprite.active_museum_media_url) || hasText(sprite.sprite_image_url); }
 function getMuseumModeErrors(room = {}, label = "Room") {
   if (!museumModeActive(room)) return [];
@@ -35,7 +35,11 @@ function getMuseumModeErrors(room = {}, label = "Room") {
     if (!spriteHasMedia(sprite)) errors.push(`${name} must have valid media or processed sprite URL.`);
     if (sprite.floor_locked !== false && Math.abs(bottom - baseline) > 4) errors.push(`${name} is floating or not aligned to the floor baseline.`);
     if (bottom > baseline + 4) errors.push(`${name} is below the floor baseline.`);
-    if (Number(sprite.x || 0) < 0 || Number(sprite.y || 0) < 0 || Number(sprite.x || 0) + Number(sprite.width || 0) > 100 || Number(sprite.y || 0) + Number(sprite.height || 0) > 100) errors.push(`${name} is outside room bounds.`);
+    const sx = Number(sprite.x) || 0;
+    const sy = Number(sprite.y) || 0;
+    const sw = Number(sprite.width) || 0;
+    const sh = Number(sprite.height) || 0;
+    if (sx < 0 || sy < 0 || sx + sw > 100 || sy + sh > 100) errors.push(`${name} is outside room bounds.`);
   });
   if (room.scrollable_image_enabled && room.scrollable_image_coordinate_space !== "full_image_percent") errors.push(`${label}: scrollable room must use full-image coordinate space.`);
   return errors;

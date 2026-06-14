@@ -5,7 +5,7 @@ import { createFingerprint, createIssueKey, sanitizeObject, sanitizeText } from 
 export async function recordSentinelEvent(payload) {
   const safe = {
     event_type: payload.event_type || "console_error",
-    route: payload.route || window.location.pathname,
+    route: payload.route || (typeof window !== "undefined" ? window.location.pathname : ""),
     component_name: sanitizeText(payload.component_name || "runtime"),
     target_label: sanitizeText(payload.target_label || ""),
     target_selector: sanitizeText(payload.target_selector || ""),
@@ -14,7 +14,7 @@ export async function recordSentinelEvent(payload) {
     severity: payload.severity || "info",
     timestamp: payload.timestamp || new Date().toISOString(),
     test_run_id: payload.test_run_id || "",
-    tenant_slug: payload.tenant_slug || extractTenantSlug(payload.route || window.location.pathname)
+    tenant_slug: payload.tenant_slug || extractTenantSlug(payload.route || (typeof window !== "undefined" ? window.location.pathname : ""))
   };
   return base44.entities.QASentinelEvent.create(safe);
 }

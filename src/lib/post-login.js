@@ -7,11 +7,12 @@ import { ROLES, normalizeRole, isMasterUser, getUserTenantIds } from "@/lib/rbac
  * freshly authenticated user should land.
  */
 export async function fetchAuthProfile(authUserId) {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("profiles")
     .select("role, tenant_ids, account_type")
     .eq("id", authUserId)
     .single();
+  if (error) throw error;
   return data;
 }
 

@@ -13,6 +13,10 @@ export const MUSEUM_MODE_DEFAULTS = {
   museum_mode_enabled: false,
   artifact_placement_enabled: false,
   artifact_sprites: [],
+  // Intentionally a single shared instance created once at module load: this
+  // freezes last_scan_at to one value per process so compileMuseumManifest
+  // produces byte-identical manifests for identical input (see
+  // manifest-determinism.test.js). Do not convert to a per-call factory.
   room_semantic_layout: createFallbackSemanticLayout(),
 };
 

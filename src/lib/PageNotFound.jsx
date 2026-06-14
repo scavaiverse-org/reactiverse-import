@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 
 export default function PageNotFound({}) {
     const location = useLocation();
-    const pageName = location.pathname.substring(1);
+    const pageName = location.pathname.substring(1) || "home";
 
     const { data: authData, isFetched } = useQuery({
         queryKey: ['user'],
