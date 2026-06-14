@@ -81,6 +81,15 @@ const entityTableMap = {
 
   // Added in 0018_avatar_creator.sql
   Avatar: 'avatars',
+
+  // Added in 0023_visitor_engagement.sql
+  VisitorJourney: 'visitor_journeys',
+  VisitorCollectible: 'visitor_collectibles',
+  VisitorBadge: 'visitor_badges',
+  VisitorNotification: 'visitor_notifications',
+  GuestbookEntry: 'guestbook_entries',
+  RoomComment: 'room_comments',
+  TenantEvent: 'tenant_events',
 };
 
 // All 65 Base44 entities now map to a real Supabase table. The catch-all
