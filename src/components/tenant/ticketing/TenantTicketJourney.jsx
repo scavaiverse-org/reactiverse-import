@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { AlertTriangle, ArrowLeft, ArrowRight, Bot, Building2, CalendarDays, CheckCircle2, Crown, MapPin, Monitor, Package, School, ShieldCheck, ShoppingBag, Sparkles, Store, Ticket, Users } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, Bot, Building2, CalendarDays, Check, CheckCircle2, Copy, Crown, Loader2, MapPin, Monitor, Package, School, ShieldCheck, ShoppingBag, Sparkles, Store, Ticket, UploadCloud, Users } from "lucide-react";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
 import { supabase } from "@/lib/supabase";
@@ -15,6 +15,8 @@ import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { museumPath } from "@/lib/domain-registry";
 import { assertTenantId } from "@/lib/tenant-query";
 import { checkSubmitAllowed, honeypotInputProps, isHoneypotTripped, recordSubmit } from "@/lib/form-protection";
+import { uploadPaymentProof } from "@/lib/upload";
+import { PAYNOW, PURCHASE_INSTRUCTIONS } from "@/lib/presale-content";
 
 const fallbackTickets = [
   { id: "virtual_general", label: "Virtual General", price: 18, currency: "SGD", access_mode: "virtual", icon: Monitor, features: ["Virtual walkthrough", "AI support", "Digital access"] },
@@ -211,85 +213,70 @@ function ActionLink({ to, children, variant = "default" }) {
 }
 
 export function TicketGateway() {
-  const navigate = useNavigate();
   const { tenantSlug } = useParams();
   const { tenant, tickets, isLoading, launchPromo } = useTickets();
   const slug = tenantSlug || tenant?.slug || "asian-operatic-museum";
   const [selectedId, setSelectedId] = useState(tickets[0]?.id || "virtual_general");
-  const [form, setForm] = useState({ visitor_name: "", visitor_email: "", quantity: 1, visit_date: "", accessibility_needs: "", group_type: "individual", notes: "" });
-  const [honeypot, setHoneypot] = useState("");
-  useEffect(() => {
-    if (tickets.length && !tickets.some((ticket) => ticket.id === selectedId)) setSelectedId(tickets[0].id);
-  }, [tickets, selectedId]);
-  const selected = tickets.find((ticket) => ticket.id === selectedId) || tickets[0];
-  const total = selected?.price ? selected.price * Number(form.quantity || 1) : null;
+  const [email, setEmail] = useState("");
+  const [quantity, setQuantity] = useState(1);
+  const [proofFile, setProofFile] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const submitReservation = async () => {
-    if (!form.visitor_name || !form.visitor_email) {
-      toast.error("Please add your name and email to reserve a ticket.");
-      return;
-    }
-    if (!isValidVisitDate(form.visit_date)) {
-      toast.error("Please select a valid visit date.");
-      return;
-    }
-    if (isHoneypotTripped(honeypot)) return;
-    const guard = checkSubmitAllowed("ticket_reservation");
-    if (!guard.allowed) {
-      toast.error(guard.message);
-      return;
-    }
-    let tenantId;
+  useEffect(() => {
+    if (tickets.length && !tickets.some((t) => t.id === selectedId)) setSelectedId(tickets[0].id);
+  }, [tickets, selectedId]);
+
+  const selected = tickets.find((t) => t.id === selectedId) || tickets[0];
+  const total = selected?.price ? selected.price * Math.max(1, Number(quantity) || 1) : null;
+
+  const copyUen = async () => {
     try {
-      tenantId = assertTenantId(tenant?.id);
+      await navigator.clipboard.writeText(PAYNOW.uen);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
     } catch {
-      toast.error("Museum is still loading. Please try again in a moment.");
-      return;
+      setErrorMsg("Couldn't copy — UEN is " + PAYNOW.uen);
     }
-    const payload = {
-      tenant_id: tenantId,
-      tenant_name: tenant?.name,
-      ticket_type: selected.id,
-      visitor_name: form.visitor_name,
-      visitor_email: form.visitor_email,
-      quantity: Number(form.quantity || 1),
-      total_price: total,
-      currency: selected.currency || "SGD",
-      status: "pending",
-      visit_date: form.visit_date || null,
-      notes: form.notes,
-      access_mode: selected.access_mode,
-      ticket_addons: [],
-      accessibility_needs: form.accessibility_needs,
-      group_type: form.group_type,
-      confirmation_stage: "reservation_created",
-      source_step: "tickets",
-      commerce_interest: false,
-      ai_help_used: false,
-    };
-    // Plain insert (no read-back): ticket reads are admin/owner-only under RLS,
-    // so the entity wrapper's insert().select() fails for anonymous visitors.
-    // The id is generated client-side so we can carry it into checkout.
-    const reservationId = crypto.randomUUID();
+  };
+
+  const submitProof = async () => {
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+    if (!emailValid) { setErrorMsg("Please enter a valid email address — it must match your PayNow comment."); return; }
+    if (!proofFile) { setErrorMsg("Please upload your PayNow payment screenshot."); return; }
+    setSubmitting(true);
+    setErrorMsg("");
     try {
-      const { error: insertError } = await supabase.from("tickets").insert({ ...payload, id: reservationId });
-      if (insertError) throw insertError;
-      recordSubmit("ticket_reservation");
-      saveJourney(tenantId, { reservation: { ...payload, id: reservationId, ticket_label: selected.label } });
-      base44.entities.AnalyticsEvent.create({ tenant_id: tenantId, tenant_name: tenant?.name, event_type: "ticket_reservation_created", source_page: "tickets", event_data: { ticket_type: selected.id, quantity: payload.quantity, source_step: "tickets" } }).catch(() => {});
-      navigate(museumPath(slug, "tickets-5"));
-    } catch (error) {
-      console.error("[tickets] reservation failed:", error);
-      toast.error("We couldn't save your reservation. Please try again or contact the museum.");
+      const uploaded = await uploadPaymentProof(proofFile);
+      const { error } = await supabase.from("payment_proofs").insert({
+        kind: "ticket",
+        item_id: selected?.id || "ticket",
+        item_label: selected?.label || "Museum Ticket",
+        email: email.trim(),
+        amount: total,
+        currency: selected?.currency || "SGD",
+        quantity: Math.max(1, Number(quantity) || 1),
+        screenshot_path: uploaded.path,
+        status: "pending",
+        notes: `Pre-sale ticket via tickets page. PayNow to UEN ${PAYNOW.uen}. Verify transfer, then grant e-ticket role for ${email.trim()}.`,
+      });
+      if (error) throw error;
+      setDone(true);
+    } catch (err) {
+      setErrorMsg(err?.message || "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <StageShell activeStage="tickets" eyebrow="Purchase Tickets" title="Choose your museum access." body="Reserve a ticket first, then compare access types, plan your visit, add upgrades, and continue to confirmation.">
+    <StageShell activeStage="tickets" eyebrow="Purchase Tickets" title="Choose your museum access." body="Select a ticket, pay by PayNow, then upload your payment screenshot to confirm your order.">
       {isLoading && <p className="mb-4 text-xs text-muted-foreground">Loading tenant ticket settings…</p>}
       <PromoBanner promo={launchPromo} />
       <div className="mb-4 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm text-primary">
-        Select one main ticket type. Choosing another ticket will replace your previous selection.
+        Select one ticket type. Choosing another will replace your current selection.
       </div>
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="grid gap-4 lg:col-span-2 sm:grid-cols-2">
@@ -299,18 +286,92 @@ export function TicketGateway() {
             return <motion.button key={ticket.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.04 }} onClick={() => setSelectedId(ticket.id)} className={`rounded-3xl border p-5 text-left backdrop-blur-sm transition-all duration-300 ${active ? "border-primary bg-primary/10 ring-1 ring-primary/30" : "border-border/40 bg-card/50 hover:border-primary/40 hover:bg-card/80"}`} aria-pressed={active}><div className="mb-4 flex items-center justify-between gap-3"><Icon className="h-6 w-6 text-primary" /><span className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${active ? "border-primary/30 bg-primary text-primary-foreground" : "border-border/50 text-muted-foreground"}`}>{active ? "Selected" : "Select"}</span></div><h3 className="font-heading text-xl font-semibold">{ticket.label}</h3><TicketPrice ticket={ticket} /><ul className="mt-4 space-y-2 text-xs text-muted-foreground">{(ticket.features || []).map((feature) => <li key={feature} className="flex gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-primary" />{feature}</li>)}</ul></motion.button>;
           })}
         </div>
+
+        {/* ── Pay by PayNow panel ── */}
         <div className="rounded-3xl border border-border/40 bg-card/50 p-6 backdrop-blur-sm">
-          <h2 className="font-heading text-2xl font-semibold">Reservation details</h2>
-          <div className="mt-5 space-y-4">
-            <input {...honeypotInputProps()} value={honeypot} onChange={(e) => setHoneypot(e.target.value)} />
-            <label className="space-y-2"><Label>Visitor name</Label><Input value={form.visitor_name} onChange={(e) => setForm({ ...form, visitor_name: e.target.value })} /></label>
-            <label className="space-y-2"><Label>Email</Label><Input type="email" value={form.visitor_email} onChange={(e) => setForm({ ...form, visitor_email: e.target.value })} /></label>
-            <div className="grid grid-cols-2 gap-3"><label className="space-y-2"><Label>Quantity</Label><Input type="number" min="1" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) || 1 })} /></label><label className="space-y-2"><Label>Visit date</Label><Input type="date" min={todayDateInput()} value={form.visit_date} onChange={(e) => setForm({ ...form, visit_date: e.target.value })} /></label></div>
-            <label className="space-y-2"><Label>Group type</Label><select value={form.group_type} onChange={(e) => setForm({ ...form, group_type: e.target.value })} className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"><option value="individual">Individual</option><option value="family">Family</option><option value="school">School</option><option value="corporate">Corporate</option></select><p className="text-xs leading-relaxed text-muted-foreground">Some group types may require staff confirmation or custom quote before payment.</p></label>
-            <label className="space-y-2"><Label>Accessibility needs</Label><Textarea value={form.accessibility_needs} onChange={(e) => setForm({ ...form, accessibility_needs: e.target.value })} /></label>
-            {total && <div className="flex items-center justify-between border-t border-white/10 pt-4"><span className="text-sm text-muted-foreground">Estimated total</span><span className="font-heading text-2xl font-semibold text-primary">{selected.currency} {total.toFixed(2)}</span></div>}
-            <Button className="w-full" onClick={submitReservation}>Reserve Ticket <ArrowRight className="h-4 w-4" /></Button>
-          </div>
+          {done ? (
+            <div className="flex flex-col items-center py-6 text-center">
+              <CheckCircle2 className="mb-3 h-10 w-10 text-emerald-400" />
+              <h2 className="font-heading text-xl font-semibold">Screenshot received!</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                We'll verify your PayNow transfer and activate your ticket for <span className="font-semibold text-foreground">{email}</span> — usually within 24 hours.
+              </p>
+              <p className="mt-3 rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs text-amber-200">
+                Make sure your email appears in the PayNow comment, or we can't match your payment.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <h2 className="font-heading text-2xl font-semibold">Pay by PayNow</h2>
+
+              {/* UEN */}
+              <div className="rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/10 to-transparent p-3 space-y-2">
+                <div className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-background/50 px-3 py-2">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground">PayNow UEN</p>
+                    <p className="font-mono text-base font-bold tracking-wide">{PAYNOW.uen}</p>
+                    {total && <p className="text-xs font-semibold text-primary mt-0.5">Amount: {selected?.currency} {total.toFixed(2)}</p>}
+                  </div>
+                  <Button type="button" size="sm" variant="outline" onClick={copyUen}>
+                    {copied ? <><Check className="h-3.5 w-3.5" /> Copied</> : <><Copy className="h-3.5 w-3.5" /> Copy</>}
+                  </Button>
+                </div>
+                <ol className="space-y-1">
+                  {PURCHASE_INSTRUCTIONS.map((line, i) => (
+                    <li key={i} className="flex gap-2 text-xs text-foreground/80">
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[9px] font-bold text-primary">{i + 1}</span>
+                      {line}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+
+              {/* Quantity */}
+              <label className="space-y-1.5 block">
+                <Label>Quantity</Label>
+                <Input type="number" min="1" value={quantity} onChange={(e) => setQuantity(Number(e.target.value) || 1)} className="w-24" />
+                {total && <p className="text-xs text-muted-foreground">Total: <strong className="text-primary">{selected?.currency} {total.toFixed(2)}</strong></p>}
+              </label>
+
+              {/* Email */}
+              <label className="space-y-1.5 block">
+                <Label>Email (must match PayNow comment)</Label>
+                <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" />
+              </label>
+
+              {/* Screenshot upload */}
+              <div className="rounded-2xl border border-dashed border-primary/40 bg-primary/[0.04] p-3 space-y-2">
+                <p className="flex items-center gap-2 text-sm font-semibold">
+                  <UploadCloud className="h-4 w-4 text-primary" /> Upload payment screenshot
+                </p>
+                <p className="text-xs text-muted-foreground">Screenshot of your completed PayNow transfer.</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button asChild type="button" size="sm" variant="outline">
+                    <label className="cursor-pointer">
+                      <UploadCloud className="h-3.5 w-3.5" /> {proofFile ? "Change" : "Choose screenshot"}
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => setProofFile(e.target.files?.[0] || null)} />
+                    </label>
+                  </Button>
+                  {proofFile
+                    ? <span className="inline-flex items-center gap-1 text-xs text-emerald-300"><Check className="h-3 w-3" /> {proofFile.name}</span>
+                    : <span className="text-xs text-amber-300">Required</span>}
+                </div>
+              </div>
+
+              {errorMsg && <p className="rounded-lg border border-rose-400/30 bg-rose-400/10 px-3 py-2 text-xs text-rose-200">{errorMsg}</p>}
+
+              <Button className="w-full" onClick={submitProof} disabled={submitting || !email || !proofFile}>
+                {submitting
+                  ? <><Loader2 className="h-4 w-4 animate-spin" /> Submitting…</>
+                  : <><UploadCloud className="h-4 w-4" /> Submit payment screenshot</>}
+              </Button>
+
+              <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
+                <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                Access is granted manually after your PayNow transfer is verified — usually within 24 hours.
+              </p>
+            </div>
+          )}
         </div>
       </div>
       <div className="mt-8 flex flex-wrap gap-3"><ActionLink to={museumPath(slug, "tickets-2")} variant="outline">Compare Ticket Types</ActionLink><ActionLink to={museumPath(slug, "tickets-3")} variant="outline">Plan Visit</ActionLink><ActionLink to={museumPath(slug, "guide")} variant="outline">Ask About Tickets</ActionLink></div>

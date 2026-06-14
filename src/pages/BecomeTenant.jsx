@@ -1,33 +1,27 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { ArrowRight, CheckCircle2, Image, MonitorPlay, QrCode, Sparkles, UploadCloud } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowRight, CheckCircle2, Copy, Check, Image, Loader2, MonitorPlay, Sparkles, UploadCloud } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { supabase } from "@/lib/supabase";
 import PlatformShell from "@/components/platform/PlatformShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { checkSubmitAllowed, honeypotInputProps, isHoneypotTripped, recordSubmit } from "@/lib/form-protection";
-import { buildPayNowQrDataUrl } from "@/lib/paynow-qr";
-import { toast } from "sonner";
+import { uploadPaymentProof } from "@/lib/upload";
+import { PAYNOW, PURCHASE_INSTRUCTIONS, TENANT_TRIAL_OFFER } from "@/lib/presale-content";
 
-// Platform UEN used for the PayNow fallback when Stripe isn't configured.
-const PLATFORM_UEN = "201722486D";
-const PLAN_PRICE_SGD = 300;
 const TRIAL_DAYS = 7;
 
 export default function BecomeTenant() {
   const [searchParams] = useSearchParams();
   const checkoutResult = searchParams.get("checkout");
 
-  const [form, setForm] = useState({ organization: "", contact_name: "", email: "", museum_type: "", message: "" });
-  const [honeypot, setHoneypot] = useState("");
-  const [step, setStep] = useState("form"); // form | checkout
-  const [inquiryId, setInquiryId] = useState(null);
-  const [reference, setReference] = useState(null);
-  const [payNowQr, setPayNowQr] = useState(null);
-  const [checkoutError, setCheckoutError] = useState(null);
+  const [form, setForm] = useState({ organization: "", contact_name: "", email: "" });
+  const [proofFile, setProofFile] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const { data: configs = [] } = useQuery({
     queryKey: ["become-tenant-page-config"],
@@ -37,57 +31,48 @@ export default function BecomeTenant() {
   const hero = configs[0]?.sections?.find((section) => section.sectionKey === "hero") || {};
   const videoUrl = hero.backgroundVideoUrl || "https://res.cloudinary.com/dwc4hamrl/video/upload/q_auto/f_auto/v1780431698/grok_video_2026-06-03-04-21-15_eo9sqz.mp4";
 
-  const mutation = useMutation({
-    // Plain insert (no read-back): inquiry reads are admin-only under RLS, so
-    // the entity wrapper's insert().select() would fail for visitors. The id
-    // is generated client-side so we can carry it into the checkout step.
-    mutationFn: async (data) => {
-      const id = crypto.randomUUID();
-      const { error } = await supabase
-        .from("tenant_inquiries")
-        .insert({ ...data, id, status: "new", submitted_at: new Date().toISOString() });
-      if (error) throw error;
-      return id;
-    },
-    onSuccess: (id) => {
-      recordSubmit("tenant_inquiry");
-      // Fire-and-forget: email the SCAVerse inbox. Never block the flow on it.
-      base44.functions.invoke("notify-inquiry", { kind: "tenant_inquiry", id }).catch(() => {});
-      setInquiryId(id);
-      setReference(`SCV-${id.slice(0, 8).toUpperCase()}`);
-      setStep("checkout");
-    },
-  });
+  const update = (field, value) => setForm((f) => ({ ...f, [field]: value }));
 
-  const checkoutMutation = useMutation({
-    mutationFn: async () => {
-      const data = await base44.functions.invoke("franchise-checkout", { inquiry_id: inquiryId, origin: window.location.origin });
-      if (!data) throw new Error("Payments are not available right now.");
-      if (data.error) throw new Error(data.error);
-      if (data.url) {
-        window.location.href = data.url;
-        return data;
-      }
-      if (data.stripe_configured === false) {
-        const dataUrl = await buildPayNowQrDataUrl({ uen: PLATFORM_UEN, amount: PLAN_PRICE_SGD, reference });
-        setPayNowQr(dataUrl);
-        return data;
-      }
-      return data;
-    },
-    onError: (error) => setCheckoutError(error.message || "Something went wrong starting the payment."),
-  });
-
-  const update = (field, value) => setForm((current) => ({ ...current, [field]: value }));
-  const submit = (event) => {
-    event.preventDefault();
-    if (isHoneypotTripped(honeypot)) return;
-    const guard = checkSubmitAllowed("tenant_inquiry");
-    if (!guard.allowed) {
-      toast.error(guard.message);
-      return;
+  const copyUen = async () => {
+    try {
+      await navigator.clipboard.writeText(PAYNOW.uen);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setErrorMsg("Couldn't copy — the UEN is " + PAYNOW.uen);
     }
-    mutation.mutate(form);
+  };
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setErrorMsg("");
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim());
+    if (!emailValid) { setErrorMsg("Please enter a valid email address."); return; }
+    if (!proofFile) { setErrorMsg("Please upload your PayNow screenshot before submitting."); return; }
+    setSubmitting(true);
+    try {
+      const uploaded = await uploadPaymentProof(proofFile);
+      const { error } = await supabase.from("payment_proofs").insert({
+        kind: "tenant_trial",
+        item_id: "tenant_trial",
+        item_label: TENANT_TRIAL_OFFER.label,
+        email: form.email.trim(),
+        organization: form.organization.trim() || null,
+        contact_name: form.contact_name.trim() || null,
+        amount: 0,
+        currency: "SGD",
+        quantity: 1,
+        screenshot_path: uploaded.path,
+        status: "pending",
+        notes: `Tenant trial application via Become a Tenant page. PayNow to UEN ${PAYNOW.uen}. Activate trial role for ${form.email.trim()}.`,
+      });
+      if (error) throw error;
+      setDone(true);
+    } catch (err) {
+      setErrorMsg(err?.message || "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const benefits = [
@@ -100,24 +85,12 @@ export default function BecomeTenant() {
   return (
     <PlatformShell>
       <section className="relative mx-auto grid max-w-7xl gap-10 overflow-hidden px-4 py-16 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:py-24">
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="absolute inset-0 h-full w-full object-cover opacity-35"
-          src={videoUrl}
-        />
+        <video autoPlay muted loop playsInline className="absolute inset-0 h-full w-full object-cover opacity-35" src={videoUrl} />
         <div className="absolute inset-0 bg-gradient-to-br from-background/88 via-background/68 to-background/35" />
         <div className="relative z-10">
           {checkoutResult === "success" && (
             <div className="mb-6 flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary">
               <CheckCircle2 className="h-4 w-4 shrink-0" /> Payment confirmed — your 7-day trial is active. We'll be in touch to set up your tenant space.
-            </div>
-          )}
-          {checkoutResult === "cancelled" && (
-            <div className="mb-6 rounded-xl border border-border/40 bg-card/60 px-4 py-3 text-sm text-muted-foreground">
-              Checkout was cancelled — you can restart it any time from your application below.
             </div>
           )}
           <p className="font-display text-[10px] font-medium uppercase tracking-[0.5em] text-primary/70">{hero.eyebrow || "Be a franchisee"}</p>
@@ -130,7 +103,7 @@ export default function BecomeTenant() {
 
           <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-xs font-medium text-primary">
             <Sparkles className="h-3.5 w-3.5" />
-            {TRIAL_DAYS}-day free trial, then SGD ${PLAN_PRICE_SGD} for 6 months — Early Bird price
+            {TRIAL_DAYS}-day free trial — then SGD $300 for 6 months (early bird)
           </div>
 
           <div className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -156,74 +129,85 @@ export default function BecomeTenant() {
           </div>
         </div>
 
+        {/* ── Right panel ── */}
         <div className="relative z-10 rounded-3xl border border-border/40 bg-card/50 p-6 shadow-2xl backdrop-blur-sm">
-          {step === "form" && (
-            <form onSubmit={submit} className="space-y-4">
-              <input {...honeypotInputProps()} value={honeypot} onChange={(event) => setHoneypot(event.target.value)} />
+          {done ? (
+            <div className="flex flex-col items-center py-10 text-center">
+              <CheckCircle2 className="mb-4 h-12 w-12 text-emerald-400" />
+              <h2 className="font-display text-2xl font-bold">Screenshot received!</h2>
+              <p className="mt-3 max-w-xs text-sm text-muted-foreground">
+                We'll verify your PayNow transfer and activate your {TRIAL_DAYS}-day trial for <span className="font-semibold text-foreground">{form.email}</span> — usually within 24 hours.
+              </p>
+              <p className="mt-4 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-xs text-amber-200">
+                Make sure your email address appears in the PayNow comment, or we can't match your payment.
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={submit} className="space-y-5">
               <div>
-                <h2 className="font-display text-2xl font-bold">Apply to become a franchisee</h2>
-                <p className="mt-2 text-sm text-muted-foreground">{TRIAL_DAYS}-day free trial, then SGD ${PLAN_PRICE_SGD} for 6 months (early bird). Tell us about your museum to get started.</p>
-              </div>
-              <Input required placeholder="Organization / museum name" value={form.organization} onChange={(e) => update("organization", e.target.value)} />
-              <Input required placeholder="Contact name" value={form.contact_name} onChange={(e) => update("contact_name", e.target.value)} />
-              <Input required type="email" placeholder="Email" value={form.email} onChange={(e) => update("email", e.target.value)} />
-              <Input placeholder="Museum type / collection focus" value={form.museum_type} onChange={(e) => update("museum_type", e.target.value)} />
-              <Textarea className="min-h-32" placeholder="Tell us what you want to launch" value={form.message} onChange={(e) => update("message", e.target.value)} />
-              {mutation.isError && (
-                <p className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">
-                  Something went wrong sending your application — please try again.
+                <h2 className="font-display text-2xl font-bold">Pay by PayNow to get started</h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {TRIAL_DAYS} days free — no payment now. After the trial: SGD $300 for 6 months. Transfer when you're ready to continue.
                 </p>
-              )}
-              <Button type="submit" disabled={mutation.isPending} className="w-full bg-primary text-primary-foreground">
-                {mutation.isPending ? "Sending..." : `Continue to ${TRIAL_DAYS}-day trial`}
+              </div>
+
+              {/* UEN block */}
+              <div className="rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/10 to-transparent p-4 space-y-3">
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-background/50 px-3 py-2">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground">PayNow UEN</p>
+                    <p className="font-mono text-lg font-bold tracking-wide">{PAYNOW.uen}</p>
+                    <p className="text-[10px] text-muted-foreground">{PAYNOW.payeeName}</p>
+                  </div>
+                  <Button type="button" size="sm" variant="outline" onClick={copyUen}>
+                    {copied ? <><Check className="h-3.5 w-3.5" /> Copied</> : <><Copy className="h-3.5 w-3.5" /> Copy UEN</>}
+                  </Button>
+                </div>
+                <ol className="space-y-1.5">
+                  {PURCHASE_INSTRUCTIONS.map((line, i) => (
+                    <li key={i} className="flex gap-2 text-xs text-foreground/85">
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[9px] font-bold text-primary">{i + 1}</span>
+                      {line}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+
+              {/* Screenshot upload */}
+              <div className="rounded-2xl border border-dashed border-primary/40 bg-primary/[0.04] p-4 space-y-2">
+                <p className="flex items-center gap-2 text-sm font-semibold">
+                  <UploadCloud className="h-4 w-4 text-primary" /> Upload your payment screenshot
+                </p>
+                <p className="text-xs text-muted-foreground">Take a screenshot of your completed PayNow transfer and upload it here.</p>
+                <div className="flex flex-wrap items-center gap-3 pt-1">
+                  <Button asChild type="button" size="sm" variant="outline">
+                    <label className="cursor-pointer">
+                      <UploadCloud className="h-3.5 w-3.5" /> {proofFile ? "Change screenshot" : "Choose screenshot"}
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => setProofFile(e.target.files?.[0] || null)} />
+                    </label>
+                  </Button>
+                  {proofFile
+                    ? <span className="inline-flex items-center gap-1.5 text-xs text-emerald-300"><Check className="h-3.5 w-3.5" /> {proofFile.name}</span>
+                    : <span className="text-xs text-amber-300">Required — screenshot of your transfer</span>}
+                </div>
+              </div>
+
+              {/* Your details */}
+              <div className="space-y-3">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Your details</p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Input placeholder="Organization / museum name" value={form.organization} onChange={(e) => update("organization", e.target.value)} />
+                  <Input placeholder="Your name" value={form.contact_name} onChange={(e) => update("contact_name", e.target.value)} />
+                </div>
+                <Input required type="email" placeholder="Email (must match your PayNow comment)" value={form.email} onChange={(e) => update("email", e.target.value)} />
+              </div>
+
+              {errorMsg && <p className="rounded-lg border border-rose-400/30 bg-rose-400/10 px-3 py-2 text-xs text-rose-200">{errorMsg}</p>}
+
+              <Button type="submit" disabled={submitting || !form.email || !proofFile} className="w-full bg-primary text-primary-foreground">
+                {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Submitting…</> : <><UploadCloud className="h-4 w-4" /> Submit payment screenshot</>}
               </Button>
             </form>
-          )}
-
-          {step === "checkout" && (
-            <div className="space-y-5">
-              <div>
-                <h2 className="font-display text-2xl font-bold">Application received</h2>
-                <p className="mt-2 text-sm text-muted-foreground">Reference <span className="font-mono text-foreground">{reference}</span> — start your trial below.</p>
-              </div>
-
-              <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
-                <p className="font-display text-lg font-bold">Franchisee — Early Bird</p>
-                <p className="mt-1 text-sm text-muted-foreground">{TRIAL_DAYS}-day free trial, then <span className="font-semibold text-foreground">SGD ${PLAN_PRICE_SGD}</span> for 6 months.</p>
-                <ul className="mt-3 space-y-1.5 text-xs text-muted-foreground">
-                  {benefits.map((item) => (
-                    <li key={item} className="flex gap-2"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" /> {item}</li>
-                  ))}
-                </ul>
-              </div>
-
-              {checkoutError && (
-                <p className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">{checkoutError}</p>
-              )}
-
-              {!payNowQr && (
-                <Button
-                  onClick={() => checkoutMutation.mutate()}
-                  disabled={checkoutMutation.isPending}
-                  className="w-full bg-primary text-primary-foreground"
-                >
-                  {checkoutMutation.isPending ? "Starting checkout..." : `Start trial — pay SGD $${PLAN_PRICE_SGD} after ${TRIAL_DAYS} days`}
-                </Button>
-              )}
-
-              {payNowQr && (
-                <div className="space-y-3 rounded-2xl border border-border/40 bg-card/60 p-4 text-center">
-                  <p className="flex items-center justify-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-primary">
-                    <QrCode className="h-3.5 w-3.5" /> Pay with PayNow
-                  </p>
-                  <img src={payNowQr} alt="PayNow QR code" className="mx-auto h-48 w-48 rounded-xl border border-border/40 bg-white p-2" />
-                  <p className="text-sm text-foreground">SGD ${PLAN_PRICE_SGD.toFixed(2)} to UEN {PLATFORM_UEN}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Scan with your banking app, confirm the SGD ${PLAN_PRICE_SGD} amount, and include reference <span className="font-mono text-foreground">{reference}</span>. We'll activate your {TRIAL_DAYS}-day trial and follow up by email once payment is received.
-                  </p>
-                </div>
-              )}
-            </div>
           )}
         </div>
       </section>
