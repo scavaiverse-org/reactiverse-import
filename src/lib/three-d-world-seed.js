@@ -114,6 +114,14 @@ export const THREE_D_WORLD_EDITOR_SEED = {
     { id: "floating_button", name: "Floating Button", category: "Action", description: "3D clickable button for actions such as open link, start video, or go next.", editableFields: ["label", "actionType", "targetUrl", "destinationRoomId", "position", "color", "size"] },
     { id: "direction_sign", name: "Direction Sign", category: "Navigation", description: "Arrow or signboard that guides visitors to the next area.", editableFields: ["label", "arrowDirection", "position", "rotation", "scale"] },
     { id: "light_source", name: "Light Source", category: "Environment", description: "Editable light for spotlight, ambient glow, or object highlight.", editableFields: ["lightType", "intensity", "color", "position", "targetObjectId"] },
+    { id: "bench", name: "Bench / Seating", category: "Furniture", description: "A seating bench, sofa, or chair for visitors to pause and reflect.", editableFields: ["title", "description", "position", "rotation", "scale"] },
+    { id: "plant", name: "Indoor Plant / Tree", category: "Furniture", description: "A decorative plant, tree, or floral arrangement to add life and atmosphere.", editableFields: ["title", "description", "position", "scale"] },
+    { id: "lamp", name: "Floor / Ceiling Lamp", category: "Furniture", description: "A decorative lamp adding warm or dramatic accent lighting to the scene.", editableFields: ["title", "description", "position", "scale"] },
+    { id: "sculpture", name: "Sculpture / Statue", category: "Museum", description: "A freestanding sculpture, statue, bust, or 3D art piece on a plinth.", editableFields: ["title", "description", "modelUrl", "imageUrl", "position", "rotation", "scale"] },
+    { id: "showcase_case", name: "Glass Showcase Case", category: "Museum", description: "A glass display case for precious artefacts, jewellery, or heritage objects.", editableFields: ["title", "description", "modelUrl", "imageUrl", "position", "scale"] },
+    { id: "info_kiosk", name: "Information Kiosk", category: "Information", description: "A self-service kiosk with maps, guides, and exhibit information panels.", editableFields: ["title", "body", "imageUrl", "position", "rotation"] },
+    { id: "mural_panel", name: "Mural / Large Wall Panel", category: "Display", description: "A large decorative mural, tapestry, or full-wall painted panel.", editableFields: ["title", "imageUrl", "caption", "position", "scale"] },
+    { id: "reception_desk", name: "Reception / Welcome Desk", category: "Furniture", description: "A front desk or welcome counter for the entrance or lobby area.", editableFields: ["title", "description", "position", "rotation"] },
   ],
 
   interactionTypes: [

@@ -136,6 +136,7 @@ export default function ThreeDWorldCanvas({
   interactive = true,
   onSelectObject,
   debounceMs = 0,
+  cartoonify = false,
 }) {
   const mountRef = useRef(null);
   const sceneRef = useRef(null);
@@ -155,6 +156,7 @@ export default function ThreeDWorldCanvas({
   const signature = JSON.stringify({
     rs: config?.roomSize, ls: config?.layoutShape, ws: config?.wallStyle, fs: config?.floorStyle,
     cs: config?.ceilingStyle, mp: config?.moodPreset, ct: config?.colorToneOverride, fg: config?.fogOverride,
+    ca: config?.cartoonify,
     title: room?.title,
     objs: (config?.objects || []).map((o) => [o.id, o.type, o.title || o.name || o.label, o.imageUrl, o.videoUrl, o.thumbnailUrl, o.mediaUrl, o.iconUrl, o.body, o.description, o.story, o.color, o.locked, o.visible, o.position?.x, o.position?.y, o.position?.z, o.rotation?.y]),
   });
@@ -338,6 +340,11 @@ export default function ThreeDWorldCanvas({
     spec.doors.forEach((item) => buildDoor(content, item, clickablesRef.current, animatorsRef.current, accentInt));
     spec.npcs.forEach((item) => buildNpc(content, item, clickablesRef.current, animatorsRef.current, accentInt));
 
+    if (config?.cartoonify) {
+      const gradientMap = makeToonGradient(4);
+      applyCartoonMaterials(content, gradientMap);
+    }
+
     // Paint immediately so the populated room shows up on the very first
     // frame instead of a black flash while waiting for the next RAF tick.
     const renderer = rendererRef.current;
@@ -360,6 +367,45 @@ export default function ThreeDWorldCanvas({
 
 function standardMat(colorInt, opts = {}) {
   return new THREE.MeshStandardMaterial({ color: colorInt, roughness: 0.85, metalness: 0.05, ...opts });
+}
+
+function makeToonGradient(steps = 4) {
+  const data = new Uint8Array(steps * 4);
+  const stops = steps === 3
+    ? [[30, 30, 35], [120, 110, 100], [240, 230, 215]]
+    : [[20, 20, 25], [80, 75, 70], [160, 150, 140], [245, 235, 220]];
+  for (let i = 0; i < steps; i += 1) {
+    data[i * 4] = stops[i][0];
+    data[i * 4 + 1] = stops[i][1];
+    data[i * 4 + 2] = stops[i][2];
+    data[i * 4 + 3] = 255;
+  }
+  const tex = new THREE.DataTexture(data, steps, 1, THREE.RGBAFormat);
+  tex.magFilter = THREE.NearestFilter;
+  tex.minFilter = THREE.NearestFilter;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function applyCartoonMaterials(group, gradientMap) {
+  group.traverse((obj) => {
+    if (!obj.isMesh || !obj.material) return;
+    const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+    const toonMats = mats.map((mat) => {
+      if (mat.isMeshToonMaterial) return mat;
+      const toon = new THREE.MeshToonMaterial({
+        color: mat.color ? mat.color.clone() : new THREE.Color(0xd4c8b8),
+        gradientMap,
+        map: mat.map || null,
+        transparent: mat.transparent || false,
+        opacity: mat.opacity ?? 1,
+        side: mat.side ?? THREE.FrontSide,
+      });
+      mat.dispose();
+      return toon;
+    });
+    obj.material = Array.isArray(obj.material) ? toonMats : toonMats[0];
+  });
 }
 
 function buildRoomShell(group, dims, colors, lighting) {
