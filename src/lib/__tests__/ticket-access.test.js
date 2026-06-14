@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { isPaidTicketStatus, readTicketJourney } from "../ticket-access";
+import { isPaidTicketStatus, readTicketJourney, resolveTicketForTenant } from "../ticket-access";
 
 function installMemoryLocalStorage() {
   const store = new Map();
@@ -51,5 +51,51 @@ describe("readTicketJourney", () => {
   it("falls back to an empty object on malformed JSON", () => {
     localStorage.setItem("scaverse_ticket_journey_tenant-1", "{not-json");
     expect(readTicketJourney("tenant-1")).toEqual({});
+  });
+});
+
+describe("resolveTicketForTenant", () => {
+  it("returns the reservation_status row when its tenant matches", () => {
+    const rows = [{ id: "res-1", status: "confirmed", tenant_id: "tenant-1" }];
+    expect(resolveTicketForTenant(rows, "tenant-1")).toEqual(rows[0]);
+  });
+
+  it("returns null when the reservation belongs to a different tenant", () => {
+    const rows = [{ id: "res-1", status: "confirmed", tenant_id: "tenant-2" }];
+    expect(resolveTicketForTenant(rows, "tenant-1")).toBeNull();
+  });
+
+  it("returns null when there is no reservation row", () => {
+    expect(resolveTicketForTenant([], "tenant-1")).toBeNull();
+  });
+});
+
+// Walks through the same state transitions as the live system:
+// TenantTicketJourney inserts a 'pending' ticket -> stripe-checkout starts
+// payment -> stripe-webhook marks it 'confirmed' on checkout.session.completed
+// -> reservation_status (queried by useTourAccess) reflects the new status.
+describe("checkout -> webhook -> tour access", () => {
+  const tenantId = "tenant-1";
+
+  it("does not grant access while the reservation is pending payment", () => {
+    const reservationStatusRow = { id: "res-1", tenant_id: tenantId, status: "pending", confirmation_stage: "reservation_created" };
+    const ticket = resolveTicketForTenant([reservationStatusRow], tenantId);
+    const hasAccess = !!ticket && isPaidTicketStatus(ticket.status);
+    expect(hasAccess).toBe(false);
+  });
+
+  it("grants access once the webhook marks the ticket confirmed", () => {
+    // stripe-webhook sets status: 'confirmed', confirmation_stage: 'payment_confirmed'
+    // on checkout.session.completed / async_payment_succeeded.
+    const reservationStatusRow = { id: "res-1", tenant_id: tenantId, status: "confirmed", confirmation_stage: "payment_confirmed" };
+    const ticket = resolveTicketForTenant([reservationStatusRow], tenantId);
+    const hasAccess = !!ticket && isPaidTicketStatus(ticket.status);
+    expect(hasAccess).toBe(true);
+  });
+
+  it("never grants access using a confirmed reservation id from another tenant", () => {
+    const reservationStatusRow = { id: "res-1", tenant_id: "tenant-2", status: "confirmed" };
+    const ticket = resolveTicketForTenant([reservationStatusRow], tenantId);
+    expect(ticket).toBeNull();
   });
 });

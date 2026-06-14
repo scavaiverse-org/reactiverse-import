@@ -25,6 +25,14 @@ export function isPaidTicketStatus(status) {
   return PAID_STATUSES.includes(String(status || "").toLowerCase());
 }
 
+// Mirrors the tenant-scoping check in useTourAccess: a reservation_status row
+// only unlocks access if it belongs to the tenant being viewed, so a stale or
+// forged reservation id from another museum can never unlock this tour.
+export function resolveTicketForTenant(rows = [], tenantId) {
+  const row = rows[0];
+  return row && String(row.tenant_id) === String(tenantId) ? row : null;
+}
+
 // Gate for visitor-facing tour routes. Access is granted when:
 //  - the signed-in user is platform staff for this museum (admin preview), or
 //  - the visitor's saved reservation is marked paid/confirmed in the DB.
@@ -47,10 +55,7 @@ export function useTourAccess(tenant) {
     initialData: [],
   });
 
-  // Scope to this tenant so a reservation id from another museum (stale or
-  // forged localStorage) can never unlock this tour.
-  const row = tickets[0];
-  const ticket = row && String(row.tenant_id) === String(tenant?.id) ? row : null;
+  const ticket = resolveTicketForTenant(tickets, tenant?.id);
   const hasPaidTicket = !!ticket && isPaidTicketStatus(ticket.status);
   const checking = !staffBypass && !!reservation.id && isLoading;
 
