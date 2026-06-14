@@ -52,7 +52,12 @@ export default function AdminTickets() {
     },
   });
 
-  const totalRevenue = tickets.reduce((sum, t) => sum + (t.total_price || 0), 0);
+  // Only count paid tickets toward revenue — 'pending' (unpaid reservations),
+  // 'expired' and 'refunded' must be excluded. Paid = confirmed or used.
+  const PAID_STATUSES = ['confirmed', 'used'];
+  const totalRevenue = tickets
+    .filter(t => PAID_STATUSES.includes(t.status))
+    .reduce((sum, t) => sum + (t.total_price || 0), 0);
   const confirmed = tickets.filter(t => t.status === 'confirmed').length;
 
   return (
