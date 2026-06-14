@@ -178,3 +178,58 @@ export function generateMuseumNarrative(rooms = [], walkthroughKey = "walkthroug
   return normalizeRooms(rooms.map((room, index) => ensureTypeConfigs({ ...room, narration: room.narration || `Room ${index + 1} invites visitors to notice the story, texture, and meaning of ${room.title || "this museum moment"}.`, description: room.description || `${room.title || "This room"} is arranged as a clear cinematic museum stop with guided attention and calm pacing.` })), walkthroughKey);
 }
 
+// Ordered sequence of room types for a full-length museum walkthrough.
+// When filling from index N onward, slot N maps to FILL_TYPE_SEQUENCE[N].
+// The last slot is always forced to finale_room regardless of this array.
+export const FILL_TYPE_SEQUENCE = [
+  "onboarding_guide",
+  "walkthrough_exhibition",
+  "artifact_room",
+  "timeline_room",
+  "walkthrough_exhibition",
+  "reflection_chamber",
+  "gamification_page",
+  "finale_room",
+];
+
+const FILL_TITLE_BY_TYPE = {
+  onboarding_guide: (t) => `Welcome to ${t}`,
+  walkthrough_exhibition: (t) => `${t} — Gallery`,
+  artifact_room: (t) => `${t} — Artifacts`,
+  timeline_room: (t) => `${t} — Through the Ages`,
+  performance_stage: (t) => `${t} — Performance`,
+  reflection_chamber: (t) => `${t} — Reflect`,
+  gamification_page: (t) => `${t} — Discovery Challenge`,
+  ai_conversation_room: (t) => `Ask ARIA about ${t}`,
+  archive_room: (t) => `${t} — Archive`,
+  memory_collection_room: (t) => `Your ${t} Discoveries`,
+  branching_choice_room: (t) => `${t} — Choose Your Path`,
+  finale_room: (t) => `${t} — Journey Complete`,
+  three_d_world: (t) => `${t} — 3D World`,
+};
+
+function extractMuseumTheme(rooms = []) {
+  const meaningful = rooms.map((r) => r.title || "").filter((t) => t && !/^Room \d+$/i.test(t));
+  return meaningful[0] || "Museum";
+}
+
+// Appends auto-generated rooms to an existing (partial) walkthrough until it
+// reaches targetCount. Existing rooms are never modified. The final slot is
+// always a finale_room. Room titles are seeded from the first meaningful
+// existing room title so new rooms feel thematically consistent.
+export function fillRemainingRooms(existingRooms = [], targetCount = 8, walkthroughKey = "walkthrough1") {
+  const current = existingRooms.length;
+  if (targetCount <= current) return { rooms: normalizeRooms(existingRooms, walkthroughKey), added: 0 };
+  const theme = extractMuseumTheme(existingRooms);
+  const newRooms = [];
+  for (let i = current; i < targetCount; i++) {
+    const isLast = i === targetCount - 1;
+    const pageType = isLast ? "finale_room" : (FILL_TYPE_SEQUENCE[i] || "walkthrough_exhibition");
+    const titleFn = FILL_TITLE_BY_TYPE[pageType] || ((t) => `${t} — Room ${i + 1}`);
+    const skeleton = createRoomByType(i, walkthroughKey, pageType);
+    skeleton.title = titleFn(theme);
+    newRooms.push(autofillRoom(skeleton, i, walkthroughKey));
+  }
+  return { rooms: normalizeRooms([...existingRooms, ...newRooms], walkthroughKey), added: newRooms.length };
+}
+
