@@ -10,6 +10,7 @@ import { Bot, Send, Sparkles, Landmark, Ticket, Store, BookOpen, MapPin, ArrowLe
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { DEFAULT_MUSEUM_SLUG, museumPath } from "@/lib/domain-registry";
+import { supabaseUrl } from "@/lib/supabase";
 
 const FALLBACK_QUICK_PROMPTS = [
   { label: "Which ticket should I choose?", icon: Ticket },
@@ -210,7 +211,9 @@ async function getAIResponse(message, guideConfig, tenant, conversationHistory =
     .slice(-10)
     .map((msg) => `${msg.role === "user" ? "Visitor" : guideName}: ${msg.content}`)
     .join("\n");
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://golunqdunvmubuprufmp.supabase.co';
+  if (!supabaseUrl) {
+    return { content: fallback, ctas: [], topic: "general" };
+  }
   const res = await fetch(`${supabaseUrl}/functions/v1/cultural-guide`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
