@@ -8,7 +8,7 @@ const metricRows = [
   ["sensory_intensity", "Sensory"],
 ];
 
-export default function ExperienceTimeline({ rooms }) {
+export default function ExperienceTimeline({ rooms = [] }) {
   const warnings = getWalkthroughWarnings(rooms);
   const totalDuration = rooms.reduce((sum, room) => sum + Number(room.estimated_duration_seconds || 0), 0);
 

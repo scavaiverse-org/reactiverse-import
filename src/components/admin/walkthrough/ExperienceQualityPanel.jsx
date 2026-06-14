@@ -12,7 +12,7 @@ const rows = [
   ["publish_safety", "Publish Safety"],
 ];
 
-export default function ExperienceQualityPanel({ rooms }) {
+export default function ExperienceQualityPanel({ rooms = [] }) {
   const scores = scoreWalkthroughQuality(rooms);
   return (
     <section className="rounded-3xl border border-white/10 bg-white/[0.035] p-4">
