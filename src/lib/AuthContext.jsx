@@ -7,18 +7,26 @@ async function buildUser(authUser) {
   if (!authUser) return null;
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('role, full_name, tenant_ids')
+    .select('role, full_name, tenant_id, tenant_ids')
     .eq('id', authUser.id)
     .single();
   if (profileError || !profile) {
     console.error('[buildUser] profile read failed:', profileError?.message ?? 'no row');
     return authUser;
   }
+  // Merge singular tenant_id and array tenant_ids — both columns exist on the
+  // profiles table and either may be set depending on how the team member was
+  // invited. Without the merge, users whose admin set only tenant_id (singular)
+  // would get tenantIds: [] and be blocked by DomainAccessGate.
+  const merged = Array.from(new Set([
+    ...(profile.tenant_ids ?? []),
+    ...(profile.tenant_id ? [profile.tenant_id] : []),
+  ]));
   return {
     ...authUser,
     role: profile.role,
     fullName: profile.full_name,
-    tenantIds: profile.tenant_ids ?? [],
+    tenantIds: merged,
   };
 }
 
