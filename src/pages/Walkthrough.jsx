@@ -11,6 +11,7 @@ import { ensureMediaTypes } from "@/lib/walkthrough-media-bindings";
 import { trackWalkthroughEvent } from "@/lib/walkthrough-analytics";
 import { fetchPublishedManifest, getWalkthroughByIndex } from "@/lib/manifest-public";
 import { useTourAccess } from "@/lib/ticket-access";
+import useVisitorJourney from "@/hooks/useVisitorJourney";
 import WalkthroughExperienceRunner from "@/components/walkthrough/WalkthroughExperienceRunner";
 
 function resolveWalkthroughIndex(params) {
@@ -45,6 +46,7 @@ export default function Walkthrough() {
   const tenantSlug = tenant?.slug || DEFAULT_MUSEUM_SLUG;
   const museumId = manifest?.museum_id || tenant?.id;
   const walkthroughKey = walkthrough?.walkthrough_key;
+  const { visitRoom, collectArtifact } = useVisitorJourney(tenant?.id, walkthroughKey);
 
   if (checkingAccess) {
     return (
@@ -98,7 +100,14 @@ export default function Walkthrough() {
     );
   }
 
-  const handleTrack = (eventName, { room, ...data }) => trackWalkthroughEvent({ eventName, tenant, museumId, walkthroughKey, room, data });
+  const handleTrack = (eventName, { room, ...data }) => {
+    trackWalkthroughEvent({ eventName, tenant, museumId, walkthroughKey, room, data });
+    if (eventName === "walkthrough_room_viewed" && room?.room_key) {
+      visitRoom(room.room_key, rooms.length);
+    } else if (eventName === "walkthrough_artifact_opened" && data.artifact_id) {
+      collectArtifact({ artifactKey: data.artifact_id, roomKey: room?.room_key, title: data.title, imageUrl: data.media_url });
+    }
+  };
 
   return (
     <WalkthroughExperienceRunner

@@ -14,6 +14,7 @@ import PublicHeaderShell, { PublicHeaderLogo } from "./PublicHeaderShell";
 const publicNav = [
   { label: "Consumer Platform", path: "/platform/overview" },
   { label: "Available Museums", path: "/virtual-experience" },
+  { label: "My Passport", path: "/passport" },
   { label: "Museum Commerce", path: `/museum/${DEFAULT_MUSEUM_SLUG}/commerce` },
   { label: "Walkthrough", path: `/museum/${DEFAULT_MUSEUM_SLUG}/walkthrough` },
   { label: "AI Guide", path: `/museum/${DEFAULT_MUSEUM_SLUG}/guide` },

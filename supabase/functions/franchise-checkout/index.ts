@@ -1,5 +1,6 @@
 import { corsHeaders } from '../_shared/cors.ts';
 import { getServiceRoleClient } from '../_shared/supabase-client.ts';
+import { checkRateLimit, rateLimitResponse } from '../_shared/rate-limit.ts';
 
 // Creates a Stripe Checkout session for the franchisee "Early Bird" plan:
 // a 7-day free trial, then SGD 300 billed every 6 months. If Stripe isn't
@@ -18,6 +19,10 @@ const PLAN_INTERVAL_MONTHS = 6;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
+  if (!(await checkRateLimit(req, 'franchise-checkout', 10, 60))) {
+    return rateLimitResponse();
+  }
 
   try {
     const body = await req.json().catch(() => ({}));

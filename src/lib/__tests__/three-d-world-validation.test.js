@@ -29,7 +29,7 @@ describe("computeThreeDWorldWarnings", () => {
     const config = createThreeDWorldConfig({
       spawnPoint: "custom_xyz",
       spawnPointCustom: { x: 0, y: 0, z: -3 },
-      objects: [makeDoor(), { id: "panel", type: "text_panel", title: "Panel", position: { x: 0, y: 1, z: -3 } }],
+      objects: [makeDoor(), { id: "panel", type: "text_panel", title: "Panel", position: { x: 0, y: 1.8, z: -3 } }],
     });
     const warnings = computeThreeDWorldWarnings(config, []);
     expect(warnings.some((warning) => warning.id === "spawn_blocked" && warning.severity === "required")).toBe(true);
@@ -51,6 +51,15 @@ describe("computeThreeDWorldWarnings", () => {
     const warnings = computeThreeDWorldWarnings(config, []);
     expect(warnings.some((warning) => warning.id === "spawn_blocked")).toBe(false);
   });
+
+  it("does not flag middle_of_room as blocked by a freshly-added object still at its default position", () => {
+    const config = createThreeDWorldConfig({
+      spawnPoint: "middle_of_room",
+      objects: [makeDoor(), { id: "panel", type: "text_panel", title: "Panel", position: { x: 0, y: 1, z: -3 } }],
+    });
+    const warnings = computeThreeDWorldWarnings(config, []);
+    expect(warnings.some((warning) => warning.id === "spawn_blocked")).toBe(false);
+  });
 });
 
 describe("evaluatePublishChecklist", () => {
@@ -60,7 +69,7 @@ describe("evaluatePublishChecklist", () => {
       spawnPoint: "custom_xyz",
       spawnPointCustom: { x: 0, y: 0, z: -3 },
       previewChecked: true,
-      objects: [makeDoor(), { id: "panel", type: "text_panel", title: "Panel", position: { x: 0, y: 1, z: -3 } }],
+      objects: [makeDoor(), { id: "panel", type: "text_panel", title: "Panel", position: { x: 0, y: 1.8, z: -3 } }],
     });
     const checklist = evaluatePublishChecklist(config, []);
     const spawnItem = checklist.results.find((item) => item.id === "has_spawn_point");

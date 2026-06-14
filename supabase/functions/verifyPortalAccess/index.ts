@@ -1,9 +1,15 @@
 import { corsHeaders } from '../_shared/cors.ts';
+import { checkRateLimit, rateLimitResponse } from '../_shared/rate-limit.ts';
 
 // Verifies internal portal access. Checks INTERNAL_PORTAL_ACCESS_CODE if set;
 // otherwise grants access unconditionally (same behaviour as the Base44 original).
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
+  // Rate limited to slow brute-forcing of INTERNAL_PORTAL_ACCESS_CODE.
+  if (!(await checkRateLimit(req, 'verify-portal-access', 10, 60))) {
+    return rateLimitResponse();
+  }
 
   const requiredCode = Deno.env.get('INTERNAL_PORTAL_ACCESS_CODE');
   if (requiredCode) {

@@ -34,8 +34,8 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_SUPABASE_URL: https://golunqdunvmubuprufmp.supabase.co
-          VITE_SUPABASE_ANON_KEY: sb_publishable_1b3xR6cl2M__O8JwGxyohA_TKhJ5LDp
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3

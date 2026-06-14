@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { RotateCcw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import WalkthroughExperienceRunner from "@/components/walkthrough/WalkthroughExperienceRunner";
 import { ensureMediaTypes } from "@/lib/walkthrough-media-bindings";
+import useModalOverlay from "@/hooks/useModalOverlay";
 
 /**
  * Full-screen "Test Publish" overlay. Simulates the live museum walkthrough
@@ -16,17 +17,7 @@ export default function TestPublishOverlay({ rooms = [], tenantSlug, onClose }) 
   const [completed, setCompleted] = useState(false);
   const previewRooms = useMemo(() => rooms.map((room) => ensureMediaTypes(room)), [rooms]);
 
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = previousOverflow; };
-  }, []);
-
-  useEffect(() => {
-    const onKeyDown = (event) => { if (event.key === "Escape") onClose?.(); };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
+  useModalOverlay(onClose);
 
   const exitControl = (
     <Button size="sm" variant="outline" className="bg-background/40 backdrop-blur-sm" onClick={onClose}>

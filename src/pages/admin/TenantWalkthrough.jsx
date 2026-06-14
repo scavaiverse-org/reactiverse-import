@@ -20,6 +20,7 @@ import MuseumPresetAutofill from "@/components/admin/walkthrough/MuseumPresetAut
 import AdminPanelTabGuidesDownload from "@/components/admin/AdminPanelTabGuidesDownload";
 import PublishMuseumDialog from "@/components/admin/walkthrough/PublishMuseumDialog";
 import TestPublishOverlay from "@/components/admin/walkthrough/TestPublishOverlay";
+import RoomPopupEditOverlay from "@/components/admin/walkthrough/RoomPopupEditOverlay";
 import ImportMuseumZipPanel from "@/components/admin/walkthrough/ImportMuseumZipPanel";
 import TheV2Guide from "@/components/admin/walkthrough/TheV2Guide";
 import GlobalExperienceAutofill from "@/components/admin/walkthrough/GlobalExperienceAutofill";
@@ -48,6 +49,7 @@ export default function TenantWalkthrough() {
   const [editorMode, setEditorMode] = useState("easy");
   const [testPublishOpen, setTestPublishOpen] = useState(false);
   const [bulkToolsOpen, setBulkToolsOpen] = useState(false);
+  const [popupEditIndex, setPopupEditIndex] = useState(null);
 
   const selectedTenant = useMemo(() => routeTenant || tenants.find((tenant) => tenant.id === selectedTenantId) || tenants[0], [tenants, selectedTenantId, routeTenant]);
 
@@ -175,6 +177,9 @@ export default function TenantWalkthrough() {
       const newRooms = buildThreeDWorldRooms({ count, startIndex: rooms.length, walkthroughKey });
       applyRoomsDraft([...rooms, ...newRooms]);
       setActiveRoom(firstNewIndex);
+      // Keep the pop-up overlay (if open) following the same jump, so the
+      // newly-added world is visible instead of being created behind it.
+      if (popupEditIndex !== null) setPopupEditIndex(firstNewIndex);
       return;
     }
     const actions = {
@@ -299,7 +304,7 @@ export default function TenantWalkthrough() {
       </Collapsible>
 
       {editorMode === "expert" && <div className="grid gap-6 xl:grid-cols-[340px_1fr_320px]">
-        <JourneyMap rooms={rooms} activeIndex={activeRoom} onSelect={setActiveRoom} onAdd={() => { const next = normalizeRooms([...rooms, createRoomByType(rooms.length, walkthroughKey, "walkthrough_exhibition")], walkthroughKey); setRooms(next); setActiveRoom(next.length - 1); }} onDuplicate={(index) => { const next = duplicateRoom(rooms, index, walkthroughKey); setRooms(next); setActiveRoom(index + 1); }} onMove={(index, direction) => { setRooms(moveRoom(rooms, index, direction, walkthroughKey)); setActiveRoom(Math.max(0, Math.min(rooms.length - 1, index + direction))); }} onDelete={(index) => { const next = normalizeRooms(rooms.filter((_, i) => i !== index), walkthroughKey); setRooms(next); setActiveRoom(Math.max(0, index - 1)); }} errorRoomKeys={errorRoomKeys} hasGlobalIssue={hasUnresolvedGlobalIssue} />
+        <JourneyMap rooms={rooms} activeIndex={activeRoom} onSelect={setActiveRoom} onAdd={() => { const next = normalizeRooms([...rooms, createRoomByType(rooms.length, walkthroughKey, "walkthrough_exhibition")], walkthroughKey); setRooms(next); setActiveRoom(next.length - 1); }} onDuplicate={(index) => { const next = duplicateRoom(rooms, index, walkthroughKey); setRooms(next); setActiveRoom(index + 1); }} onMove={(index, direction) => { setRooms(moveRoom(rooms, index, direction, walkthroughKey)); setActiveRoom(Math.max(0, Math.min(rooms.length - 1, index + direction))); }} onDelete={(index) => { const next = normalizeRooms(rooms.filter((_, i) => i !== index), walkthroughKey); setRooms(next); setActiveRoom(Math.max(0, index - 1)); }} onPopupEdit={(index) => { setActiveRoom(index); setPopupEditIndex(index); }} errorRoomKeys={errorRoomKeys} hasGlobalIssue={hasUnresolvedGlobalIssue} />
         <div className="space-y-6">
           <WalkthroughRoomEditor room={currentRoom} onChange={(room) => updateRoom(activeRoom, room)} rooms={rooms} onAddThreeDWorlds={(count) => handleGlobalAutofill("threeDWorlds", { count })} hasError={errorRoomKeys.has(currentRoom?.room_key)} previewSlot={<WalkthroughPreview room={currentRoom} rooms={rooms} activeIndex={activeRoom} tenantSlug={selectedTenant.slug} walkthroughKey={walkthroughKey} onNavigateRoom={setActiveRoom} />} />
         </div>
@@ -331,10 +336,25 @@ export default function TenantWalkthrough() {
         <TestPublishOverlay rooms={testPublishRooms} tenantSlug={selectedTenant.slug} onClose={() => setTestPublishOpen(false)} />
       )}
 
+      {popupEditIndex !== null && rooms[popupEditIndex] && (
+        <RoomPopupEditOverlay
+          room={rooms[popupEditIndex]}
+          rooms={rooms}
+          activeIndex={popupEditIndex}
+          tenantSlug={selectedTenant.slug}
+          walkthroughKey={walkthroughKey}
+          onChange={(room) => updateRoom(popupEditIndex, room)}
+          onNavigateRoom={setActiveRoom}
+          onAddThreeDWorlds={(count) => handleGlobalAutofill("threeDWorlds", { count })}
+          errorRoomKeys={errorRoomKeys}
+          onClose={() => setPopupEditIndex(null)}
+        />
+      )}
+
       {editorMode === "easy" && (
         <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
           <div className="space-y-6">
-            <JourneyMap rooms={rooms} activeIndex={activeRoom} onSelect={setActiveRoom} onAdd={() => { const next = normalizeRooms([...rooms, createRoomByType(rooms.length, walkthroughKey, "walkthrough_exhibition")], walkthroughKey); setRooms(next); setActiveRoom(next.length - 1); }} onDuplicate={(index) => { const next = duplicateRoom(rooms, index, walkthroughKey); setRooms(next); setActiveRoom(index + 1); }} onMove={(index, direction) => { setRooms(moveRoom(rooms, index, direction, walkthroughKey)); setActiveRoom(Math.max(0, Math.min(rooms.length - 1, index + direction))); }} onDelete={(index) => { const next = normalizeRooms(rooms.filter((_, i) => i !== index), walkthroughKey); setRooms(next); setActiveRoom(Math.max(0, index - 1)); }} />
+            <JourneyMap rooms={rooms} activeIndex={activeRoom} onSelect={setActiveRoom} onAdd={() => { const next = normalizeRooms([...rooms, createRoomByType(rooms.length, walkthroughKey, "walkthrough_exhibition")], walkthroughKey); setRooms(next); setActiveRoom(next.length - 1); }} onDuplicate={(index) => { const next = duplicateRoom(rooms, index, walkthroughKey); setRooms(next); setActiveRoom(index + 1); }} onMove={(index, direction) => { setRooms(moveRoom(rooms, index, direction, walkthroughKey)); setActiveRoom(Math.max(0, Math.min(rooms.length - 1, index + direction))); }} onDelete={(index) => { const next = normalizeRooms(rooms.filter((_, i) => i !== index), walkthroughKey); setRooms(next); setActiveRoom(Math.max(0, index - 1)); }} onPopupEdit={(index) => { setActiveRoom(index); setPopupEditIndex(index); }} />
             <WalkthroughRoomEditor room={currentRoom} onChange={(room) => updateRoom(activeRoom, room)} rooms={rooms} onAddThreeDWorlds={(count) => handleGlobalAutofill("threeDWorlds", { count })} previewSlot={<WalkthroughPreview room={currentRoom} rooms={rooms} activeIndex={activeRoom} tenantSlug={selectedTenant.slug} walkthroughKey={walkthroughKey} onNavigateRoom={setActiveRoom} />} />
           </div>
           <div>

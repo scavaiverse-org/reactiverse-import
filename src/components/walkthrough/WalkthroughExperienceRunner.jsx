@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Accessibility, ChevronLeft, ChevronRight, Info, Moon, Volume2, VolumeX, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import ThreeBackground from "@/components/layout/ThreeBackground";
+
+const ThreeBackground = lazy(() => import("@/components/layout/ThreeBackground"));
 import { museumPath } from "@/lib/domain-registry";
 import { getPublicMediaSlots } from "@/lib/walkthrough-media-bindings";
 import { resolveNextRoomIndex } from "@/lib/walkthrough-routing";
@@ -106,7 +107,7 @@ export default function WalkthroughExperienceRunner({ rooms = [], tenantSlug, ex
   const resolveRoute = (route) => !route ? "#" : /^https?:\/\//i.test(route) ? route : route.startsWith("/") ? route : museumPath(tenantSlug, route);
   const handleChoice = (choice) => goToRoom(choice.next_room_id, { choice_id: choice.id, choice_label: choice.label });
   const handleHotspotOpen = (hotspot) => { setActiveHotspot(hotspot); track("walkthrough_hotspot_opened", { hotspot_id: hotspot.id, label: hotspot.label || hotspot.title }); };
-  const handleArtifactOpen = (artifact) => { setActiveArtifact(artifact); track("walkthrough_artifact_opened", { artifact_id: artifact.id, title: artifact.title }); };
+  const handleArtifactOpen = (artifact) => { setActiveArtifact(artifact); track("walkthrough_artifact_opened", { artifact_id: artifact.id, title: artifact.title, media_url: getInteractionMedia(artifact) }); };
   const complete = () => { track("walkthrough_completed"); onComplete?.(); };
 
   if (!room) return null;
@@ -117,7 +118,9 @@ export default function WalkthroughExperienceRunner({ rooms = [], tenantSlug, ex
 
   return (
     <div className={`relative min-h-screen overflow-hidden bg-background text-foreground ${calmMode ? "saturate-75 contrast-95" : ""} ${accessibilityMode ? "text-[112.5%]" : ""}`}>
-      <ThreeBackground />
+      <Suspense fallback={null}>
+        <ThreeBackground />
+      </Suspense>
       {hasRoomAudio && <SceneAudio scene={toAudioScene(room)} muted={muted || calmMode} />}
 
       <AnimatePresence mode="wait">

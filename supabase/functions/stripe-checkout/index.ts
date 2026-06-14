@@ -1,5 +1,6 @@
 import { corsHeaders } from '../_shared/cors.ts';
 import { getServiceRoleClient } from '../_shared/supabase-client.ts';
+import { checkRateLimit, rateLimitResponse } from '../_shared/rate-limit.ts';
 
 // Creates a Stripe Checkout Session for a saved ticket reservation.
 // Prices are resolved server-side (ticketing ModuleConfig, then defaults) —
@@ -45,6 +46,10 @@ async function resolveUnitPrice(service: ReturnType<typeof getServiceRoleClient>
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
+  if (!(await checkRateLimit(req, 'stripe-checkout', 10, 60))) {
+    return rateLimitResponse();
+  }
 
   try {
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');

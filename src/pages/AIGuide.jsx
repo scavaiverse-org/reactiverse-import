@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, Suspense, lazy } from "react";
 import { useQuery } from "@tanstack/react-query";
-import ThreeBackground from "../components/layout/ThreeBackground";
+
+const ThreeBackground = lazy(() => import("../components/layout/ThreeBackground"));
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import { Bot, Send, Sparkles, Landmark, Ticket, Store, BookOpen, MapPin, ArrowLe
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { DEFAULT_MUSEUM_SLUG, museumPath } from "@/lib/domain-registry";
+import { supabaseUrl } from "@/lib/supabase";
 
 const FALLBACK_QUICK_PROMPTS = [
   { label: "Which ticket should I choose?", icon: Ticket },
@@ -201,27 +203,19 @@ function saveStoredMessages(storageKey, messages) {
 async function getAIResponse(message, guideConfig, tenant, conversationHistory = [], addOns = [], tenantSlug = DEFAULT_MUSEUM_SLUG) {
   const local = createLocalResponse(message, conversationHistory, addOns, tenantSlug);
   if (local) return local;
-  const guideName = guideConfig?.guide_name || "ARIA";
-  const personality = guideConfig?.personality || guideConfig?.tone || "warm, culturally intelligent, concise";
   const fallback = guideConfig?.fallback_answer || "I don't have that information, but I can connect you with our team.";
-  const approvedKnowledge = Array.isArray(guideConfig?.knowledge_base) ? guideConfig.knowledge_base.join("\n- ") : (guideConfig?.knowledge_base || "Approved museum content only");
-  const addonKnowledge = addOns.map((addon) => `- ${addon.title}${addon.price ? `: SGD ${addon.price}` : ""} — ${addon.desc}`).join("\n");
-  const recentConversation = conversationHistory
-    .slice(-10)
-    .map((msg) => `${msg.role === "user" ? "Visitor" : guideName}: ${msg.content}`)
-    .join("\n");
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://golunqdunvmubuprufmp.supabase.co';
+  if (!supabaseUrl) {
+    return { content: fallback, ctas: [], topic: "general" };
+  }
+  // The edge function resolves guide identity, personality, fallback copy,
+  // approved knowledge, and add-ons server-side from the tenant's published
+  // config — only the tenant id, prompt, and conversation history are sent.
   const res = await fetch(`${supabaseUrl}/functions/v1/cultural-guide`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       prompt: message,
-      guide_name: guideName,
-      personality,
-      fallback_answer: fallback,
-      approved_knowledge: approvedKnowledge,
-      addon_knowledge: addonKnowledge || "Add-ons may be tenant-specific; guide visitors to the Add-ons page.",
-      tenant_name: tenant?.name || "the museum",
+      tenant_id: tenant?.id || "",
       conversation_history: conversationHistory.slice(-10).map((msg) => ({
         role: msg.role === "user" ? "user" : "assistant",
         content: msg.content,
@@ -229,7 +223,7 @@ async function getAIResponse(message, guideConfig, tenant, conversationHistory =
     }),
   });
   const data = res.ok ? await res.json().catch(() => ({})) : {};
-  const content = data?.text || "I'm having trouble connecting right now. Please try again or visit our Help section.";
+  const content = data?.text || fallback;
   return { content, ctas: [], topic: "general" };
 }
 
@@ -348,7 +342,9 @@ export default function AIGuide() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
-      <ThreeBackground />
+      <Suspense fallback={null}>
+        <ThreeBackground />
+      </Suspense>
 
       {/* Header */}
       <div className="relative z-10 border-b border-border/50 bg-card/40 backdrop-blur-xl px-4 py-3.5">

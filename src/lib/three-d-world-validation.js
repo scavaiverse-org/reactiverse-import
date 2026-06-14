@@ -313,6 +313,15 @@ function isUnlabelled(object = {}) {
   return !(object.title || object.name || object.label || "").trim();
 }
 
+// Mirrors isDefaultPosition in three-d-world-scene.js: true when an object is
+// still at the new-object default {x:0, y:0|1, z:-3}, which the scene layout
+// auto-relocates rather than rendering in place.
+function isUnplacedDefaultPosition(position) {
+  if (!position) return true;
+  const { x = 0, y = 0, z = 0 } = position;
+  return Number(x) === 0 && Number(z) === -3 && (Number(y) === 1 || Number(y) === 0);
+}
+
 // Rough mobile weight model: each object class carries a cost; the result is
 // a 0-100 "weight" plus a band label the admin can reason about.
 const OBJECT_WEIGHTS = { video_wall: 6, artifact_display: 5, npc_guide: 4, portal: 3, light_source: 3, memory_capsule: 2, product_booth: 2, audio_point: 2, quiz_station: 2, image_frame: 1.5, collectible: 1, floating_button: 1, direction_sign: 1, text_panel: 1, door: 1 };
@@ -418,6 +427,11 @@ export function computeThreeDWorldWarnings(config = {}, allRooms = []) {
       : NAMED_SPAWN_COORDS[config.spawnPoint];
     if (spawn) {
       const blocked = objects.some((object) => {
+        // An object still at the editor's default/unset position {x:0, z:-3}
+        // is auto-placed elsewhere by the gallery layout (see
+        // isDefaultPosition in three-d-world-scene.js) and never actually
+        // renders there, so it can't block the spawn point.
+        if (isUnplacedDefaultPosition(object.position)) return false;
         const position = object.position || {};
         return Math.abs(Number(position.x || 0) - Number(spawn.x || 0)) < 0.5
           && Math.abs(Number(position.z || 0) - Number(spawn.z || 0)) < 0.5;

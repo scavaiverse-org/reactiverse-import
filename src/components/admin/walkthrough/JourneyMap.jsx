@@ -1,14 +1,26 @@
+import { useState } from "react";
 import { GitBranch, Plus, Copy, Trash2, ArrowDown, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PAGE_TYPES } from "@/lib/walkthrough-room-types";
 import { findBrokenRoutes, getWalkthroughWarnings } from "@/lib/walkthrough-validation";
 import { getRoomConnections } from "@/lib/walkthrough-routing";
 import HelpHint from "./HelpHint";
 
-export default function JourneyMap({ rooms, activeIndex, onSelect, onAdd, onDuplicate, onDelete, onMove, errorRoomKeys, hasGlobalIssue }) {
+export default function JourneyMap({ rooms, activeIndex, onSelect, onAdd, onDuplicate, onDelete, onMove, onPopupEdit, errorRoomKeys, hasGlobalIssue }) {
+  const [confirmIndex, setConfirmIndex] = useState(null);
   const connections = getRoomConnections(rooms);
   const brokenRoutes = findBrokenRoutes(rooms);
   const warnings = getWalkthroughWarnings(rooms);
+  const confirmRoom = confirmIndex != null ? rooms[confirmIndex] : null;
+
+  const selectRoom = (index, room) => {
+    if (room.page_type === "three_d_world") {
+      setConfirmIndex(index);
+      return;
+    }
+    onSelect(index);
+  };
 
   // Defensive wrappers: stop any default/submit/navigation behaviour before
   // delegating to the existing handlers (handlers themselves are unchanged).
@@ -41,7 +53,7 @@ export default function JourneyMap({ rooms, activeIndex, onSelect, onAdd, onDupl
           const hasError = errorRoomKeys?.has(room.room_key);
           return (
             <div key={room.id || room.room_key} className={`rounded-2xl border p-3 transition ${hasError ? "animate-error-glow border-destructive" : active ? "border-primary bg-primary/10" : "border-white/10 bg-background/40"}`}>
-              <button type="button" onClick={() => onSelect(index)} className="w-full text-left focus:outline-none focus:ring-2 focus:ring-primary">
+              <button type="button" onClick={() => selectRoom(index, room)} className="w-full text-left focus:outline-none focus:ring-2 focus:ring-primary">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-[10px] uppercase tracking-[0.24em] text-primary">#{room.order || index + 1} · {room.visibility || "draft"}</p>
@@ -62,6 +74,22 @@ export default function JourneyMap({ rooms, activeIndex, onSelect, onAdd, onDupl
           );
         })}
       </div>
+
+      <Dialog open={confirmIndex != null} onOpenChange={(open) => { if (!open) setConfirmIndex(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Open in pop-up edit?</DialogTitle>
+            <DialogDescription>
+              Would you like to edit "{confirmRoom?.title || confirmRoom?.room_key}" in a pop-up preview overlay?
+              Choose "No" to edit it inline as usual.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { onSelect(confirmIndex); setConfirmIndex(null); }}>No, edit inline</Button>
+            <Button onClick={() => { onPopupEdit?.(confirmIndex); setConfirmIndex(null); }}>Yes, pop-up edit</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

@@ -8,6 +8,7 @@ import { base44 } from "@/api/base44Client";
 import { useActiveTenant } from "@/hooks/useActiveTenant";
 import { DEFAULT_ROOM_PREVIEW_CONFIG } from "@/lib/room-preview-defaults";
 import { publicExperienceFilter } from "@/lib/tenant-query";
+import { supabaseUrl } from "@/lib/supabase";
 import SpriteLayer from "@/components/room-preview/SpriteLayer";
 import { Bot, Info, Maximize2, Sparkles, Ticket, Volume2, VolumeX, Wand2, X } from "lucide-react";
 
@@ -109,12 +110,12 @@ export default function RoomPreview() {
 
   const spriteLayoutMutation = useMutation({
     mutationFn: async () => {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://golunqdunvmubuprufmp.supabase.co';
+      if (!supabaseUrl) return null;
       const prompt = `Suggest a cinematic 2.5D visual sprite layout for this Asian Operatic Museum room preview. Return ONLY a JSON object with a "sprites" array — no explanation, no markdown. Each sprite must have: id (string), label (string), type (one of: glow shimmer warmth shadow ring), x (number 0-100), y (number 0-100), width (number), height (number), opacity (number 0-1). Return 5 to 8 sprites. Room title: ${roomConfig.title}. Hotspots: ${hotspots.map(h => `${h.label} at ${h.x},${h.y}`).join("; ")}.`;
       const res = await fetch(`${supabaseUrl}/functions/v1/cultural-guide`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, guide_name: "SpriteAI", personality: "precise, returns only valid JSON" }),
+        body: JSON.stringify({ prompt, tenant_id: tenant?.id || "" }),
       });
       if (!res.ok) return null;
       const data = await res.json().catch(() => null);
