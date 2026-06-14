@@ -126,7 +126,7 @@ export function buildSceneSpec(config = {}, room = {}) {
   const dims = getRoomDimensions(config);
   const colors = getSurfaceColors(config);
   const lighting = getMoodLighting(config);
-  const accent = config.colorToneOverride ? lighting.accent : lighting.accent;
+  const accent = lighting.accent;
 
   const objects = (config.objects || []).filter((object) => object && object.visible !== false);
 
