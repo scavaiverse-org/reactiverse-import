@@ -34,6 +34,7 @@ const VendorRegister = lazy(() => import('./pages/VendorRegister'));
 const Commerce = lazy(() => import('./pages/Commerce'));
 const AIGuide = lazy(() => import('./pages/AIGuide'));
 const VirtualExperience = lazy(() => import('./pages/VirtualExperience'));
+const Passport = lazy(() => import('./pages/Passport'));
 const PresaleTickets = lazy(() => import('./pages/PresaleTickets'));
 const TenantHome1 = lazy(() => import('./pages/tenant/TenantHome1'));
 const TenantHome2 = lazy(() => import('./pages/tenant/TenantHome2'));
@@ -152,6 +153,7 @@ const AuthenticatedApp = () => {
       <Route path="/presale" element={<PresaleTickets />} />
       <Route path="/become-a-tenant" element={<BecomeTenant />} />
       <Route path="/virtual-experience" element={<VirtualExperience />} />
+      <Route path="/passport" element={<Passport />} />
       <Route path="/tenant-login" element={<TenantLogin />} />
       <Route element={<AppLayout />}>
         <Route path="/login" element={<LoginRedirect />} />
