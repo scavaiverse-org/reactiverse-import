@@ -32,7 +32,8 @@ import { getErrorRoomKeys, getWalkthroughWarnings, hasGlobalIssue, validateWalkt
 import { compileVisibleRooms } from "@/lib/manifest-compiler";
 import { scoreWalkthroughQuality } from "@/lib/walkthrough-quality-scoring";
 import { createLegacyBackup } from "@/lib/walkthrough-migration";
-import { autofillEntireExperience, autofillMedia, autofillRoom, buildCanonicalExperienceConfig, generateCinematicLayout, generateMuseumNarrative, validateExperienceIntegrity } from "@/lib/experience-append-protection";
+import { autofillEntireExperience, autofillMedia, autofillRoom, buildCanonicalExperienceConfig, fillRemainingRooms, generateCinematicLayout, generateMuseumNarrative, validateExperienceIntegrity } from "@/lib/experience-append-protection";
+import FillRemainingRoomsPanel from "@/components/admin/walkthrough/FillRemainingRoomsPanel";
 
 export default function TenantWalkthrough() {
   const queryClient = useQueryClient();
@@ -192,6 +193,14 @@ export default function TenantWalkthrough() {
     applyRoomsDraft(actions[action]?.() || rooms);
   };
 
+  const handleFillRemaining = (targetCount) => {
+    const { rooms: next, added } = fillRemainingRooms(rooms, targetCount, walkthroughKey);
+    if (added > 0) {
+      applyRoomsDraft(next);
+      setActiveRoom(rooms.length); // jump to first new room
+    }
+  };
+
   if (!selectedTenant) return <div className="text-sm text-muted-foreground">Create or select a tenant before managing Walkthrough.</div>;
   const currentRoom = rooms[activeRoom];
 
@@ -298,6 +307,7 @@ export default function TenantWalkthrough() {
           </span>
         </div>
         <CollapsibleContent className="mt-3 space-y-6">
+          <FillRemainingRoomsPanel rooms={rooms} onFill={handleFillRemaining} disabled={saveMutation.isPending} />
           <GlobalExperienceAutofill onAction={handleGlobalAutofill} disabled={saveMutation.isPending} />
           <MuseumPresetAutofill tenant={selectedTenant} museumId={museumFilter || selectedTenant.id} walkthroughKey={walkthroughKey} rooms={rooms} onPopulate={handlePresetPopulate} />
         </CollapsibleContent>
