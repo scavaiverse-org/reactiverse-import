@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Box, CheckCircle2, ChevronDown, ChevronUp, Copy, DoorOpen, Eye, Plus, Sparkles, Trash2, Upload, Wand2 } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Box, CheckCircle2, ChevronDown, ChevronUp, Copy, DoorOpen, Eye, Palette, Plus, Sparkles, Trash2, Upload, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -242,6 +242,7 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
   const [activeTab, setActiveTab] = useState(0);
   const [previewOpen, setPreviewOpen] = useState(true);
   const [stepPanelOpen, setStepPanelOpen] = useState(true);
+  const [cartoonifyOpen, setCartoonifyOpen] = useState(true);
   const [editingObjectId, setEditingObjectId] = useState(null);
   const config = getThreeDWorldConfig(room);
   const setConfig = (patch) => onChange({ ...room, threeDWorldConfig: { ...(config || createThreeDWorldConfig()), ...patch } });
@@ -356,7 +357,7 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
         </button>
         {previewOpen && (
           <div className="space-y-2 border-t border-white/10 p-4">
-            <ThreeDWorldCanvas config={config} room={room} debounceMs={400} className="h-[420px] w-full overflow-hidden rounded-2xl border border-white/10" />
+            <ThreeDWorldCanvas config={config} room={room} debounceMs={400} cartoonify={!!config.cartoonify} className="h-[420px] w-full overflow-hidden rounded-2xl border border-white/10" />
             <p className="text-xs text-muted-foreground">Drag to look around, scroll to zoom, click an object to see how it appears to visitors. This is the same renderer used on the published page.</p>
           </div>
         )}
@@ -794,6 +795,38 @@ export default function ThreeDWorldBuilder({ room, onChange, rooms = [] }) {
         <Button variant="outline" size="sm" disabled={activeTab === 0} onClick={() => goToTab(activeTab - 1)}><ArrowLeft className="h-3.5 w-3.5" /> Previous</Button>
         <span className="text-xs text-muted-foreground">Step {activeTab + 1} of {BUILDER_TABS.length}</span>
         <Button size="sm" disabled={activeTab === BUILDER_TABS.length - 1} onClick={() => goToTab(activeTab + 1)}>Next <ArrowRight className="h-3.5 w-3.5" /></Button>
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-primary/20 bg-primary/5">
+        <button type="button" onClick={() => setCartoonifyOpen((v) => !v)} className="flex w-full items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-white/[0.03]">
+          <span className="flex items-center gap-2 text-sm font-semibold">
+            <Palette className="h-4 w-4 text-primary" />
+            Cartoonify
+            <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">Addon</span>
+          </span>
+          <span className={`flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${cartoonifyOpen ? "text-muted-foreground" : "bg-primary/10 text-primary"}`}>
+            {cartoonifyOpen ? <>Hide <ChevronUp className="h-3.5 w-3.5" /></> : <>Show <ChevronDown className="h-3.5 w-3.5" /></>}
+          </span>
+        </button>
+        {cartoonifyOpen && (
+          <div className="space-y-4 border-t border-white/10 p-4">
+            <p className="text-xs text-muted-foreground">
+              Cartoonify switches the 3D world to a cel-shaded toon style — stepped lighting gradients, flat colours, and graphic outlines — for a bold, illustrated look.
+            </p>
+            <Toggle
+              label="Enable Cartoonify"
+              checked={!!config.cartoonify}
+              onChange={(value) => setConfig({ cartoonify: value })}
+              hint="Applies toon shading to all surfaces in the live preview and the published world."
+            />
+            {config.cartoonify && (
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
+                <p className="font-semibold text-primary">Cartoonify is active</p>
+                <p className="mt-1">The preview above shows the toon-shaded version. All walls, floors, objects, and furniture use stepped cel shading with a 4-tone gradient. This setting is saved with the room and appears on the published page.</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );

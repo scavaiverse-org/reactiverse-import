@@ -2,6 +2,9 @@
 .env
 .env.*
 
+# Claude Code worktrees (agent isolation)
+.claude/worktrees/
+
 # Logs
 /logs
 *.log
