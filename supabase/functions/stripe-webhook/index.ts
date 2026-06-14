@@ -43,15 +43,24 @@ Deno.serve(async (req) => {
         const service = getServiceRoleClient();
         // tickets_status_check allows pending/confirmed/used/expired/refunded —
         // 'confirmed' is the unlock status used by the tour gate + Confirmation page.
+        // The .neq('status', 'confirmed') guard makes this idempotent: Stripe may
+        // deliver the same event more than once (and completed + async_payment_
+        // succeeded can both fire), so only the first transition matches a row —
+        // preventing the buyer from receiving duplicate confirmation emails.
         const { data: ticket, error } = await service.from('tickets').update({
           status: 'confirmed',
           confirmation_stage: 'payment_confirmed',
           updated_at: new Date().toISOString(),
-        }).eq('id', ticketId).select('visitor_name, visitor_email, tenant_id').maybeSingle();
+        }).eq('id', ticketId).neq('status', 'confirmed').select('visitor_name, visitor_email, tenant_id').maybeSingle();
         if (error) {
           console.error('[stripe-webhook] ticket update failed:', error.message);
           // Non-200 so Stripe retries until the DB update succeeds.
           return Response.json({ error: 'Ticket update failed.' }, { status: 500 });
+        }
+        if (!ticket) {
+          // Already confirmed by an earlier delivery — nothing more to do.
+          console.log(`[stripe-webhook] ticket ${ticketId} already confirmed; skipping (${event.type})`);
+          return Response.json({ received: true });
         }
         console.log(`[stripe-webhook] ticket ${ticketId} marked confirmed (${event.type})`);
 

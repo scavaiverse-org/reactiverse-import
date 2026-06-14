@@ -70,3 +70,19 @@ verify_jwt = false
 # logged-in admin JWT (the function also re-checks the caller's role).
 [functions.notify-launch]
 verify_jwt = true
+
+# Public: anonymous visitors (no JWT) read/write their own journey, collectibles,
+# and badges through this gateway. The function scopes every query by the caller-
+# supplied visitor_id and rate-limits per IP, so JWT verification must be off.
+[functions.visitor-data]
+verify_jwt = false
+
+# Public: anonymous visitors start ticket checkout before signing in. Prices are
+# resolved server-side and the call is rate-limited; no Supabase JWT is present.
+[functions.stripe-checkout]
+verify_jwt = false
+
+# Public: prospective tenants start the franchise checkout from the anonymous
+# application form, so there is no Supabase JWT to verify.
+[functions.franchise-checkout]
+verify_jwt = false
