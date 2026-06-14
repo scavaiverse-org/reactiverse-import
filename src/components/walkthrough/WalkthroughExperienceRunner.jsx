@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Accessibility, ChevronLeft, ChevronRight, Info, Moon, Volume2, VolumeX, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import ThreeBackground from "@/components/layout/ThreeBackground";
+
+const ThreeBackground = lazy(() => import("@/components/layout/ThreeBackground"));
 import { museumPath } from "@/lib/domain-registry";
 import { getPublicMediaSlots } from "@/lib/walkthrough-media-bindings";
 import { resolveNextRoomIndex } from "@/lib/walkthrough-routing";
@@ -117,7 +118,9 @@ export default function WalkthroughExperienceRunner({ rooms = [], tenantSlug, ex
 
   return (
     <div className={`relative min-h-screen overflow-hidden bg-background text-foreground ${calmMode ? "saturate-75 contrast-95" : ""} ${accessibilityMode ? "text-[112.5%]" : ""}`}>
-      <ThreeBackground />
+      <Suspense fallback={null}>
+        <ThreeBackground />
+      </Suspense>
       {hasRoomAudio && <SceneAudio scene={toAudioScene(room)} muted={muted || calmMode} />}
 
       <AnimatePresence mode="wait">

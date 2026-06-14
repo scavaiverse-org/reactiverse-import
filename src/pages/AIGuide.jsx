@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, Suspense, lazy } from "react";
 import { useQuery } from "@tanstack/react-query";
-import ThreeBackground from "../components/layout/ThreeBackground";
+
+const ThreeBackground = lazy(() => import("../components/layout/ThreeBackground"));
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -341,7 +342,9 @@ export default function AIGuide() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
-      <ThreeBackground />
+      <Suspense fallback={null}>
+        <ThreeBackground />
+      </Suspense>
 
       {/* Header */}
       <div className="relative z-10 border-b border-border/50 bg-card/40 backdrop-blur-xl px-4 py-3.5">
