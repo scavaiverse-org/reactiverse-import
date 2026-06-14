@@ -34,6 +34,7 @@ const buttonVariants = cva(
   }
 )
 
+/** @type {React.ForwardRefExoticComponent<React.ComponentPropsWithoutRef<"button"> & import("class-variance-authority").VariantProps<typeof buttonVariants> & { asChild?: boolean } & React.RefAttributes<HTMLButtonElement>>} */
 const Button = React.forwardRef(({ className, variant, size, asChild = false, type, ...props }, ref) => {
   const Comp = asChild ? Slot : "button"
   // Default native buttons to type="button" so they never accidentally submit a
