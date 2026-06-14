@@ -82,7 +82,7 @@ export default function PublicContent() {
       <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
         <div className="space-y-3">
           {records.map((record) => (
-            <div key={record.id} role="button" tabIndex={0} onClick={() => setDraft(record)} className="w-full rounded-xl border border-border/50 bg-card/40 p-4 text-left hover:border-primary/40 cursor-pointer">
+            <div key={record.id} role="button" tabIndex={0} onClick={() => setDraft(record)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setDraft(record); } }} className="w-full rounded-xl border border-border/50 bg-card/40 p-4 text-left hover:border-primary/40 cursor-pointer">
               <div className="flex items-center justify-between gap-3">
                 <h3 className="font-semibold text-foreground">{record.title}</h3>
                 <div className="flex items-center gap-2">

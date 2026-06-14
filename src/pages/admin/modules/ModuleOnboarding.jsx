@@ -28,7 +28,7 @@ export default function ModuleOnboarding() {
     queryFn: () => base44.entities.ExperienceConfig.filter({ tenant_id: selected.id }),
     enabled: !!selected?.id,
   });
-  const savedOnboardingConfig = experienceConfigs[0]?.onboarding_config || {};
+  const savedOnboardingConfig = [...experienceConfigs].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))[0]?.onboarding_config || {};
   const step6Configured = Boolean(savedOnboardingConfig.cta_label?.trim() && savedOnboardingConfig.completion_route?.trim());
 
   const completedCount = progress.filter(p => p.stage === "completed").length;

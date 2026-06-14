@@ -110,8 +110,11 @@ export default function Vendors() {
         tenant_name: tenant?.name,
         status: "pending",
       };
+      const vendor = await base44.entities.Vendor.create(payload);
+      // Fire analytics only after the vendor row actually persists, so a failed
+      // create can't inflate signup metrics with phantom events.
       base44.entities.AnalyticsEvent.create({ tenant_id: tenant?.id, tenant_name: tenant?.name, event_type: "vendor_signup", event_data: { slot_type: data.slot_type }, source_page: "vendors" }).catch(() => {});
-      return base44.entities.Vendor.create(payload);
+      return vendor;
     },
     onSuccess: () => {
       toast.success("Application submitted! We'll review and get back to you within 48 hours.");
@@ -243,7 +246,7 @@ export default function Vendors() {
                 <Button
                   className="w-full bg-primary text-primary-foreground gap-2"
                   onClick={() => registerMutation.mutate(formData)}
-                  disabled={!formData.business_name || !formData.email || !formData.category || registerMutation.isPending}
+                  disabled={!formData.business_name || !formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) || !formData.category || registerMutation.isPending}
                 >
                   {registerMutation.isPending ? "Submitting..." : "Submit Application"}
                   <ArrowRight className="w-4 h-4" />

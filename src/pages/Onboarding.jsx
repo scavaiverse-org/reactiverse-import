@@ -10,7 +10,9 @@ export default function Onboarding() {
   const handleContextChange = useCallback((next) => setContext(next), []);
 
   useEffect(() => {
-    setReduceMotion(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    if (typeof window !== "undefined" && window.matchMedia) {
+      setReduceMotion(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    }
   }, []);
 
   return (

@@ -46,7 +46,7 @@ export default function PlatformPages({ initialPageKey = "platform_home" }) {
   const updateHero = (field, value) => setDraft((prev) => ({ ...prev, sections: (prev.sections || []).map((section, index) => index === 0 || section.sectionKey === "hero" ? { ...section, [field]: value } : section), lastEditedAt: new Date().toISOString() }));
   const updateHeroOverlay = (field, value) => updateHero(field, value);
   const updateHeroSlot = (field, value) => setDraft((prev) => ({ ...prev, mediaSlots: (prev.mediaSlots || []).map((slot, index) => index === 0 || slot.sectionKey === "hero" ? { ...slot, [field]: value } : slot), lastEditedAt: new Date().toISOString() }));
-  const updateCta = (key, field, value) => setDraft((prev) => ({ ...prev, ctaSlots: (prev.ctaSlots || []).map((cta) => cta.ctaKey === key ? { ...cta, [field]: value, target: field === "route" ? value : cta.target } : cta), lastEditedAt: new Date().toISOString() }));
+  const updateCta = (key, field, value) => setDraft((prev) => ({ ...prev, ctaSlots: (prev.ctaSlots || []).map((cta) => cta.ctaKey === key ? { ...cta, [field]: value } : cta), lastEditedAt: new Date().toISOString() }));
   const updateGatewayCard = (key, field, value) => setDraft((prev) => {
     const currentCards = gatewayDefaults.map((fallback) => ({
       ...fallback,

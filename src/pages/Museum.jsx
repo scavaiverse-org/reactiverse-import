@@ -43,7 +43,7 @@ export default function Museum() {
     );
   }
 
-  const multiWalkthrough = manifest.walkthroughs.length > 1;
+  const multiWalkthrough = (manifest.walkthroughs?.length || 0) > 1;
   const stationCards = multiWalkthrough
     ? manifest.walkthroughs.map((walkthrough, index) => ({
         key: walkthrough.walkthrough_key,

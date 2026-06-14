@@ -64,7 +64,7 @@ export default function Dashboard() {
 
   const recentActivity = [
     ...tickets.slice(0, 3).map(t => ({ icon: Ticket, color: "text-primary", text: `Ticket — ${t.visitor_name || "visitor"} · ${t.ticket_type?.replace(/_/g, " ")}`, time: t.created_date, status: t.status })),
-    ...vendors.slice(0, 2).map(v => ({ icon: Store, color: "text-blue-400", text: `Vendor — ${v.business_name} · ${v.category?.replace(/_/g, " ")}`, time: v.created_date, status: v.status })),
+    ...vendors.slice(0, 2).map(v => ({ icon: Store, color: "text-blue-400", text: `Vendor — ${v.business_name || "vendor"} · ${v.category?.replace(/_/g, " ")}`, time: v.created_date, status: v.status })),
   ].sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 6);
 
   const systemModules = [

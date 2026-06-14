@@ -104,8 +104,8 @@ export default function Walkthrough() {
     trackWalkthroughEvent({ eventName, tenant, museumId, walkthroughKey, room, data });
     if (eventName === "walkthrough_room_viewed" && room?.room_key) {
       visitRoom(room.room_key, rooms.length);
-    } else if (eventName === "walkthrough_artifact_opened" && data.artifact_id) {
-      collectArtifact({ artifactKey: data.artifact_id, roomKey: room?.room_key, title: data.title, imageUrl: data.media_url });
+    } else if (eventName === "walkthrough_artifact_opened" && data.artifact_id && data.title) {
+      collectArtifact({ artifactKey: data.artifact_id, roomKey: room?.room_key, title: data.title, imageUrl: data.media_url || "" });
     }
   };
 
