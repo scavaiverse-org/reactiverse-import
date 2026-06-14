@@ -1,8 +1,8 @@
-import { useEffect } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import WalkthroughRoomEditor from "./WalkthroughRoomEditor";
 import WalkthroughPreview from "./WalkthroughPreview";
+import useModalOverlay from "@/hooks/useModalOverlay";
 
 /**
  * Centered "pop-up edit" overlay for a single room. Shown after a tenant
@@ -10,18 +10,8 @@ import WalkthroughPreview from "./WalkthroughPreview";
  * gives the same museum preview + full room editor as the main page, but in a
  * focused modal overlay with its own close control.
  */
-export default function RoomPopupEditOverlay({ room, rooms = [], activeIndex = 0, tenantSlug, walkthroughKey, onChange, onNavigateRoom, onAddThreeDWorlds, onClose }) {
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = previousOverflow; };
-  }, []);
-
-  useEffect(() => {
-    const onKeyDown = (event) => { if (event.key === "Escape") onClose?.(); };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
+export default function RoomPopupEditOverlay({ room, rooms = [], activeIndex = 0, tenantSlug, walkthroughKey, onChange, onNavigateRoom, onAddThreeDWorlds, errorRoomKeys, onClose }) {
+  useModalOverlay(onClose);
 
   if (!room) return null;
 
@@ -40,7 +30,7 @@ export default function RoomPopupEditOverlay({ room, rooms = [], activeIndex = 0
         </div>
         <div className="flex-1 space-y-6 overflow-y-auto p-4">
           <WalkthroughPreview room={room} rooms={rooms} activeIndex={activeIndex} tenantSlug={tenantSlug} walkthroughKey={walkthroughKey} onNavigateRoom={onNavigateRoom} />
-          <WalkthroughRoomEditor room={room} onChange={onChange} rooms={rooms} onAddThreeDWorlds={onAddThreeDWorlds} />
+          <WalkthroughRoomEditor room={room} onChange={onChange} rooms={rooms} onAddThreeDWorlds={onAddThreeDWorlds} hasError={errorRoomKeys?.has(room?.room_key)} />
         </div>
       </div>
     </div>

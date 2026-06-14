@@ -177,6 +177,9 @@ export default function TenantWalkthrough() {
       const newRooms = buildThreeDWorldRooms({ count, startIndex: rooms.length, walkthroughKey });
       applyRoomsDraft([...rooms, ...newRooms]);
       setActiveRoom(firstNewIndex);
+      // Keep the pop-up overlay (if open) following the same jump, so the
+      // newly-added world is visible instead of being created behind it.
+      if (popupEditIndex !== null) setPopupEditIndex(firstNewIndex);
       return;
     }
     const actions = {
@@ -343,6 +346,7 @@ export default function TenantWalkthrough() {
           onChange={(room) => updateRoom(popupEditIndex, room)}
           onNavigateRoom={setActiveRoom}
           onAddThreeDWorlds={(count) => handleGlobalAutofill("threeDWorlds", { count })}
+          errorRoomKeys={errorRoomKeys}
           onClose={() => setPopupEditIndex(null)}
         />
       )}
