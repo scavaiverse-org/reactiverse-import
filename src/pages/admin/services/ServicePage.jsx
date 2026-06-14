@@ -58,7 +58,7 @@ const SERVICE_CONFIGS = {
   integrations: {
     key: "moa-export", title: "Integration Service", layer: "Platform Services",
     desc: "External API connections including analytics platforms, email providers, AI models, and third-party services.",
-    features: ["Email API (Resend)", "LLM Integration (Base44 AI)", "Analytics Events Pipeline", "Webhook Endpoints", "OAuth Connectors", "API Rate Limiting"],
+    features: ["Email API (Resend)", "LLM Integration (SCAVerse AI)", "Analytics Events Pipeline", "Webhook Endpoints", "OAuth Connectors", "API Rate Limiting"],
     connected: ["/platform/admin/platform-services", "/platform/admin/modules/analytics", "/platform/admin/infrastructure"],
     connectedLabels: ["All Services", "Analytics", "Infrastructure"],
   },

@@ -33,7 +33,7 @@ export const blueprintPageFunctions = [
       { code: "B6", path: "/white-label", page: "WhiteLabel", function: "Public white-label and expansion route preserved through legacy redirect.", adminConnection: "WhiteLabelAdmin mirror at /platform/admin/white-label." },
       { code: "B7", path: "/docs", page: "Documentation", function: "Public documentation route mapped to platform docs.", adminConnection: "DocumentationAdmin mirror through public content and PlatformPages." },
       { code: "B8", path: "/contact", page: "Contact", function: "Public contact/legal utility route preserved in AppLayout.", adminConnection: "ContactAdmin mirror contract through PlatformPages." },
-      { code: "B9", path: "/login", page: "Login", function: "Authentication entry handled by Base44 auth flow.", adminConnection: "AuthAdmin mirror contract; no custom auth backend created." },
+      { code: "B9", path: "/login", page: "Login", function: "Authentication entry handled by SCAVerse auth flow.", adminConnection: "AuthAdmin mirror contract; no custom auth backend created." },
       { code: "B10", path: "/signup", page: "Signup", function: "Tenant signup/acquisition alias routed to BecomeTenant.", adminConnection: "AuthAdmin / BecomeTenant mirror contract." },
       { code: "B11", path: "/showcase", page: "Showcase", function: "Public showcase alias routed to VirtualExperience.", adminConnection: "ShowcaseAdmin mirror contract through PlatformPages." }
     ]

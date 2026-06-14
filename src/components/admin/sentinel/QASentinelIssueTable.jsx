@@ -15,7 +15,7 @@ export default function QASentinelIssueTable({ issues = [], title = "Live Issue 
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <p className="flex items-center gap-2 text-sm font-semibold text-foreground"><Bug className="h-4 w-4 text-primary" /> {title}</p>
-          <p className="text-xs text-muted-foreground">Newest active issues update through Base44 realtime subscriptions.</p>
+          <p className="text-xs text-muted-foreground">Newest active issues update through SCAVerse realtime subscriptions.</p>
         </div>
         <span className="rounded-full border border-white/10 px-2 py-1 text-[10px] text-muted-foreground">{visible.length} shown</span>
       </div>

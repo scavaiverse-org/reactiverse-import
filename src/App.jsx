@@ -170,9 +170,7 @@ const AuthenticatedApp = () => {
       {/* Canonical admin standard route aliases */}
       <Route path="/admin/platform" element={<Navigate to="/platform/admin" replace />} />
       <Route path="/admin/platform/pages" element={<Navigate to="/platform/admin/pages" replace />} />
-      <Route path="/admin/music" element={<MasterAdminLayout />}>
-        <Route index element={<Music />} />
-      </Route>
+      <Route path="/admin/music" element={<Navigate to="/platform/admin/music" replace />} />
       <Route path="/admin/platform/media" element={<Navigate to="/platform/admin/public-content" replace />} />
       <Route path="/admin/platform/analytics" element={<Navigate to="/platform/admin/modules/analytics" replace />} />
       <Route path="/admin/platform/navigation" element={<Navigate to="/platform/admin/pages" replace />} />

@@ -17,7 +17,7 @@ const highlights = [
 ];
 
 export default function Museum() {
-  const { data: tenant } = useQuery({
+  const { data: tenant, isLoading: tenantLoading } = useQuery({
     queryKey: ["museum-page-tenant", DEFAULT_MUSEUM_SLUG],
     queryFn: async () => {
       const tenants = await base44.entities.MuseumTenant.filter({ slug: DEFAULT_MUSEUM_SLUG }, "name", 1);
@@ -25,7 +25,7 @@ export default function Museum() {
     },
   });
 
-  const { data: manifest } = useQuery({
+  const { data: manifest, isLoading: manifestLoading } = useQuery({
     queryKey: ["published-manifest", tenant?.id, tenant?.published_manifest_id],
     queryFn: () => fetchPublishedManifest(tenant),
     enabled: !!tenant?.id,
@@ -33,6 +33,15 @@ export default function Museum() {
   });
 
   const tenantSlug = tenant?.slug || DEFAULT_MUSEUM_SLUG;
+  const isLoading = tenantLoading || (!!tenant?.id && manifestLoading);
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+      </div>
+    );
+  }
 
   if (!manifest) {
     return (

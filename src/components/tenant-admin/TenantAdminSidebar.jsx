@@ -59,7 +59,7 @@ export default function TenantAdminSidebar({ open = true, onToggle }) {
   };
 
   return (
-    <aside className={`relative flex-shrink-0 border-r border-border/50 bg-card/20 flex flex-col transition-all duration-200 ${open ? "w-60" : "w-14"}`}>
+    <aside className={`relative flex-shrink-0 border-r border-border/50 bg-card/20 flex-col transition-all duration-200 ${open ? "flex w-60" : "hidden sm:flex sm:w-14"}`}>
       {/* Toggle tab — pinned to the right edge, very obvious */}
       <button
         type="button"

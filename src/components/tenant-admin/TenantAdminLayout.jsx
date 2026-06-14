@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { Outlet, useLocation, useParams } from "react-router-dom";
-import { ChevronRight, ShieldCheck } from "lucide-react";
+import { ChevronRight, ShieldCheck, Menu } from "lucide-react";
 import DomainAccessGate from "@/components/access/DomainAccessGate";
 import { useActiveTenant } from "@/hooks/useActiveTenant";
 import TenantAdminSidebar from "./TenantAdminSidebar.jsx";
 
 export default function TenantAdminLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth >= 1024 : true
+  );
   const location = useLocation();
   const { tenantSlug = "" } = useParams();
   const { tenant } = useActiveTenant();
@@ -21,6 +23,14 @@ export default function TenantAdminLayout() {
         <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
           <header className="border-b border-border/50 bg-card/10 px-6 py-3 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <button
+                type="button"
+                onClick={() => setSidebarOpen((v) => !v)}
+                className="sm:hidden mr-1 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                title="Toggle sidebar"
+              >
+                <Menu className="w-4 h-4" />
+              </button>
               <span>Museum Administration</span>
               <ChevronRight className="w-3 h-3" />
               <span className="text-foreground capitalize">{section}</span>
