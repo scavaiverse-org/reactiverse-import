@@ -45,6 +45,7 @@ function makeMissingConfigClient() {
       signInWithPassword: async () => sessionStub,
       signInWithOtp: async () => sessionStub,
       signUp: async () => sessionStub,
+      signInWithOAuth: async () => ({ data: null, error: { message: 'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment and redeploy.' } }),
     },
     from: () => makeQueryStub(),
     rpc: () => Promise.resolve({ data: null, error: null }),

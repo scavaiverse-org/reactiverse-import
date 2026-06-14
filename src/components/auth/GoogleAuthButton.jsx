@@ -26,17 +26,22 @@ export default function GoogleAuthButton({ redirect }) {
   const handleClick = async () => {
     setError("");
     setLoading(true);
-    const callback = `${window.location.origin}/auth/callback${
-      redirect ? `?redirect=${encodeURIComponent(redirect)}` : ""
-    }`;
-    const { error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: callback },
-    });
-    // On success the browser navigates away; we only get here on failure.
-    if (oauthError) {
+    try {
+      const callback = `${window.location.origin}/auth/callback${
+        redirect ? `?redirect=${encodeURIComponent(redirect)}` : ""
+      }`;
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: callback },
+      });
+      // On success the browser navigates away; we only reach here on failure.
+      if (oauthError) {
+        setLoading(false);
+        setError(oauthError.message);
+      }
+    } catch (e) {
       setLoading(false);
-      setError(oauthError.message);
+      setError(e?.message || "Google sign-in failed. Please try again.");
     }
   };
 
