@@ -115,7 +115,7 @@ export default function RoomPreview() {
       const res = await fetch(`${supabaseUrl}/functions/v1/cultural-guide`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, guide_name: "SpriteAI", personality: "precise, returns only valid JSON" }),
+        body: JSON.stringify({ prompt, tenant_id: tenant?.id || "" }),
       });
       if (!res.ok) return null;
       const data = await res.json().catch(() => null);

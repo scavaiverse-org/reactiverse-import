@@ -202,29 +202,19 @@ function saveStoredMessages(storageKey, messages) {
 async function getAIResponse(message, guideConfig, tenant, conversationHistory = [], addOns = [], tenantSlug = DEFAULT_MUSEUM_SLUG) {
   const local = createLocalResponse(message, conversationHistory, addOns, tenantSlug);
   if (local) return local;
-  const guideName = guideConfig?.guide_name || "ARIA";
-  const personality = guideConfig?.personality || guideConfig?.tone || "warm, culturally intelligent, concise";
   const fallback = guideConfig?.fallback_answer || "I don't have that information, but I can connect you with our team.";
-  const approvedKnowledge = Array.isArray(guideConfig?.knowledge_base) ? guideConfig.knowledge_base.join("\n- ") : (guideConfig?.knowledge_base || "Approved museum content only");
-  const addonKnowledge = addOns.map((addon) => `- ${addon.title}${addon.price ? `: SGD ${addon.price}` : ""} — ${addon.desc}`).join("\n");
-  const recentConversation = conversationHistory
-    .slice(-10)
-    .map((msg) => `${msg.role === "user" ? "Visitor" : guideName}: ${msg.content}`)
-    .join("\n");
   if (!supabaseUrl) {
     return { content: fallback, ctas: [], topic: "general" };
   }
+  // The edge function resolves guide identity, personality, fallback copy,
+  // approved knowledge, and add-ons server-side from the tenant's published
+  // config — only the tenant id, prompt, and conversation history are sent.
   const res = await fetch(`${supabaseUrl}/functions/v1/cultural-guide`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       prompt: message,
-      guide_name: guideName,
-      personality,
-      fallback_answer: fallback,
-      approved_knowledge: approvedKnowledge,
-      addon_knowledge: addonKnowledge || "Add-ons may be tenant-specific; guide visitors to the Add-ons page.",
-      tenant_name: tenant?.name || "the museum",
+      tenant_id: tenant?.id || "",
       conversation_history: conversationHistory.slice(-10).map((msg) => ({
         role: msg.role === "user" ? "user" : "assistant",
         content: msg.content,
@@ -232,7 +222,7 @@ async function getAIResponse(message, guideConfig, tenant, conversationHistory =
     }),
   });
   const data = res.ok ? await res.json().catch(() => ({})) : {};
-  const content = data?.text || "I'm having trouble connecting right now. Please try again or visit our Help section.";
+  const content = data?.text || fallback;
   return { content, ctas: [], topic: "general" };
 }
 
