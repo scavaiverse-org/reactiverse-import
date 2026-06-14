@@ -14,6 +14,7 @@ import QASentinelSemanticTab from "@/components/admin/sentinel/QASentinelSemanti
 import QASentinelEventsPanel from "@/components/admin/sentinel/QASentinelEventsPanel";
 import QASentinelVerbatimExport from "@/components/admin/sentinel/QASentinelVerbatimExport";
 import QASentinelThinkingLayers from "@/components/admin/sentinel/QASentinelThinkingLayers";
+import QASentinelChat from "@/components/admin/sentinel/QASentinelChat";
 import SystemSectionTabs from "@/components/admin/SystemSectionTabs";
 import { adminTabDefinitions } from "@/lib/qa-sentinel/registry";
 import { sentinelCheckDefinitions } from "@/lib/qa-sentinel/check-definitions";
@@ -22,10 +23,15 @@ import { ignoreIssue, markIssueFixed, recordSentinelEvent } from "@/lib/qa-senti
 import { externalRunnerStatus } from "@/lib/qa-sentinel/external-runner-adapter";
 import { buildFixIntelligence } from "@/lib/qa-sentinel/fix-intelligence";
 
-const tabs = ["Overview", "Runtime Truth", "Structural Intelligence", "Semantic Impact", "Live Issues", "Route Matrix", "CTA Matrix", "Runs", "Events", "Exports", "Settings"];
+const tabs = ["Overview", "Runtime Truth", "Structural Intelligence", "Semantic Impact", "Live Issues", "Route Matrix", "CTA Matrix", "Runs", "Events", "Chat With QA", "Exports", "Settings"];
 
 export default function QASentinel() {
-  const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get("tab") === "exports" ? "Exports" : "Overview");
+  const [activeTab, setActiveTab] = useState(() => {
+    const param = new URLSearchParams(window.location.search).get("tab");
+    if (param === "exports") return "Exports";
+    if (param === "chat") return "Chat With QA";
+    return "Overview";
+  });
   const [issues, setIssues] = useState([]);
   const [runs, setRuns] = useState([]);
   const [events, setEvents] = useState([]);
@@ -148,7 +154,7 @@ export default function QASentinel() {
             <div>
               <p className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-primary"><ShieldAlert className="h-4 w-4" /> Master Admin Semantic Layer</p>
               <h1 className="font-display text-4xl font-bold text-foreground">AOM Live QA Sentinel</h1>
-              <p className="mt-2 max-w-3xl text-sm text-muted-foreground">Realtime semantic testing layer for routes, CTAs, admin tabs, forms, media, tenant isolation, and runtime failures.</p>
+              <p className="mt-2 max-w-3xl text-sm text-muted-foreground">Checks the platform in real time for broken pages, buttons, forms, images, and more. Shows you what is wrong and how to fix it.</p>
             </div>
             <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs ${realtime === "live" ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300" : "border-red-400/30 bg-red-400/10 text-red-300"}`}>
               <Radio className={`h-3.5 w-3.5 ${realtime === "live" ? "animate-pulse" : ""}`} /> {realtime === "live" ? "LIVE" : realtime === "connecting" ? "Connecting realtime" : "Realtime disconnected"}
@@ -175,6 +181,7 @@ export default function QASentinel() {
         {activeTab === "CTA Matrix" && <QASentinelCoverageMap checks={sentinelCheckDefinitions.filter((check) => check.check_type === "cta")} ctas={ctas} />}
         {activeTab === "Runs" && <QASentinelRunTimeline runs={runs} />}
         {activeTab === "Events" && <QASentinelEventsPanel events={events} />}
+        {activeTab === "Chat With QA" && <QASentinelChat issues={issues} />}
         {activeTab === "Exports" && <QASentinelVerbatimExport issues={issues} events={events} runs={runs} previousExports={exportsQuery.data || []} onExportCreated={() => exportsQuery.refetch()} />}
 
         {activeTab === "Settings" && <SettingsPanel />}

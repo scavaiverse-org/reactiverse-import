@@ -4,19 +4,23 @@ const tabs = [
   { label: "System Health", path: "/platform/admin/infrastructure" },
   { label: "Live QA Sentinel", path: "/platform/admin/qa-sentinel" },
   { label: "Testers Feedback", path: "/platform/admin/testers-feedback" },
-  { label: "Exports", path: "/platform/admin/qa-sentinel?tab=exports" },
+  { label: "Chat With QA", path: "/platform/admin/qa-sentinel?tab=chat", queryParam: "chat" },
+  { label: "Exports", path: "/platform/admin/qa-sentinel?tab=exports", queryParam: "exports" },
 ];
 
 export default function SystemSectionTabs() {
-  const location = useLocation();
-  const isExports = location.pathname === "/platform/admin/qa-sentinel" && location.search.includes("tab=exports");
+  const { pathname, search } = useLocation();
+  const activeParam = new URLSearchParams(search).get("tab");
 
   return (
     <nav className="mb-6 flex flex-wrap gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-2">
       {tabs.map((tab) => {
-        const active = tab.label === "Exports"
-          ? isExports
-          : location.pathname === tab.path && !isExports;
+        let active;
+        if (tab.queryParam) {
+          active = pathname === "/platform/admin/qa-sentinel" && activeParam === tab.queryParam;
+        } else {
+          active = pathname === tab.path && !activeParam;
+        }
         return (
           <Link
             key={tab.label}
