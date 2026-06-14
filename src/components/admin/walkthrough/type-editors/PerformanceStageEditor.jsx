@@ -12,8 +12,12 @@ export default function PerformanceStageEditor({ room, onChange }) {
   const setConfig = (patch) => onChange({ ...room, performance_config: { ...config, ...patch } });
   const upload = async (file) => {
     if (!file) return;
-    const result = await uploadFile(file);
-    setConfig({ performance_media_url: result.file_url, performance_media_type: detectMediaTypeFromFile(file) });
+    try {
+      const result = await uploadFile(file);
+      setConfig({ performance_media_url: result.file_url, performance_media_type: detectMediaTypeFromFile(file) });
+    } catch (error) {
+      console.error("Upload failed:", error);
+    }
   };
 
   return (

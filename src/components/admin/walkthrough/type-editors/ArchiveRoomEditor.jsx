@@ -15,8 +15,12 @@ export default function ArchiveRoomEditor({ room, onChange }) {
   const updateDocument = (index, patch) => setConfig({ documents: documents.map((item, i) => i === index ? { ...item, ...patch } : item) });
   const upload = async (index, file) => {
     if (!file) return;
-    const result = await uploadFile(file);
-    updateDocument(index, { file_url: result.file_url, media_url: result.file_url, media_type: detectMediaTypeFromFile(file) });
+    try {
+      const result = await uploadFile(file);
+      updateDocument(index, { file_url: result.file_url, media_url: result.file_url, media_type: detectMediaTypeFromFile(file) });
+    } catch (error) {
+      console.error("Upload failed:", error);
+    }
   };
 
   return (

@@ -15,8 +15,12 @@ export default function GamificationPageEditor({ room, onChange }) {
   const setConfig = (patch) => onChange({ ...room, gamification_config: { ...config, ...patch } });
   const uploadBadge = async (file) => {
     if (!file) return;
-    const result = await uploadFile(file);
-    setConfig({ badge_icon_url: result.file_url });
+    try {
+      const result = await uploadFile(file);
+      setConfig({ badge_icon_url: result.file_url });
+    } catch (error) {
+      console.error("Upload failed:", error);
+    }
   };
 
   return (

@@ -1,4 +1,4 @@
-export default function MediaSyncReport({ draft }) {
+export default function MediaSyncReport({ draft = {} }) {
   const assigned = [
     draft.heroDesktopMediaId,
     draft.heroTabletMediaId,

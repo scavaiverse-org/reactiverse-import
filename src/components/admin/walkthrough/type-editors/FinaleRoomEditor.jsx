@@ -15,8 +15,12 @@ export default function FinaleRoomEditor({ room, onChange }) {
   const setConfig = (patch) => onChange({ ...room, finale_config: { ...config, ...patch } });
   const upload = async (file) => {
     if (!file) return;
-    const result = await uploadFile(file);
-    setConfig({ media_url: result.file_url, media_type: detectMediaTypeFromFile(file) });
+    try {
+      const result = await uploadFile(file);
+      setConfig({ media_url: result.file_url, media_type: detectMediaTypeFromFile(file) });
+    } catch (error) {
+      console.error("Upload failed:", error);
+    }
   };
 
   return (

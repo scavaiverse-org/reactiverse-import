@@ -9,7 +9,7 @@ const tabs = [
 
 export default function SystemSectionTabs() {
   const location = useLocation();
-  const isExports = location.pathname === "/platform/admin/qa-sentinel" && location.search.includes("tab=exports");
+  const isExports = location.pathname === "/platform/admin/qa-sentinel" && new URLSearchParams(location.search).get("tab") === "exports";
 
   return (
     <nav className="mb-6 flex flex-wrap gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-2">

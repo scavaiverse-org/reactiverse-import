@@ -1,9 +1,10 @@
+import { HelpCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import StatusBadge from "@/components/admin/StatusBadge";
 
 export default function GamificationElementModal({ element, tenant, gamEnabled, open, onClose }) {
   if (!element) return null;
-  const Icon = element.icon;
+  const Icon = element.icon || HelpCircle;
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>

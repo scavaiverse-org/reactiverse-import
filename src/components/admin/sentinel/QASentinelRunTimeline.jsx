@@ -13,7 +13,7 @@ export default function QASentinelRunTimeline({ runs = [] }) {
           <div key={run.id || run.run_id} className="rounded-xl border border-white/8 bg-black/15 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm font-semibold text-foreground">{run.run_type} · {run.status}</p>
-              <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><Clock className="h-3 w-3" /> {new Date(run.started_at).toLocaleString()}</span>
+              <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><Clock className="h-3 w-3" /> {run.started_at ? new Date(run.started_at).toLocaleString() : "—"}</span>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">{run.summary}</p>
             <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs sm:grid-cols-6">

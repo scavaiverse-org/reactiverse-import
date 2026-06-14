@@ -1,7 +1,7 @@
 import { HelpCircle } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-export default function HelpHint({ title, children }) {
+export default function HelpHint({ title = "Information", children }) {
   return (
     <Popover>
       <PopoverTrigger asChild>
