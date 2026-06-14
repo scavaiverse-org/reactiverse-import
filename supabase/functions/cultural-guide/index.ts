@@ -167,20 +167,30 @@ ${addonKnowledge ? `Available add-ons / upgrades:\n${addonKnowledge}` : 'Add-ons
       { role: 'user', content: prompt },
     ];
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 512,
-        system: systemPrompt,
-        messages,
-      }),
-    });
+    // Abort the upstream call if Anthropic hangs, so the Edge Function doesn't
+    // wait indefinitely and tie up resources.
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    let response: Response;
+    try {
+      response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 512,
+          system: systemPrompt,
+          messages,
+        }),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
       const err = await response.text().catch(() => response.statusText);
@@ -193,9 +203,10 @@ ${addonKnowledge ? `Available add-ons / upgrades:\n${addonKnowledge}` : 'Add-ons
     return Response.json({ text, ctas: [], topic: 'general' }, { headers: corsHeaders });
   } catch (error) {
     console.error('[cultural-guide] Error:', error);
+    // Don't leak internal error details (stack traces, DB errors) to the client.
     return Response.json({
       text: "I'm having trouble connecting right now. Please try again or visit our Help section.",
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: 'CONNECTION_ERROR',
     }, { status: 200, headers: corsHeaders });
   }
 });

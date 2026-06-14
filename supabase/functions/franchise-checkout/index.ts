@@ -80,12 +80,15 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Could not start payment. Please try again.' }, { status: 502, headers: corsHeaders });
     }
 
-    await service.from('tenant_inquiries').update({
+    const { error: updateErr } = await service.from('tenant_inquiries').update({
       plan: 'franchisee_early_bird',
       checkout_status: 'checkout_started',
       checkout_session_id: session.id,
       updated_at: new Date().toISOString(),
     }).eq('id', inquiryId);
+    if (updateErr) {
+      console.error('[franchise-checkout] failed to update inquiry after session create:', updateErr.message);
+    }
 
     return Response.json({ url: session.url }, { headers: corsHeaders });
   } catch (error) {

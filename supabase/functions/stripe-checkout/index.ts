@@ -112,12 +112,15 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Could not start payment. Please try again.' }, { status: 502, headers: corsHeaders });
     }
 
-    await service.from('tickets').update({
+    const { error: updateErr } = await service.from('tickets').update({
       confirmation_stage: 'checkout_started',
       total_price: price * quantity,
       currency: currency.toUpperCase(),
       updated_at: new Date().toISOString(),
     }).eq('id', ticketId);
+    if (updateErr) {
+      console.error('[stripe-checkout] failed to update ticket after session create:', updateErr.message);
+    }
 
     return Response.json({ url: session.url, session_id: session.id }, { headers: corsHeaders });
   } catch (error) {

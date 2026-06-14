@@ -38,6 +38,28 @@ Deno.serve(async (req) => {
       event.type === 'checkout.session.async_payment_succeeded'
     ) {
       const session = event.data.object as Stripe.Checkout.Session;
+
+      // Franchise subscription checkout (franchise-checkout) runs in subscription
+      // mode and carries inquiry_id. Trial subscriptions report payment_status
+      // 'no_payment_required', so don't gate on 'paid' — completion of the
+      // session is the signal. Mark the inquiry paid (checkout_status only allows
+      // checkout_started/paynow_pending/paid/cancelled). Handle this before the
+      // ticket branch so the inquiry id isn't misread as a ticket id.
+      const inquiryId = session.metadata?.inquiry_id;
+      if (session.mode === 'subscription' && inquiryId) {
+        const service = getServiceRoleClient();
+        const { error } = await service.from('tenant_inquiries')
+          .update({ checkout_status: 'paid', updated_at: new Date().toISOString() })
+          .eq('id', inquiryId)
+          .neq('checkout_status', 'paid');
+        if (error) {
+          console.error('[stripe-webhook] inquiry update failed:', error.message);
+          return Response.json({ error: 'Inquiry update failed.' }, { status: 500 });
+        }
+        console.log(`[stripe-webhook] inquiry ${inquiryId} marked paid (subscription, ${event.type})`);
+        return Response.json({ received: true });
+      }
+
       const ticketId = session.metadata?.ticket_id || session.client_reference_id;
       if (ticketId && session.payment_status === 'paid') {
         const service = getServiceRoleClient();

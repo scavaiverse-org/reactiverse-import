@@ -1,6 +1,14 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { normalizeRole } from './rbac.ts';
 
+// SUPABASE_URL is auto-injected into every Edge Function by the platform, but
+// validate it once up front so a misconfigured environment fails with a clear
+// message instead of an opaque createClient error deeper in a request.
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
+if (!SUPABASE_URL) {
+  throw new Error('SUPABASE_URL environment variable is required');
+}
+
 // Resolves an API key from the first env var that yields a usable value.
 // Platform-managed vars (SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY) are
 // kept in sync with the project's current keys (post key-migration they hold
@@ -13,7 +21,8 @@ function resolveKey(...names: string[]): string {
     if (raw.startsWith('[')) {
       try {
         const arr = JSON.parse(raw);
-        if (Array.isArray(arr) && arr[0]) return String(arr[0]).trim();
+        const first = Array.isArray(arr) ? arr[0] : undefined;
+        if (typeof first === 'string' && first.trim()) return first.trim();
       } catch { /* not JSON — fall through */ }
       continue;
     }
@@ -24,7 +33,7 @@ function resolveKey(...names: string[]): string {
 
 export function getServiceRoleClient() {
   return createClient(
-    Deno.env.get('SUPABASE_URL')!,
+    SUPABASE_URL,
     resolveKey('SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SECRET_KEYS'),
     { auth: { autoRefreshToken: false, persistSession: false } },
   );
@@ -32,7 +41,7 @@ export function getServiceRoleClient() {
 
 export function getUserClient(authHeader: string) {
   return createClient(
-    Deno.env.get('SUPABASE_URL')!,
+    SUPABASE_URL,
     resolveKey('SUPABASE_ANON_KEY', 'SUPABASE_PUBLISHABLE_KEYS'),
     { global: { headers: { Authorization: authHeader } } },
   );

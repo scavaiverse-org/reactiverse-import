@@ -1,6 +1,7 @@
 import { corsHeaders } from '../_shared/cors.ts';
 import { getAuthUser, getServiceRoleClient } from '../_shared/supabase-client.ts';
 import { TENANT_ADMIN_ROLES } from '../_shared/rbac.ts';
+import { checkRateLimit, rateLimitResponse } from '../_shared/rate-limit.ts';
 
 // QA Agent dispatcher — replaces Base44 agents:
 //   operational_tester, visitor_tester, accessibility_tester, tenant_isolation_tester
@@ -63,6 +64,12 @@ interface TesterFeedbackRecord {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
+  // Each run calls the Anthropic API (billable); cap per-IP to limit cost from
+  // a compromised admin token.
+  if (!(await checkRateLimit(req, 'qa-agent', 5, 60))) {
+    return rateLimitResponse();
+  }
 
   try {
     const user = await getAuthUser(req);
@@ -139,7 +146,10 @@ Deno.serve(async (req) => {
     // Optionally persist to tester_feedback table
     if (save_results && feedbackItems.length > 0) {
       const service = getServiceRoleClient();
-      await service.from('tester_feedback').insert(feedbackItems);
+      const { error: insertError } = await service.from('tester_feedback').insert(feedbackItems);
+      if (insertError) {
+        console.error('[qa-agent] failed to persist results:', insertError.message);
+      }
     }
 
     return Response.json({ agent, count: feedbackItems.length, results: feedbackItems }, { headers: corsHeaders });

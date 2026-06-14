@@ -79,7 +79,9 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const apply = body.apply !== false;
+    // Default to dry-run for this destructive maintenance op (it rewrites media
+    // URLs across records); the caller must opt in with apply: true to persist.
+    const apply = body.apply === true;
     const service = getServiceRoleClient();
     const { data: records, error } = await service
       .from('experience_configs')

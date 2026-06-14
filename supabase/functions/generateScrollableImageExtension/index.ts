@@ -55,23 +55,32 @@ async function generateImage(prompt: string, imageUrl: string, seed: number): Pr
     throw new Error('Image generation is not configured. Set FAL_KEY in Supabase Edge Function secrets.');
   }
 
-  // FAL.ai flux-dev image-to-image
-  const response = await fetch('https://fal.run/fal-ai/flux/dev/image-to-image', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Key ${falKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      image_url: imageUrl,
-      prompt,
-      negative_prompt: AVOID,
-      strength: 0.85,
-      num_inference_steps: 28,
-      seed,
-      image_size: 'landscape_16_9',
-    }),
-  });
+  // FAL.ai flux-dev image-to-image. Abort if FAL hangs so the function doesn't
+  // stall indefinitely (image generation can legitimately take a while).
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 120000);
+  let response: Response;
+  try {
+    response = await fetch('https://fal.run/fal-ai/flux/dev/image-to-image', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Key ${falKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        image_url: imageUrl,
+        prompt,
+        negative_prompt: AVOID,
+        strength: 0.85,
+        num_inference_steps: 28,
+        seed,
+        image_size: 'landscape_16_9',
+      }),
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!response.ok) {
     const err = await response.text().catch(() => response.statusText);
@@ -88,7 +97,14 @@ async function generateImage(prompt: string, imageUrl: string, seed: number): Pr
 // via <img>/background-image, so the panorama must embed its three images as
 // data URIs to display anywhere on the public site.
 async function toDataUri(url: string): Promise<string> {
-  const response = await fetch(url);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
+  let response: Response;
+  try {
+    response = await fetch(url, { signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
   if (!response.ok) throw new Error(`Could not fetch panorama panel image (${response.status})`);
   const contentType = response.headers.get('content-type')?.split(';')[0] || 'image/jpeg';
   if (!contentType.startsWith('image/')) throw new Error(`Panorama panel is not an image (${contentType})`);
