@@ -23,7 +23,7 @@ export default function ExperienceQualityPanel({ rooms = [] }) {
       <div className="space-y-3">
         {rows.map(([key, label]) => <div key={key}><div className="mb-1 flex justify-between text-xs"><span>{label}</span><span className="font-mono text-primary">{scores[key]}</span></div><div className="h-2 rounded-full bg-white/10"><div className="h-2 rounded-full bg-primary" style={{ width: `${scores[key]}%` }} /></div></div>)}
       </div>
-      {(scores.errors.length > 0 || scores.warnings.length > 0) && <div className="mt-4 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-xs text-amber-100"><p className="mb-1 font-semibold">Readiness notes</p>{[...scores.errors, ...scores.warnings].slice(0, 6).map((item) => <p key={item}>• {item}</p>)}</div>}
+      {(scores.errors.length > 0 || scores.warnings.length > 0) && <div className="mt-4 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-xs text-amber-100"><p className="mb-1 font-semibold">Readiness notes</p>{[...scores.errors, ...scores.warnings].slice(0, 6).map((item, idx) => <p key={idx}>• {item}</p>)}</div>}
     </section>
   );
 }

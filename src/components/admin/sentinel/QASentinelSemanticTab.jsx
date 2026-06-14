@@ -14,7 +14,7 @@ export default function QASentinelSemanticTab({ tab, issues = [], onSelectIssue 
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
         <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-primary">{tab}</p>
         <h2 className="mt-2 font-display text-2xl font-bold text-foreground">{tab}</h2>
-        <p className="mt-2 max-w-4xl text-sm text-muted-foreground">{DESCRIPTIONS[tab]}</p>
+        <p className="mt-2 max-w-4xl text-sm text-muted-foreground">{DESCRIPTIONS[tab] || "QA Sentinel semantic analysis view."}</p>
         <p className="mt-3 text-xs text-muted-foreground">Issue-only view. Healthy checks, passing routes, and working CTAs are excluded.</p>
       </div>
       <QASentinelIssueTable issues={rows} onSelectIssue={onSelectIssue} />
