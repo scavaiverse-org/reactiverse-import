@@ -4,25 +4,36 @@ import { ArrowRight, Clock, Sparkles, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { listPresaleMuseums } from "@/lib/manifest-public";
 import { museumPath } from "@/lib/domain-registry";
+import { PRESALE_PROMO_ENDS_AT, selectPresaleDisplayMuseums } from "@/lib/presale-content";
 
-// Dynamic pre-sale spotlight on the consumer platform page. Features whichever
-// museums are currently in pre-sale (live tenant, not yet published) — no
-// hard-coded museum. Hides itself when nothing is in pre-sale, and renders one
-// card per pre-sale museum (in practice one at a time).
+function isPresaleActive() {
+  return new Date() <= new Date(PRESALE_PROMO_ENDS_AT);
+}
+
+// Dynamic pre-sale spotlight on the consumer platform page.
+// – When the DB returns pre-sale museums, renders one card per museum.
+// – When the DB returns [] (e.g. AOM is already published) or throws (RLS,
+//   network), renders the hardcoded AOM fallback card so the section is never
+//   blank during the active pre-sale window.
+// – Only returns null after the promo window closes AND the DB confirms no
+//   pre-sale museums.
 export default function PreBookingFeature() {
   const { data: museums = [] } = useQuery({
     queryKey: ["presale-museums"],
-    queryFn: () => listPresaleMuseums(),
+    queryFn: () => listPresaleMuseums().catch(() => []),
     initialData: [],
+    retry: 1,
   });
 
-  if (!museums.length) return null;
+  if (!isPresaleActive() && !museums.length) return null;
+
+  const displayMuseums = selectPresaleDisplayMuseums(museums);
 
   return (
     <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6">
       <p className="mb-5 font-display text-[10px] font-medium uppercase tracking-[0.5em] text-primary/70">Now in pre-sale</p>
       <div className="space-y-6">
-        {museums.map((tenant) => (
+        {displayMuseums.map((tenant) => (
           <div key={tenant.id} className="overflow-hidden rounded-[2rem] border border-primary/25 bg-gradient-to-br from-primary/10 via-card/50 to-cyan-400/[0.06] p-8 backdrop-blur sm:p-12">
             <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
               <div>
@@ -34,11 +45,19 @@ export default function PreBookingFeature() {
                   {tenant.description || "Reserve your pre-sale ticket now and be among the first inside the moment the doors open."}
                 </p>
                 <div className="mt-6 flex flex-wrap gap-3">
-                  <Link to={museumPath(tenant.slug, "tickets")}>
-                    <Button size="lg" className="bg-primary text-primary-foreground">
-                      <Ticket className="h-4 w-4" /> Reserve Pre-Sale Tickets <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
+                  {tenant.useFallbackCta ? (
+                    <Link to="/presale">
+                      <Button size="lg" className="bg-primary text-primary-foreground">
+                        <Ticket className="h-4 w-4" /> Reserve Pre-Sale Tickets <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Link to={museumPath(tenant.slug, "tickets")}>
+                      <Button size="lg" className="bg-primary text-primary-foreground">
+                        <Ticket className="h-4 w-4" /> Reserve Pre-Sale Tickets <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                  )}
                 </div>
               </div>
               <div className="rounded-3xl border border-white/10 bg-background/50 p-6">

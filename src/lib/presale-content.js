@@ -159,6 +159,23 @@ export const TENANT_TRIAL_OFFER = {
   afterTrialNote: "No charge during the 7-day trial. Onboarding is only invoiced if you continue after the trial.",
 };
 
+// Fallback card shown in PreBookingFeature when the DB query returns [] or
+// errors. Covers: AOM already published (no longer "pre-sale" in DB terms),
+// RLS blocking, or network failure. CTA routes to /presale.
+export const PRESALE_FALLBACK_MUSEUM = {
+  id: "presale-fallback-aom",
+  name: "Asian Operatic Museum",
+  description:
+    "Singapore's first cinematic virtual museum experience. Reserve your early-bird ticket and be among the first visitors when we open — SCAVerse launch 2026.",
+  useFallbackCta: true, // CTA → /presale instead of museumPath(slug, "tickets")
+};
+
+// Returns the museums list to render: DB result when available, otherwise the
+// hardcoded fallback. Pure function — exported so tests can import it directly.
+export function selectPresaleDisplayMuseums(museums) {
+  return museums.length ? museums : [PRESALE_FALLBACK_MUSEUM];
+}
+
 export const PRESALE_FAQ = [
   {
     q: "When does the pre-sale run?",
